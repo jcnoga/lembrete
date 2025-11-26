@@ -130,8 +130,8 @@
         <div class="auth-box" id="login-form">
             <h2>Compromisso Fácil</h2>
             <p style="margin-bottom: 20px; color: #666;">Sua agenda na nuvem.</p>
-            <input type="email" id="log-email" class="auth-input" placeholder="Seu E-mail">
-            <input type="password" id="log-pass" class="auth-input" placeholder="Sua Senha">
+            <input type="email" id="log-email" class="auth-input" placeholder="lembrete91@gmail.com">
+            <input type="password" id="log-pass" class="auth-input" placeholder="pyfz mxbq pqrq btgb">
             <button class="auth-btn" onclick="appLogin()">Entrar</button>
             <div class="auth-link" onclick="toggleAuth('register')">Criar conta nova (Cadastre-se)</div>
             <div class="auth-link" onclick="toggleAuth('reset')" style="color:#ddd;">Esqueci senha</div>
@@ -330,15 +330,15 @@
     // ==========================================
     // 1. CONFIGURAÇÃO DO FIREBASE (PREENCHIDA)
     // ==========================================
-    const firebaseConfig = {
-      apiKey: "AIzaSyBhtwWew_DQNX2TZROUShZz4mjK57pRgQk",
-      authDomain: "lembrete-d6c15.firebaseapp.com",
-      projectId: "lembrete-d6c15",
-      storageBucket: "lembrete-d6c15.firebasestorage.app",
-      messagingSenderId: "368296869868",
-      appId: "1:368296869868:web:7a2c0a91f57de5d3a90ac9",
-      measurementId: "G-JE0QH81JG6"
-    };
+const firebaseConfig = {
+  apiKey: "AIzaSyBhtwWew_DQNX2TZROUShZz4mjK57pRgQk",
+  authDomain: "lembrete-d6c15.firebaseapp.com",
+  projectId: "lembrete-d6c15",
+  storageBucket: "lembrete-d6c15.firebasestorage.app",
+  messagingSenderId: "368296869868",
+  appId: "1:368296869868:web:7a2c0a91f57de5d3a90ac9",
+  measurementId: "G-JE0QH81JG6"
+};
 
     firebase.initializeApp(firebaseConfig);
 
