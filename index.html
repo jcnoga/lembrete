@@ -83,7 +83,7 @@
         .cal-day.today { background: var(--primary); color: white; }
         .cal-day.has-task::after { content: ''; position: absolute; bottom: 4px; left: 50%; transform: translateX(-50%); width: 4px; height: 4px; background: var(--danger); border-radius: 50%; }
 
-        /* --- NAVIGATION BAR (RESTAURADA) --- */
+        /* --- NAVIGATION BAR --- */
         nav { background: var(--white); border-top: 1px solid #eee; display: flex; justify-content: space-around; padding: 10px 0; position: fixed; bottom: 0; width: 100%; z-index: 100; height: 60px; }
         .nav-item { display: flex; flex-direction: column; align-items: center; color: var(--text-light); text-decoration: none; font-size: 0.75rem; background: none; border: none; cursor: pointer; width: 25%; }
         .nav-item svg { width: 24px; height: 24px; margin-bottom: 4px; fill: currentColor; }
@@ -241,7 +241,7 @@
         <!-- FAB -->
         <button class="fab" onclick="openModal()">+</button>
 
-        <!-- NAVIGATION BAR RESTAURADA -->
+        <!-- NAVIGATION BAR -->
         <nav>
             <button class="nav-item active" onclick="switchTab('dashboard')" id="nav-dashboard">
                 <svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
@@ -329,18 +329,17 @@
     // ==========================================
     // 1. CONFIGURAÇÃO DO FIREBASE
     // ==========================================
-const firebaseConfig = {
-  apiKey: "AIzaSyBhtwWew_DQNX2TZROUShZz4mjK57pRgQk",
-  authDomain: "lembrete-d6c15.firebaseapp.com",
-  projectId: "lembrete-d6c15",
-  storageBucket: "lembrete-d6c15.firebasestorage.app",
-  messagingSenderId: "368296869868",
-  appId: "1:368296869868:web:7a2c0a91f57de5d3a90ac9",
-  measurementId: "G-JE0QH81JG6"
-};
-    if (firebaseConfig.apiKey !== "apikey: AIzaSyBhtwWew_DQNX2TZROUShZz4mjK57pRgQk") {
-        firebase.initializeApp(firebaseConfig);
-    }
+    const firebaseConfig = {
+      apiKey: "AIzaSyBhtwWew_DQNX2TZROUShZz4mjK57pRgQk",
+      authDomain: "lembrete-d6c15.firebaseapp.com",
+      projectId: "lembrete-d6c15",
+      storageBucket: "lembrete-d6c15.firebasestorage.app",
+      messagingSenderId: "368296869868",
+      appId: "1:368296869868:web:7a2c0a91f57de5d3a90ac9",
+      measurementId: "G-JE0QH81JG6"
+    };
+
+    firebase.initializeApp(firebaseConfig);
 
     let auth, db;
     try {
@@ -349,7 +348,6 @@ const firebaseConfig = {
     } catch(e) { console.error("Erro Firebase", e); }
 
     let currentUser = null;
-    // Memória local das tarefas (Sincronizada com Cloud)
     let appData = { tasks: [] };
 
     // ==========================================
@@ -363,10 +361,10 @@ const firebaseConfig = {
                 document.getElementById('app-screen').classList.remove('hidden');
                 document.getElementById('user-display').textContent = user.email.split('@')[0];
                 document.getElementById('settings-email').textContent = user.email;
-                syncTasks(); // Inicia sincronia
+                syncTasks(); 
             } else {
                 currentUser = null;
-                appData.tasks = []; // Limpa memória
+                appData.tasks = [];
                 document.getElementById('auth-screen').classList.remove('hidden');
                 document.getElementById('app-screen').classList.add('hidden');
             }
@@ -399,17 +397,16 @@ const firebaseConfig = {
     function syncTasks() {
         if(!currentUser) return;
         
-        // Listener em tempo real
         db.collection('users').doc(currentUser.uid).collection('tasks')
             .orderBy('date')
             .onSnapshot(snapshot => {
-                appData.tasks = []; // Limpa lista local
+                appData.tasks = [];
                 snapshot.forEach(doc => {
                     let task = doc.data();
-                    task.id = doc.id; // Salva ID do documento
+                    task.id = doc.id;
                     appData.tasks.push(task);
                 });
-                refreshViews(); // Atualiza a tela que estiver aberta
+                refreshViews();
             });
     }
 
@@ -428,11 +425,10 @@ const firebaseConfig = {
             title, date, time, category: cat, value: val,
             sendEmail, emailAddr,
             userId: currentUser.uid, completed: false,
-            alarm5MinSent: false, alarmOnTimeSent: false, // Flags de alarme
+            alarm5MinSent: false, alarmOnTimeSent: false,
             createdAt: firebase.firestore.FieldValue.serverTimestamp()
         };
 
-        // Se for edição (t-id preenchido), update. Se não, add.
         const id = document.getElementById('t-id').value;
         if(id) {
             db.collection('users').doc(currentUser.uid).collection('tasks').doc(id).update(data)
@@ -456,14 +452,10 @@ const firebaseConfig = {
     let currentView = 'dashboard';
     
     function switchTab(tab) {
-        // Atualiza nav
         document.querySelectorAll('.nav-item').forEach(e => e.classList.remove('active'));
         document.getElementById('nav-'+tab).classList.add('active');
-        
-        // Atualiza views
         document.querySelectorAll('.view-section').forEach(e => e.classList.add('hidden'));
         document.getElementById('view-'+tab).classList.remove('hidden');
-        
         currentView = tab;
         refreshViews();
     }
@@ -511,7 +503,6 @@ const firebaseConfig = {
         const div = document.createElement('div');
         div.className = `task-item ${t.completed ? 'done' : ''} priority-normal`;
         
-        // WhatsApp Link
         const waMsg = encodeURIComponent(`${t.title} - ${t.date} ${t.time}`);
         const waBtn = `<button class="btn-icon btn-wa" onclick="window.open('https://wa.me/?text=${waMsg}')">💬</button>`;
         
@@ -554,7 +545,6 @@ const firebaseConfig = {
             el.className = 'cal-day';
             el.textContent = i;
             
-            // Check tasks
             if(appData.tasks.some(t => t.date === dStr && !t.completed)) el.classList.add('has-task');
             if(dStr === new Date().toISOString().split('T')[0]) el.classList.add('today');
 
@@ -579,7 +569,7 @@ const firebaseConfig = {
     // 5. ALARMES & UTILITÁRIOS
     // ==========================================
     
-    setInterval(checkAlarms, 10000); // Checa a cada 10s
+    setInterval(checkAlarms, 10000);
 
     function checkAlarms() {
         if(!currentUser) return;
@@ -603,7 +593,6 @@ const firebaseConfig = {
     }
 
     function triggerAlarm(task, type) {
-        // Atualiza flags no cloud para não repetir
         if(type==="5MIN") db.collection('users').doc(currentUser.uid).collection('tasks').doc(task.id).update({alarm5MinSent:true});
         if(type==="AGORA") db.collection('users').doc(currentUser.uid).collection('tasks').doc(task.id).update({alarmOnTimeSent:true});
 
@@ -623,7 +612,7 @@ const firebaseConfig = {
     }
     function completeTaskFromAlarm() {
         const id = document.getElementById('alarm-task-id').value;
-        toggleTask(id, false); // marca como feito
+        toggleTask(id, false);
         stopAlarm();
     }
 
@@ -662,11 +651,8 @@ const firebaseConfig = {
         doc.save('relatorio.pdf');
     }
 
-    // Saudação
     const hr = new Date().getHours();
     document.getElementById('greeting').textContent = hr<12?"Bom dia!":hr<18?"Boa tarde!":"Boa noite!";
-
-    // Permissão de notificação
     if("Notification" in window) Notification.requestPermission();
 
 </script>
