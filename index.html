@@ -1,65 +1,478 @@
-const functions = require('@google-cloud/functions-framework');
-const admin = require('firebase-admin');
-const nodemailer = require('nodemailer');
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Compromisso Fácil - Cloud</title>
+    
+    <!-- Bibliotecas PDF (Opcional, mantido para relatórios) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+    
+    <!-- FIREBASE SDKs (Versão Compatível para HTML puro) -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
 
-admin.initializeApp();
-const db = admin.firestore();
+    <style>
+        :root {
+            --primary: #0066cc;
+            --primary-dark: #004c99;
+            --secondary: #00cc99;
+            --bg: #f4f7f6;
+            --text: #333;
+            --white: #fff;
+            --danger: #e74c3c;
+            --radius: 12px;
+        }
 
-// CONFIGURAÇÃO DO SEU GMAIL (ROBÔ DE ENVIO)
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: 'SEU_EMAIL_GMAIL_AQUI@gmail.com',
-    pass: 'SUA_SENHA_DE_APP_AQUI' 
-  }
-});
+        * { box-sizing: border-box; outline: none; -webkit-tap-highlight-color: transparent; }
+        body { margin: 0; font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background: var(--bg); color: var(--text); height: 100vh; display: flex; flex-direction: column; }
 
-functions.http('enviarLembretes', async (req, res) => {
-  try {
-    // 1. Define a data de "Amanhã"
-    const hoje = new Date();
-    const amanha = new Date(hoje);
-    amanha.setDate(amanha.getDate() + 1);
-    const dataAlvo = amanha.toISOString().split('T')[0]; // Ex: 2023-10-25
+        /* --- TELA DE AUTENTICAÇÃO (LOGIN) --- */
+        #auth-screen {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            z-index: 5000;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            padding: 20px;
+        }
+        .auth-box {
+            background: white; padding: 30px; border-radius: 15px;
+            width: 100%; max-width: 400px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2); text-align: center;
+        }
+        .auth-box h2 { color: var(--primary); margin-bottom: 20px; margin-top: 0; }
+        .auth-input {
+            width: 100%; padding: 12px; border: 1px solid #ddd;
+            border-radius: 8px; margin-bottom: 15px; font-size: 1rem;
+        }
+        .auth-btn {
+            width: 100%; padding: 12px; background: var(--primary); color: white;
+            border: none; border-radius: 8px; font-weight: bold; cursor: pointer;
+            font-size: 1rem; transition: background 0.2s;
+        }
+        .auth-btn:active { transform: scale(0.98); }
+        .auth-link {
+            margin-top: 20px; font-size: 0.9rem; color: var(--primary);
+            text-decoration: underline; cursor: pointer; display: block;
+        }
+        .hidden { display: none !important; }
 
-    console.log(`Buscando tarefas para envio de e-mail na data: ${dataAlvo}`);
+        /* --- APP PRINCIPAL --- */
+        header {
+            background: var(--white); padding: 15px 20px;
+            display: flex; justify-content: space-between; align-items: center;
+            box-shadow: 0 1px 5px rgba(0,0,0,0.05); z-index: 10;
+        }
+        .user-info { font-size: 0.8rem; color: #777; margin-right: 10px; }
+        
+        main { flex: 1; overflow-y: auto; padding: 20px; padding-bottom: 80px; }
 
-    // 2. Busca TODAS as tarefas de TODOS os usuários para essa data que querem e-mail
-    // Isso requer uma "Collection Group Query" no Firestore (O console vai te dar um link para criar o índice se falhar)
-    const snapshot = await db.collectionGroup('tasks')
-      .where('date', '==', dataAlvo)
-      .where('sendEmail', '==', true)
-      .where('completed', '==', false)
-      .get();
+        /* LISTA DE TAREFAS */
+        .task-item {
+            background: white; padding: 15px; margin-bottom: 10px;
+            border-radius: var(--radius); display: flex; justify-content: space-between;
+            align-items: center; border-left: 5px solid var(--primary);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.02);
+        }
+        .task-item.done {
+            opacity: 0.6; text-decoration: line-through; border-left-color: var(--secondary);
+        }
+        .task-details strong { display: block; font-size: 1rem; margin-bottom: 4px; }
+        .task-details span { font-size: 0.85rem; color: #666; }
+        
+        /* Botões de Ação na Lista */
+        .task-actions { display: flex; gap: 10px; }
+        .btn-icon { background: none; border: none; font-size: 1.2rem; cursor: pointer; }
 
-    if (snapshot.empty) {
-      console.log('Nenhuma tarefa para notificar.');
-      return res.send('Nenhuma tarefa encontrada.');
+        /* BOTÃO FLUTUANTE (FAB) */
+        .fab {
+            position: fixed; bottom: 80px; right: 20px;
+            background: var(--primary); color: white;
+            width: 56px; height: 56px; border-radius: 50%; border: none;
+            font-size: 28px; box-shadow: 0 4px 15px rgba(0,102,204,0.4);
+            cursor: pointer; display: flex; justify-content: center; align-items: center;
+            transition: transform 0.2s;
+        }
+        .fab:active { transform: scale(0.90); }
+
+        /* MODAL DE CADASTRO DE TAREFA */
+        .modal {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5); z-index: 300; justify-content: center; align-items: center;
+        }
+        .modal.open { display: flex; animation: fadeIn 0.2s; }
+        .modal-content {
+            background: white; width: 90%; max-width: 500px; padding: 25px;
+            border-radius: 15px; max-height: 90vh; overflow-y: auto;
+        }
+        @keyframes fadeIn { from {opacity:0} to {opacity:1} }
+        
+        .form-group { margin-bottom: 15px; text-align: left; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: 600; font-size: 0.9rem; }
+        
+        /* Checkbox especial para o Google Cloud */
+        .cloud-option {
+            background: #eef2ff; padding: 12px; border-radius: 8px; border: 1px solid #ccd5ff;
+            display: flex; align-items: center; gap: 10px; margin-bottom: 15px;
+        }
+        .cloud-option input[type="checkbox"] { width: 20px; height: 20px; }
+        .cloud-option label { margin: 0; font-weight: normal; flex: 1; cursor: pointer; color: var(--primary-dark); }
+
+        /* BARRA DE NAVEGAÇÃO */
+        nav {
+            background: white; border-top: 1px solid #eee;
+            display: flex; justify-content: space-around; padding: 10px 0;
+            position: fixed; bottom: 0; width: 100%; height: 60px; z-index: 10;
+        }
+        .nav-item {
+            border: none; background: none; color: #999; font-size: 0.75rem;
+            display: flex; flex-direction: column; align-items: center; cursor: pointer;
+        }
+        .nav-item.active { color: var(--primary); font-weight: bold; }
+
+    </style>
+</head>
+<body>
+
+    <!-- 1. TELA DE AUTENTICAÇÃO -->
+    <div id="auth-screen">
+        
+        <!-- Formulário de Login -->
+        <div class="auth-box" id="login-form">
+            <h2>Compromisso Fácil</h2>
+            <p style="color:#666; font-size:0.9rem; margin-bottom:20px;">Organize suas tarefas na nuvem.</p>
+            
+            <input type="email" id="log-email" class="auth-input" placeholder="Seu E-mail">
+            <input type="password" id="log-pass" class="auth-input" placeholder="Sua Senha">
+            
+            <button class="auth-btn" onclick="appLogin()">Entrar</button>
+            
+            <span class="auth-link" onclick="toggleAuth('register')">Não tem conta? <b>Cadastre-se</b></span>
+            <span class="auth-link" onclick="toggleAuth('reset')" style="color:#eee; opacity:0.8; font-size:0.8rem;">Esqueci minha senha</span>
+        </div>
+
+        <!-- Formulário de Cadastro -->
+        <div class="auth-box hidden" id="register-form">
+            <h2>Criar Conta</h2>
+            <input type="email" id="reg-email" class="auth-input" placeholder="E-mail">
+            <input type="password" id="reg-pass" class="auth-input" placeholder="Senha (mínimo 6 dígitos)">
+            <button class="auth-btn" onclick="appRegister()">Cadastrar</button>
+            <span class="auth-link" onclick="toggleAuth('login')">Voltar para Login</span>
+        </div>
+
+        <!-- Recuperar Senha -->
+        <div class="auth-box hidden" id="reset-form">
+            <h2>Recuperar Senha</h2>
+            <p style="font-size:0.9rem; margin-bottom:15px; color:#555;">Digite seu e-mail para receber o link de redefinição.</p>
+            <input type="email" id="reset-email" class="auth-input" placeholder="E-mail cadastrado">
+            <button class="auth-btn" onclick="appResetPassword()">Enviar E-mail</button>
+            <span class="auth-link" onclick="toggleAuth('login')">Cancelar</span>
+        </div>
+    </div>
+
+    <!-- 2. APP PRINCIPAL -->
+    <div id="app-screen" class="hidden">
+        <header>
+            <div style="font-weight: bold; font-size: 1.1rem; color: var(--primary);">
+                ☁️ Compromisso Cloud
+            </div>
+            <div style="display:flex; align-items:center;">
+                <span id="user-display" class="user-info"></span>
+                <button onclick="appLogout()" style="color:var(--danger); background:none; border:1px solid var(--danger); border-radius:4px; padding:4px 8px; font-weight:bold; cursor:pointer; font-size:0.8rem;">Sair</button>
+            </div>
+        </header>
+
+        <main id="task-container">
+            <!-- Loader -->
+            <div id="loading" style="text-align:center; margin-top:50px; color:#777;">
+                <p>Conectando ao banco de dados...</p>
+            </div>
+            
+            <!-- Lista -->
+            <div id="task-list"></div>
+        </main>
+
+        <!-- Botão Adicionar -->
+        <button class="fab" onclick="openModal()">+</button>
+
+        <!-- Menu Inferior -->
+        <nav>
+            <button class="nav-item active">
+                <span style="font-size:1.2rem;">🏠</span> Início
+            </button>
+            <button class="nav-item" onclick="alert('Relatórios disponíveis via exportação PDF na versão completa.')">
+                <span style="font-size:1.2rem;">📊</span> Relatórios
+            </button>
+        </nav>
+    </div>
+
+    <!-- 3. MODAL NOVA TAREFA -->
+    <div class="modal" id="taskModal">
+        <div class="modal-content">
+            <h3 style="margin-top:0; color:var(--primary);">Novo Compromisso</h3>
+            <input type="hidden" id="t-id">
+            
+            <div class="form-group">
+                <label>Título *</label>
+                <input type="text" id="t-title" class="auth-input" placeholder="Ex: Reunião, Pagar conta">
+            </div>
+            
+            <div style="display:flex; gap:10px;">
+                <div class="form-group" style="flex:1">
+                    <label>Data *</label>
+                    <input type="date" id="t-date" class="auth-input">
+                </div>
+                <div class="form-group" style="flex:1">
+                    <label>Hora</label>
+                    <input type="time" id="t-time" class="auth-input">
+                </div>
+            </div>
+
+            <!-- OPÇÃO GOOGLE CLOUD -->
+            <div class="cloud-option">
+                <input type="checkbox" id="t-send-email" onchange="toggleEmailInput()">
+                <label for="t-send-email">Receber e-mail automático</label>
+            </div>
+            
+            <div class="form-group hidden" id="div-email-input">
+                <label>E-mail de Destino</label>
+                <input type="email" id="t-email-addr" class="auth-input" placeholder="seu@email.com">
+                <small style="color:#777; font-size:0.75rem;">O Google Cloud enviará um lembrete às 08:00 do dia anterior.</small>
+            </div>
+
+            <div style="display:flex; gap:10px; margin-top:10px;">
+                <button class="auth-btn" onclick="saveTask()">Salvar</button>
+                <button class="auth-btn" onclick="closeModal()" style="background:#e0e0e0; color:#333;">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+<script>
+    // ==========================================
+    // 1. CONFIGURAÇÃO DO FIREBASE
+    // ==========================================
+    // IMPORTANTE: Substitua os dados abaixo pelos do seu projeto Firebase Console
+    const firebaseConfig = {
+        apiKey: "COLE_SUA_API_KEY_AQUI",
+        authDomain: "SEU_PROJETO.firebaseapp.com",
+        projectId: "SEU_PROJETO",
+        storageBucket: "SEU_PROJETO.appspot.com",
+        messagingSenderId: "NUMERO",
+        appId: "ID_APP"
+    };
+
+    // Inicializa o Firebase se a config estiver preenchida (evita erro se copiar sem config)
+    if (firebaseConfig.apiKey !== "COLE_SUA_API_KEY_AQUI") {
+        firebase.initializeApp(firebaseConfig);
+    } else {
+        console.warn("ATENÇÃO: Você precisa configurar as chaves do Firebase no código!");
     }
 
-    // 3. Loop para enviar e-mails
-    const promessasEnvio = [];
-    
-    snapshot.forEach(doc => {
-      const task = doc.data();
-      const emailDestino = task.emailAddr;
+    // Referências
+    let auth, db;
+    try {
+        auth = firebase.auth();
+        db = firebase.firestore();
+    } catch(e) {
+        console.error("Erro ao inicializar serviços Firebase. Verifique a configuração.");
+    }
 
-      if (emailDestino) {
-        const mailOptions = {
-          from: 'Compromisso Fácil <seu_email@gmail.com>',
-          to: emailDestino,
-          subject: `🔔 Lembrete: ${task.title} é amanhã!`,
-          text: `Olá!\n\nVocê tem um compromisso agendado:\n\nTítulo: ${task.title}\nHorário: ${task.time}\n\nNão se esqueça!`
+    let currentUser = null;
+
+    // ==========================================
+    // 2. SISTEMA DE AUTENTICAÇÃO (LOGIN/REGISTER)
+    // ==========================================
+
+    // Monitora o estado (Logado/Deslogado)
+    if(auth) {
+        auth.onAuthStateChanged((user) => {
+            if (user) {
+                // Usuário Logado
+                currentUser = user;
+                document.getElementById('auth-screen').classList.add('hidden');
+                document.getElementById('app-screen').classList.remove('hidden');
+                document.getElementById('user-display').textContent = user.email.split('@')[0]; // Mostra parte do email
+                loadTasksFromCloud();
+            } else {
+                // Usuário Deslogado
+                currentUser = null;
+                document.getElementById('auth-screen').classList.remove('hidden');
+                document.getElementById('app-screen').classList.add('hidden');
+                document.getElementById('task-list').innerHTML = ''; // Limpa lista visual
+            }
+        });
+    }
+
+    function appLogin() {
+        const email = document.getElementById('log-email').value;
+        const pass = document.getElementById('log-pass').value;
+        if(!email || !pass) return alert("Preencha todos os campos.");
+        
+        auth.signInWithEmailAndPassword(email, pass)
+            .catch(err => alert("Erro ao entrar: " + err.message));
+    }
+
+    function appRegister() {
+        const email = document.getElementById('reg-email').value;
+        const pass = document.getElementById('reg-pass').value;
+        if(!email || !pass) return alert("Preencha todos os campos.");
+
+        auth.createUserWithEmailAndPassword(email, pass)
+            .then(() => alert("Conta criada com sucesso! Você já está logado."))
+            .catch(err => alert("Erro ao cadastrar: " + err.message));
+    }
+
+    function appResetPassword() {
+        const email = document.getElementById('reset-email').value;
+        if(!email) return alert("Digite o e-mail cadastrado.");
+        
+        auth.sendPasswordResetEmail(email)
+            .then(() => {
+                alert("E-mail de recuperação enviado! Verifique sua caixa de entrada.");
+                toggleAuth('login');
+            })
+            .catch(err => alert("Erro: " + err.message));
+    }
+
+    function appLogout() {
+        if(confirm("Deseja realmente sair?")) {
+            auth.signOut();
+        }
+    }
+
+    // Alternar visualização entre Login, Cadastro e Recuperação
+    function toggleAuth(view) {
+        document.getElementById('login-form').classList.add('hidden');
+        document.getElementById('register-form').classList.add('hidden');
+        document.getElementById('reset-form').classList.add('hidden');
+
+        if(view === 'login') document.getElementById('login-form').classList.remove('hidden');
+        if(view === 'register') document.getElementById('register-form').classList.remove('hidden');
+        if(view === 'reset') document.getElementById('reset-form').classList.remove('hidden');
+    }
+
+    // ==========================================
+    // 3. BANCO DE DADOS (FIRESTORE)
+    // ==========================================
+
+    function loadTasksFromCloud() {
+        if(!currentUser) return;
+        const listEl = document.getElementById('task-list');
+        
+        // Escuta em tempo real (qualquer mudança no banco atualiza a tela automaticamente)
+        db.collection('users').doc(currentUser.uid).collection('tasks')
+            .orderBy('date') // Ordenado por data
+            .onSnapshot(snapshot => {
+                document.getElementById('loading').classList.add('hidden');
+                listEl.innerHTML = ''; // Limpa para redesenhar
+
+                if (snapshot.empty) {
+                    listEl.innerHTML = `
+                        <div style="text-align:center; padding:30px; color:#aaa;">
+                            <p style="font-size:3rem; margin:0;">📝</p>
+                            <p>Nenhuma tarefa encontrada.</p>
+                            <p>Toque no + para adicionar.</p>
+                        </div>`;
+                    return;
+                }
+
+                snapshot.forEach(doc => {
+                    const t = doc.data();
+                    const el = document.createElement('div');
+                    el.className = `task-item ${t.completed ? 'done' : ''}`;
+                    
+                    const emailIcon = t.sendEmail ? '<span style="font-size:0.8rem">📧</span>' : '';
+                    const dateFormatted = t.date.split('-').reverse().join('/');
+
+                    el.innerHTML = `
+                        <div class="task-details" style="flex:1; cursor:pointer;" onclick="toggleTaskCloud('${doc.id}', ${t.completed})">
+                            <strong>${emailIcon} ${t.title}</strong>
+                            <span>${dateFormatted} ${t.time ? '- ' + t.time : ''}</span>
+                        </div>
+                        <div class="task-actions">
+                            <button class="btn-icon" onclick="deleteTaskCloud('${doc.id}')" style="color:var(--danger)">🗑️</button>
+                        </div>
+                    `;
+                    listEl.appendChild(el);
+                });
+            }, error => {
+                console.error("Erro ao carregar:", error);
+                listEl.innerHTML = '<p style="color:red; text-align:center">Erro ao carregar dados.</p>';
+            });
+    }
+
+    function saveTask() {
+        const title = document.getElementById('t-title').value;
+        const date = document.getElementById('t-date').value;
+        const time = document.getElementById('t-time').value;
+        const sendEmail = document.getElementById('t-send-email').checked;
+        const emailAddr = document.getElementById('t-email-addr').value;
+
+        if (!title || !date) return alert("Título e Data são obrigatórios.");
+        if (sendEmail && !emailAddr) return alert("Para envio automático, digite o e-mail.");
+
+        const taskData = {
+            title, date, time, 
+            sendEmail, emailAddr,
+            userId: currentUser.uid, // Vincula ao usuário logado
+            completed: false,
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
         };
-        promessasEnvio.push(transporter.sendMail(mailOptions));
-      }
-    });
 
-    await Promise.all(promessasEnvio);
-    res.send(`Sucesso! ${promessasEnvio.length} e-mails enviados.`);
+        // Adiciona à coleção do usuário
+        db.collection('users').doc(currentUser.uid).collection('tasks').add(taskData)
+            .then(() => {
+                closeModal();
+                // A atualização da lista é automática pelo onSnapshot
+            })
+            .catch(err => alert("Erro ao salvar: " + err.message));
+    }
 
-  } catch (error) {
-    console.error('Erro:', error);
-    res.status(500).send(error.message);
-  }
-});
+    function toggleTaskCloud(docId, currentStatus) {
+        db.collection('users').doc(currentUser.uid).collection('tasks').doc(docId).update({
+            completed: !currentStatus
+        });
+    }
+
+    function deleteTaskCloud(docId) {
+        if(confirm("Deseja realmente excluir este compromisso?")) {
+            db.collection('users').doc(currentUser.uid).collection('tasks').doc(docId).delete();
+        }
+    }
+
+    // ==========================================
+    // 4. UI HELPER FUNCTIONS
+    // ==========================================
+
+    function openModal() {
+        document.getElementById('t-title').value = '';
+        document.getElementById('t-date').valueAsDate = new Date();
+        document.getElementById('t-time').value = '';
+        document.getElementById('t-send-email').checked = false;
+        document.getElementById('t-email-addr').value = '';
+        toggleEmailInput();
+        document.getElementById('taskModal').classList.add('open');
+    }
+
+    function closeModal() {
+        document.getElementById('taskModal').classList.remove('open');
+    }
+
+    function toggleEmailInput() {
+        const chk = document.getElementById('t-send-email');
+        const div = document.getElementById('div-email-input');
+        if(chk.checked) {
+            div.classList.remove('hidden');
+            if(currentUser && currentUser.email) {
+                document.getElementById('t-email-addr').value = currentUser.email; // Sugere o próprio email
+            }
+        } else {
+            div.classList.add('hidden');
+        }
+    }
+
+</script>
+</body>
+</html>
