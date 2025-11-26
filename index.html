@@ -133,16 +133,17 @@
             <input type="email" id="log-email" class="auth-input" placeholder="Seu E-mail">
             <input type="password" id="log-pass" class="auth-input" placeholder="Sua Senha">
             <button class="auth-btn" onclick="appLogin()">Entrar</button>
-            <div class="auth-link" onclick="toggleAuth('register')">Criar conta nova</div>
+            <div class="auth-link" onclick="toggleAuth('register')">Criar conta nova (Cadastre-se)</div>
             <div class="auth-link" onclick="toggleAuth('reset')" style="color:#ddd;">Esqueci senha</div>
         </div>
 
         <div class="auth-box hidden" id="register-form">
             <h2>Criar Conta</h2>
+            <p style="font-size:0.9rem; color:#777;">Preencha para acessar o sistema</p>
             <input type="email" id="reg-email" class="auth-input" placeholder="E-mail">
             <input type="password" id="reg-pass" class="auth-input" placeholder="Senha (min 6)">
             <button class="auth-btn" onclick="appRegister()">Cadastrar</button>
-            <div class="auth-link" onclick="toggleAuth('login')">Voltar</div>
+            <div class="auth-link" onclick="toggleAuth('login')">Voltar para Login</div>
         </div>
 
         <div class="auth-box hidden" id="reset-form">
@@ -327,7 +328,7 @@
 
 <script>
     // ==========================================
-    // 1. CONFIGURAÇÃO DO FIREBASE
+    // 1. CONFIGURAÇÃO DO FIREBASE (PREENCHIDA)
     // ==========================================
     const firebaseConfig = {
       apiKey: "AIzaSyBhtwWew_DQNX2TZROUShZz4mjK57pRgQk",
@@ -374,16 +375,19 @@
     function appLogin() {
         const email = document.getElementById('log-email').value;
         const pass = document.getElementById('log-pass').value;
-        auth.signInWithEmailAndPassword(email, pass).catch(err => alert(err.message));
+        if(!email || !pass) return alert("Preencha os dados");
+        auth.signInWithEmailAndPassword(email, pass).catch(err => alert("Erro: " + err.message));
     }
     function appRegister() {
         const email = document.getElementById('reg-email').value;
         const pass = document.getElementById('reg-pass').value;
-        auth.createUserWithEmailAndPassword(email, pass).then(()=>alert("Criado!")).catch(err => alert(err.message));
+        if(!email || !pass) return alert("Preencha os dados");
+        auth.createUserWithEmailAndPassword(email, pass).then(()=>alert("Conta criada!")).catch(err => alert("Erro: " + err.message));
     }
     function appResetPassword() {
         const email = document.getElementById('reset-email').value;
-        auth.sendPasswordResetEmail(email).then(()=>alert("Verifique seu e-mail!")).catch(err => alert(err.message));
+        if(!email) return alert("Digite o e-mail");
+        auth.sendPasswordResetEmail(email).then(()=>alert("E-mail de recuperação enviado!")).catch(err => alert("Erro: " + err.message));
     }
     function appLogout() { auth.signOut(); }
     function toggleAuth(v) {
@@ -447,7 +451,7 @@
     }
 
     // ==========================================
-    // 4. LÓGICA DE UI (NAVEGAÇÃO E VIEWS)
+    // 4. LÓGICA DE UI
     // ==========================================
     let currentView = 'dashboard';
     
@@ -566,7 +570,7 @@
     }
 
     // ==========================================
-    // 5. ALARMES & UTILITÁRIOS
+    // 5. ALARMES
     // ==========================================
     
     setInterval(checkAlarms, 10000);
@@ -580,11 +584,9 @@
                 const taskDate = new Date(`${task.date}T${task.time}:00`);
                 const diffMin = (taskDate - now) / 60000;
 
-                // Alarme 5 min antes
                 if (diffMin <= 5 && diffMin > 0.5 && !task.alarm5MinSent) {
                     triggerAlarm(task, "5MIN");
                 }
-                // Alarme Hora exata
                 if (diffMin <= 0.5 && diffMin > -30 && !task.alarmOnTimeSent) {
                     triggerAlarm(task, "AGORA");
                 }
