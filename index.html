@@ -1,0 +1,65 @@
+const functions = require('@google-cloud/functions-framework');
+const admin = require('firebase-admin');
+const nodemailer = require('nodemailer');
+
+admin.initializeApp();
+const db = admin.firestore();
+
+// CONFIGURAÇÃO DO SEU GMAIL (ROBÔ DE ENVIO)
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: 'SEU_EMAIL_GMAIL_AQUI@gmail.com',
+    pass: 'SUA_SENHA_DE_APP_AQUI' 
+  }
+});
+
+functions.http('enviarLembretes', async (req, res) => {
+  try {
+    // 1. Define a data de "Amanhã"
+    const hoje = new Date();
+    const amanha = new Date(hoje);
+    amanha.setDate(amanha.getDate() + 1);
+    const dataAlvo = amanha.toISOString().split('T')[0]; // Ex: 2023-10-25
+
+    console.log(`Buscando tarefas para envio de e-mail na data: ${dataAlvo}`);
+
+    // 2. Busca TODAS as tarefas de TODOS os usuários para essa data que querem e-mail
+    // Isso requer uma "Collection Group Query" no Firestore (O console vai te dar um link para criar o índice se falhar)
+    const snapshot = await db.collectionGroup('tasks')
+      .where('date', '==', dataAlvo)
+      .where('sendEmail', '==', true)
+      .where('completed', '==', false)
+      .get();
+
+    if (snapshot.empty) {
+      console.log('Nenhuma tarefa para notificar.');
+      return res.send('Nenhuma tarefa encontrada.');
+    }
+
+    // 3. Loop para enviar e-mails
+    const promessasEnvio = [];
+    
+    snapshot.forEach(doc => {
+      const task = doc.data();
+      const emailDestino = task.emailAddr;
+
+      if (emailDestino) {
+        const mailOptions = {
+          from: 'Compromisso Fácil <seu_email@gmail.com>',
+          to: emailDestino,
+          subject: `🔔 Lembrete: ${task.title} é amanhã!`,
+          text: `Olá!\n\nVocê tem um compromisso agendado:\n\nTítulo: ${task.title}\nHorário: ${task.time}\n\nNão se esqueça!`
+        };
+        promessasEnvio.push(transporter.sendMail(mailOptions));
+      }
+    });
+
+    await Promise.all(promessasEnvio);
+    res.send(`Sucesso! ${promessasEnvio.length} e-mails enviados.`);
+
+  } catch (error) {
+    console.error('Erro:', error);
+    res.status(500).send(error.message);
+  }
+});
