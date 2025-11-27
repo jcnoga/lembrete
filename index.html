@@ -13,6 +13,8 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <!-- MANIFEST PWA -->
+    <link rel="manifest" href="manifest.json">
 
     <style>
         :root {
@@ -120,51 +122,19 @@
         @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
-        .empty-state { text-align: center; padding: 40px 20px; color: var(--text-light); }
+        .filters-box input, .filters-box select { height: 45px; font-size: 0.95rem; }
+        .empty-state { padding: 40px 20px; text-align: center; color: var(--text-light); background: #fff; border-radius: var(--radius); margin-top: 10px; border: 1px dashed #ddd; }
     </style>
 </head>
 <body>
 
     <!-- 1. TELA DE AUTENTICAÇÃO -->
-	<head>
-    <!-- ... outras meta tags ... -->
-
-    <style>
-        /* ... Todo o CSS que já existia no seu arquivo ... */
-        
-        .alarm-card { background: white; ... }
-        
-        /* --- COLE O NOVO CSS AQUI (ANTES DE FECHAR A TAG) --- */
-
-        .filters-box input, .filters-box select {
-            height: 45px;
-            font-size: 0.95rem;
-        }
-
-        /* Isso melhora o visual quando não há tarefas */
-        .empty-state {
-            padding: 40px 20px;
-            text-align: center;
-            color: var(--text-light);
-            background: #fff;
-            border-radius: var(--radius);
-            margin-top: 10px;
-            border: 1px dashed #ddd;
-        }
-
-    </style> <!-- Fim da tag style -->
-</head>
-
-
     <div id="auth-screen">
         <div class="auth-box" id="login-form">
             <h2>Compromisso Fácil</h2>
             <p style="margin-bottom: 20px; color: #666;">Sua agenda na nuvem.</p>
-            
-            <!-- PLACEHOLDERS MANTIDOS -->
             <input type="email" id="log-email" class="auth-input" placeholder="lembrete91@gmail.com">
             <input type="password" id="log-pass" class="auth-input" placeholder="pyfz mxbq pqrq btgb">
-            
             <button class="auth-btn" onclick="appLogin()">Entrar</button>
             <div class="auth-link" onclick="toggleAuth('register')">Criar conta nova</div>
             <div class="auth-link" onclick="toggleAuth('reset')" style="color:#ddd;">Esqueci senha</div>
@@ -244,35 +214,23 @@
             </div>
 
             <!-- VIEW: TASKS -->
-			<div id="view-tasks" class="view-section hidden">
-    <div class="section-title">
-        <h3>Todas as Tarefas</h3>
-    </div>
-    
-    <!-- Nova Área de Filtros -->
-    <div class="filters-box" style="display:flex; gap:10px; margin-bottom:20px;">
-        <input type="text" id="task-search" class="form-control" placeholder="🔍 Buscar por título..." oninput="renderTasks()" style="flex: 2;">
-        
-        <select id="filter-category" class="form-control" style="flex: 1; padding:5px;" onchange="renderTasks()">
-            <option value="all">Todas</option>
-            <option value="Trabalho">Trabalho</option>
-            <option value="Pessoal">Pessoal</option>
-            <option value="Cliente">Clientes</option>
-        </select>
-    </div>
-
-    <div id="tasks-list"></div>
-</div>
             <div id="view-tasks" class="view-section hidden">
                 <div class="section-title">
                     <h3>Todas as Tarefas</h3>
-                    <select id="filter-category" class="form-control" style="width:auto; padding:5px;" onchange="renderTasks()">
+                </div>
+                
+                <!-- Nova Área de Filtros -->
+                <div class="filters-box" style="display:flex; gap:10px; margin-bottom:20px;">
+                    <input type="text" id="task-search" class="form-control" placeholder="🔍 Buscar por título..." oninput="renderTasks()" style="flex: 2;">
+                    
+                    <select id="filter-category" class="form-control" style="flex: 1; padding:5px;" onchange="renderTasks()">
                         <option value="all">Todas</option>
                         <option value="Trabalho">Trabalho</option>
                         <option value="Pessoal">Pessoal</option>
                         <option value="Cliente">Clientes</option>
                     </select>
                 </div>
+
                 <div id="tasks-list"></div>
             </div>
 
@@ -325,6 +283,13 @@
                 <label>Título *</label>
                 <input type="text" id="t-title" class="form-control" placeholder="Ex: Reunião com João">
             </div>
+            
+            <!-- CAMPO NOVO: DESCRIÇÃO -->
+            <div class="form-group">
+                <label>Descrição</label>
+                <textarea id="t-desc" class="form-control" rows="3" placeholder="Detalhes do lembrete..."></textarea>
+            </div>
+
             <div style="display:flex; gap:10px;">
                 <div class="form-group" style="flex:1">
                     <label>Data *</label>
@@ -344,7 +309,7 @@
             <div class="form-group hidden" id="div-email-input">
                 <label>E-mail Destino</label>
                 <input type="email" id="t-email-addr" class="form-control" placeholder="cliente@email.com">
-                <small style="color:#777; font-size:0.75rem;">Requer configuração no Google Cloud.</small>
+                <!-- MENSAGEM REMOVIDA AQUI -->
             </div>
 
             <div class="form-group">
@@ -466,8 +431,17 @@
             });
     }
 
-function saveTask() {
+    // FUNÇÃO PARA PEGAR DATA LOCAL CORRETA
+    function getLocalDateStr() {
+        const d = new Date();
+        const offset = d.getTimezoneOffset() * 60000;
+        const localDate = new Date(d.getTime() - offset);
+        return localDate.toISOString().split('T')[0];
+    }
+
+    function saveTask() {
         const title = document.getElementById('t-title').value;
+        const desc = document.getElementById('t-desc').value; // Captura a descrição
         const date = document.getElementById('t-date').value;
         const time = document.getElementById('t-time').value;
         const cat = document.getElementById('t-category').value;
@@ -478,10 +452,15 @@ function saveTask() {
         if(!title || !date) return alert("Preencha título e data");
 
         const data = {
-            title, date, time, category: cat, value: val,
+            title, 
+            description: desc, // Salva descrição no banco
+            date, time, category: cat, value: val,
             sendEmail, emailAddr,
             userId: currentUser.uid, completed: false,
-            alarm5MinSent: false, alarmOnTimeSent: false,
+            // Flags de controle
+            alarm5MinSent: false, 
+            alarmOnTimeSent: false,
+            emailDailySent: false, // Nova flag para controlar envio diário
             createdAt: firebase.firestore.FieldValue.serverTimestamp()
         };
 
@@ -495,55 +474,22 @@ function saveTask() {
         }
 
         dbOperation.then(async () => {
+            // REMOVIDO: O envio imediato de e-mail foi retirado daqui.
+            // Agora o e-mail será enviado apenas pelo verificador automático (checkDailyEmails)
+            // se a data for hoje, garantindo "apenas uma vez no dia do compromisso".
             
-            // --- ENVIO DE E-MAIL ---
-            if (sendEmail && emailAddr) {
-                const btn = document.querySelector('.btn-primary');
-                // Salva o texto original do botão para restaurar depois
-                const originalText = btn ? btn.textContent : "Salvar";
-                if(btn) btn.textContent = "Enviando e-mail...";
-                
-                try {
-                    // AQUI ESTÁ A SUA URL NOVA DO CLOUD RUN:
-                    await fetch('https://enviaremailsdiarios-368296869868.southamerica-east1.run.app/send-email', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            to: emailAddr,
-                            subject: `Compromisso: ${title}`,
-                            html: `
-                                <div style="font-family: Arial, sans-serif; color: #333;">
-                                    <h2 style="color: #0066cc;">📅 Novo Agendamento</h2>
-                                    <p>Olá! Você tem um novo compromisso marcado.</p>
-                                    <hr>
-                                    <p><strong>O que:</strong> ${title}</p>
-                                    <p><strong>Quando:</strong> ${date.split('-').reverse().join('/')} às ${time}</p>
-                                    <p><strong>Valor:</strong> R$ ${val || '0,00'}</p>
-                                    <hr>
-                                    <small>Enviado via App Compromisso Fácil.</small>
-                                </div>
-                            `
-                        })
-                    });
-                    alert("✅ Salvo e e-mail enviado com sucesso!");
-                } catch (error) {
-                    console.error(error);
-                    alert("⚠️ Salvo, mas o e-mail falhou. Verifique se o e-mail do sistema está configurado.");
-                } finally {
-                    if(btn) btn.textContent = originalText;
-                }
-            } else {
-                if(!id) alert("Tarefa criada com sucesso!");
-            }
-            // -----------------------
-
+            if(!id) alert("Tarefa salva!"); 
             closeModal();
         }).catch(err => {
             alert("Erro ao salvar: " + err.message);
         });
     }
+
     function deleteTask(id) {
         if(confirm("Excluir?")) db.collection('users').doc(currentUser.uid).collection('tasks').doc(id).delete();
+    }
+    function toggleTask(id, status) {
+        db.collection('users').doc(currentUser.uid).collection('tasks').doc(id).update({ completed: !status });
     }
 
     // ==========================================
@@ -569,7 +515,7 @@ function saveTask() {
     // --- RENDERERS ---
     function renderDashboard() {
         const listEl = document.getElementById('dashboard-list');
-        const todayStr = new Date().toISOString().split('T')[0];
+        const todayStr = getLocalDateStr();
         const todaysTasks = appData.tasks.filter(t => t.date === todayStr && !t.completed);
         
         document.getElementById('stat-pending').textContent = appData.tasks.filter(t => !t.completed).length;
@@ -584,53 +530,44 @@ function saveTask() {
         todaysTasks.forEach(t => listEl.appendChild(createTaskElement(t)));
     }
 
-// Substitua a função renderTasks antiga por esta:
-function renderTasks() {
-    const listEl = document.getElementById('tasks-list');
-    const filterCat = document.getElementById('filter-category').value;
-    // Pega o termo de busca e converte para minúsculo para facilitar a comparação
-    const searchTerm = document.getElementById('task-search').value.toLowerCase().trim();
-    
-    listEl.innerHTML = '';
-    
-    // Começa com todas as tarefas
-    let tasks = [...appData.tasks];
-    
-    // 1. Aplica filtro de Categoria
-    if(filterCat !== 'all') {
-        tasks = tasks.filter(t => (t.category || "") === filterCat);
-    }
-    
-    // 2. Aplica filtro de Texto (Busca)
-    if(searchTerm !== '') {
-        tasks = tasks.filter(t => {
-            // Verifica se o título existe e se contém o termo digitado
-            const titleMatch = t.title && t.title.toLowerCase().includes(searchTerm);
-            return titleMatch;
+    function renderTasks() {
+        const listEl = document.getElementById('tasks-list');
+        const filterCat = document.getElementById('filter-category').value;
+        const searchTerm = document.getElementById('task-search').value.toLowerCase().trim();
+        
+        listEl.innerHTML = '';
+        
+        let tasks = [...appData.tasks];
+        
+        if(filterCat !== 'all') {
+            tasks = tasks.filter(t => (t.category || "") === filterCat);
+        }
+        
+        if(searchTerm !== '') {
+            tasks = tasks.filter(t => {
+                const titleMatch = t.title && t.title.toLowerCase().includes(searchTerm);
+                return titleMatch;
+            });
+        }
+
+        tasks.sort((a, b) => {
+            if (a.completed === b.completed) {
+                return new Date(a.date) - new Date(b.date);
+            }
+            return a.completed ? 1 : -1;
         });
-    }
-
-    // Ordenação Opcional: Tarefas pendentes primeiro, depois por data
-    tasks.sort((a, b) => {
-        if (a.completed === b.completed) {
-            return new Date(a.date) - new Date(b.date);
+        
+        if(tasks.length === 0) {
+            if(searchTerm) {
+                listEl.innerHTML = '<div class="empty-state">Nenhuma tarefa encontrada para "' + searchTerm + '"</div>';
+            } else {
+                listEl.innerHTML = '<div class="empty-state">Nenhuma tarefa nesta categoria.</div>';
+            }
+            return;
         }
-        return a.completed ? 1 : -1;
-    });
-    
-    // Renderização visual
-    if(tasks.length === 0) {
-        // Mensagem personalizada dependendo se é uma busca vazia ou não
-        if(searchTerm) {
-            listEl.innerHTML = '<div class="empty-state">Nenhuma tarefa encontrada para "' + searchTerm + '"</div>';
-        } else {
-            listEl.innerHTML = '<div class="empty-state">Nenhuma tarefa nesta categoria.</div>';
-        }
-        return;
-    }
 
-    tasks.forEach(t => listEl.appendChild(createTaskElement(t)));
-}
+        tasks.forEach(t => listEl.appendChild(createTaskElement(t)));
+    }
 
     function createTaskElement(t) {
         const div = document.createElement('div');
@@ -679,7 +616,7 @@ function renderTasks() {
             el.textContent = i;
             
             if(appData.tasks.some(t => t.date === dStr && !t.completed)) el.classList.add('has-task');
-            if(dStr === new Date().toISOString().split('T')[0]) el.classList.add('today');
+            if(dStr === getLocalDateStr()) el.classList.add('today');
 
             el.onclick = () => {
                 const list = document.getElementById('calendar-task-list');
@@ -699,7 +636,7 @@ function renderTasks() {
     }
 
     // ==========================================
-    // 5. ALARMES
+    // 5. ALARMES E EMAILS AUTOMÁTICOS
     // ==========================================
     
     setInterval(checkAlarms, 10000);
@@ -707,22 +644,75 @@ function renderTasks() {
     function checkAlarms() {
         if(!currentUser) return;
         const now = new Date();
-        
+        const todayStr = getLocalDateStr();
+
         appData.tasks.forEach(task => {
+            // Lógica de Alarme Sonoro
             if(task.time && !task.completed) {
                 const taskDate = new Date(`${task.date}T${task.time}:00`);
                 const diffMin = (taskDate - now) / 60000;
 
-                // Alarme 5 min antes
                 if (diffMin <= 5 && diffMin > 0.5 && !task.alarm5MinSent) {
                     triggerAlarm(task, "5MIN");
                 }
-                // Alarme Hora exata
                 if (diffMin <= 0.5 && diffMin > -30 && !task.alarmOnTimeSent) {
                     triggerAlarm(task, "AGORA");
                 }
             }
+
+            // Lógica de Envio de Email (APENAS UMA VEZ NO DIA)
+            checkDailyEmails(task, todayStr);
         });
+    }
+
+    function checkDailyEmails(task, todayStr) {
+        // Se a tarefa é hoje, tem email configurado, e ainda não enviou hoje
+        if (task.date === todayStr && task.sendEmail && task.emailAddr && !task.emailDailySent && !task.completed) {
+            
+            // Marca como enviado no banco imediatamente para evitar duplicação
+            db.collection('users').doc(currentUser.uid).collection('tasks').doc(task.id).update({emailDailySent: true});
+            
+            console.log("Tentando enviar e-mail diário para:", task.title);
+
+            // Monta o HTML do E-mail
+            let htmlContent = `
+                <div style="font-family: Arial, sans-serif; color: #333;">
+                    <h2 style="color: #0066cc;">📅 Lembrete de Hoje</h2>
+                    <p>Olá! Este é o seu lembrete diário.</p>
+                    <hr>
+                    <p><strong>O que:</strong> ${task.title}</p>
+            `;
+            
+            // Adiciona descrição se houver
+            if (task.description) {
+                htmlContent += `<p><strong>Detalhes:</strong> ${task.description}</p>`;
+            }
+
+            htmlContent += `<p><strong>Quando:</strong> ${formatDateBR(task.date)} ${task.time || ''}</p>`;
+            
+            // Adiciona valor APENAS se maior que zero
+            if (task.value && parseFloat(task.value) > 0) {
+                htmlContent += `<p><strong>Valor:</strong> R$ ${task.value}</p>`;
+            }
+
+            htmlContent += `
+                    <hr>
+                    <small>Enviado via App Compromisso Fácil.</small>
+                </div>
+            `;
+
+            // Chama o servidor
+            fetch('https://enviaremailsdiarios-368296869868.southamerica-east1.run.app/send-email', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    to: task.emailAddr,
+                    subject: `Lembrete: ${task.title}`,
+                    html: htmlContent
+                })
+            }).then(() => console.log("E-mail enviado!"))
+              .catch(err => console.error("Erro email:", err));
+        }
     }
 
     function triggerAlarm(task, type) {
@@ -753,6 +743,7 @@ function renderTasks() {
     function openModal() {
         document.getElementById('taskModal').classList.add('open');
         document.getElementById('t-id').value = '';
+        document.getElementById('t-desc').value = ''; // Limpa descrição
         document.getElementById('t-date').valueAsDate = new Date();
     }
     function openEditModal(id) {
@@ -760,6 +751,7 @@ function renderTasks() {
         if(!t) return;
         document.getElementById('t-id').value = t.id;
         document.getElementById('t-title').value = t.title;
+        document.getElementById('t-desc').value = t.description || ''; // Carrega descrição
         document.getElementById('t-date').value = t.date;
         document.getElementById('t-time').value = t.time;
         document.getElementById('t-category').value = t.category||'';
