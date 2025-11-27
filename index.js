@@ -14,10 +14,8 @@ const PORT = process.env.PORT || 8080;
 const transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: {
-        // MUDANÇA AQUI:
-        // Em vez de escrever o e-mail e a senha, usamos essas variáveis
-        user: process.env.EMAIL_USER, 
-        pass: process.env.EMAIL_PASS
+        user: process.env.EMAIL_USER, // Pega o valor que você acabou de subir no terminal
+        pass: process.env.EMAIL_PASS  // Pega a senha que você acabou de subir no terminal
     }
 });
 
