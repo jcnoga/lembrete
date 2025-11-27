@@ -109,6 +109,7 @@
         .btn-secondary { background: #eee; color: var(--text); margin-top: 10px; }
         .btn-success { background: var(--secondary); color: white; }
         .btn-danger { background: var(--danger); color: white; margin-top: 10px; }
+        .btn-gold { background: #f1c40f; color: #333; margin-top: 10px; }
         
         /* Checkbox Cloud */
         .cloud-option { background: #eef2ff; padding: 12px; border-radius: 8px; border: 1px solid #ccd5ff; display: flex; align-items: center; gap: 10px; margin-bottom: 15px; }
@@ -134,7 +135,7 @@
         input:checked + .slider { background-color: var(--primary); }
         input:checked + .slider:before { transform: translateX(26px); }
 
-        /* PIX FOOTER DISCRETO */
+        /* PIX FOOTER */
         .pix-footer { text-align: center; margin-top: 40px; padding-bottom: 20px; font-size: 0.8rem; color: #ccc; cursor: pointer; transition: color 0.3s; }
         .pix-footer:hover { color: var(--primary); text-decoration: underline; }
     </style>
@@ -147,7 +148,6 @@
             <h2>Compromisso Fácil</h2>
             <p style="margin-bottom: 20px; color: #666;">Sua agenda na nuvem.</p>
             
-            <!-- Campos vazios (Login) -->
             <input type="email" id="log-email" class="auth-input" placeholder="Seu e-mail">
             <input type="password" id="log-pass" class="auth-input" placeholder="Sua senha">
             
@@ -209,6 +209,13 @@
                     <a href="#" onclick="switchTab('tasks')" style="color:var(--primary); text-decoration:none;">Ver todas</a>
                 </div>
                 <div id="dashboard-list"></div>
+
+                <!-- BOTÃO DE APOIO DISCRETO (NOVO) -->
+                <div style="margin-top: 40px; text-align: center;">
+                    <button onclick="openSupportModal()" style="background: white; color: var(--primary); border: 2px solid #f1c40f; padding: 10px 25px; border-radius: 50px; font-weight: bold; font-size: 0.9rem; cursor: pointer; box-shadow: var(--shadow);">
+                        Apoiar 💛
+                    </button>
+                </div>
             </div>
 
             <!-- VIEW: CALENDAR -->
@@ -289,9 +296,9 @@
                     <p style="font-size:0.8rem; color:#777;">Logado como: <span id="settings-email"></span></p>
                     <button class="btn-block btn-secondary" onclick="appLogout()" style="color:var(--danger)">Sair da Conta</button>
                 </div>
-
-                <!-- PIX DISCRETO -->
-                <div class="pix-footer" onclick="copyPix()">
+                
+                <!-- PIX DISCRETO (ABA MAIS) -->
+                <div class="pix-footer" onclick="openSupportModal()">
                     ☕ Apoie o desenvolvimento (Pix)
                 </div>
             </div>
@@ -388,8 +395,21 @@
         </div>
     </div>
 
+    <!-- 5. SUPPORT MODAL (NOVO) -->
+    <div class="modal" id="supportModal">
+        <div class="modal-content" style="text-align: center;">
+            <h3 style="color:var(--primary); margin-top:0;">Apoie o Projeto ☕</h3>
+            <p style="font-size: 1rem; line-height: 1.6; color: #555; margin-bottom: 25px; margin-top:15px;">
+                Este app é 100% gratuito.<br>
+                Se ele está facilitando seu dia, considere apoiar o projeto para que ele continue existindo e melhorando.
+            </p>
+            <button class="btn-block btn-gold" onclick="copyPix()">Copiar Chave Pix</button>
+            <button class="btn-block btn-secondary" onclick="closeSupportModal()">Fechar</button>
+        </div>
+    </div>
+
     <!-- Som do Alarme (Loop) -->
-    <audio id="audioAlert" loop src="data:audio/mp3;base64,//uQxAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAAUAAACzAAKCg4PEhIWFxsbHiAgIyMoKCsrLzAwMjI2Njg4Ojw8P0BAQkJERkdHSkpMTk5QUFJTU1dXV1lbW11dYGBiYmRmZmdnaGhqam5ucHBydHR3d3l5e3t9fX6AgIGBgoKFhYiIiouLkJCSkpWWlpiYmZmbm52dnp6goKGhoqKkpKWlpqeoqKmqq6ytrq6wsLGxsrK0tLe3uLi6ur29v8DAwsLGxsnJysrMzM7O0NDS0tTX19jY2dvb3Nzd3d7e4ODi4uPj5eXn5+jo6evr7Ozt7u7w8PHx8vL09PX19vf3+Pj6+vv7/Pz9/f7+/v///wAAAqpLdXJ6AAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//uQxAAACkQBOAAAAAEAAAD5AAAAABj3/vT23uAgBPgAPAAAAAAAZAAAAAAAAAAAAAAB//uQxAAACkQBOAAAAAEAAAD5AAAAABj3/vT23uAgBPgAPAAAAAAAZAAAAAAAAAAAAAAB//uQxAAACkQBOAAAAAEAAAD5AAAAABj3/vT23uAgBPgAPAAAAAAAZAAAAAAAAAAAAAAB//uQxAAACkQBOAAAAAEAAAD5AAAAABj3/vT23uAgBPgAPAAAAAAAZAAAAAAAAAAAAAAB//uQxAAACkQBOAAAAAEAAAD5AAAAABj3/vT23uAgBPgAPAAAAAAAZAAAAAAAAAAAAAAB"></audio>
+    <audio id="audioAlert" loop src="data:audio/mp3;base64,//uQxAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAAUAAACzAAKCg4PEhIWFxsbHiAgIyMoKCsrLzAwMjI2Njg4Ojw8P0BAQkJERkdHSkpMTk5QUFJTU1dXV1lbW11dYGBiYmRmZmdnaGhqam5ucHBydHR3d3l5e3t9fX6AgIGBgoKFhYiIiouLkJCSkpWWlpiYmZmbm52dnp6goKGhoqKkpKWlpqeoqKmqq6ytrq6wsLGxsrK0tLe3uLi6ur29v8DAwsLGxsnJysrMzM7O0NDS0tTX19jY2dvb3Nzd3d7e4ODi4uPj5eXn5+jo6evr7Ozt7u7w8PHx8vL09PX19vf3+Pj6+vv7/Pz9/f7+/v///wAAAqpLdXJ6AAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//uQxAAACkQBOAAAAAEAAAD5AAAAABj3/vT23uAgBPgAPAAAAAAAZAAAAAAAAAAAAAAB//uQxAAACkQBOAAAAAEAAAD5AAAAABj3/vT23uAgBPgAPAAAAAAAZAAAAAAAAAAAAAAB//uQxAAACkQBOAAAAAEAAAD5AAAAABj3/vT23uAgBPgAPAAAAAAAZAAAAAAAAAAAAAAB//uQxAAACkQBOAAAAAEAAAD5AAAAABj3/vT23uAgBPgAPAAAAAAAZAAAAAAAAAAAAAAB//uQxAAACkQBOAAAAAEAAAD5AAAAABj3/vT23uAgBPgAPAAAAAAAZAAAAAAAAAAAAAAB//uQxAAACkQBOAAAAAEAAAD5AAAAABj3/vT23uAgBPgAPAAAAAAAZAAAAAAAAAAAAAAB"></audio>
 
     <!-- Som de Conclusão (Ding curto) -->
     <audio id="audioDone" src="data:audio/mp3;base64,//uQxAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAAGAAABuAAKCg4PEhIWFxsbHiAgIyMoKCsrLzAwMjI2Njg4Ojw8P0BAQkJERkdHSkpMTk5QUFJTU1dXV1lbW11dYGBiYmRmZmdnaGhqam5ucHBydHR3d3l5e3t9fX6AgIGBgoKFhYiIiouLkJCSkpWWlpiYmZmbm52dnp6goKGhoqKkpKWlpqeoqKmqq6ytrq6wsLGxsrK0tLe3uLi6ur29v8DAwsLGxsnJysrMzM7O0NDS0tTX19jY2dvb3Nzd3d7e4ODi4uPj5eXn5+jo6evr7Ozt7u7w8PHx8vL09PX19vf3+Pj6+vv7/Pz9/f7+/v///wAAAD5LdXJ6AAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//uQxAAACkQBOAAAAAEAAAD5AAAAABj3/vT23uAgBPgAPAAAAAAAZAAAAAAAAAAAAAAB//uQxAAACkQBOAAAAAEAAAD5AAAAABj3/vT23uAgBPgAPAAAAAAAZAAAAAAAAAAAAAAB"></audio>
@@ -907,6 +927,14 @@
         }).catch(err => {
             alert("Não foi possível copiar automaticamente. A chave é: " + pixKey);
         });
+    }
+
+    // --- MODAL SUPPORT ---
+    function openSupportModal() {
+        document.getElementById('supportModal').classList.add('open');
+    }
+    function closeSupportModal() {
+        document.getElementById('supportModal').classList.remove('open');
     }
 
     // --- UI HELPERS ---
