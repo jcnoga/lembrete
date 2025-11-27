@@ -126,14 +126,47 @@
 <body>
 
     <!-- 1. TELA DE AUTENTICAÇÃO -->
+	<head>
+    <!-- ... outras meta tags ... -->
+
+    <style>
+        /* ... Todo o CSS que já existia no seu arquivo ... */
+        
+        .alarm-card { background: white; ... }
+        
+        /* --- COLE O NOVO CSS AQUI (ANTES DE FECHAR A TAG) --- */
+
+        .filters-box input, .filters-box select {
+            height: 45px;
+            font-size: 0.95rem;
+        }
+
+        /* Isso melhora o visual quando não há tarefas */
+        .empty-state {
+            padding: 40px 20px;
+            text-align: center;
+            color: var(--text-light);
+            background: #fff;
+            border-radius: var(--radius);
+            margin-top: 10px;
+            border: 1px dashed #ddd;
+        }
+
+    </style> <!-- Fim da tag style -->
+</head>
+
+
     <div id="auth-screen">
         <div class="auth-box" id="login-form">
             <h2>Compromisso Fácil</h2>
             <p style="margin-bottom: 20px; color: #666;">Sua agenda na nuvem.</p>
+            
+            <!-- PLACEHOLDERS MANTIDOS -->
             <input type="email" id="log-email" class="auth-input" placeholder="lembrete91@gmail.com">
             <input type="password" id="log-pass" class="auth-input" placeholder="pyfz mxbq pqrq btgb">
+            
             <button class="auth-btn" onclick="appLogin()">Entrar</button>
-            <div class="auth-link" onclick="toggleAuth('register')">Criar conta nova (Cadastre-se)</div>
+            <div class="auth-link" onclick="toggleAuth('register')">Criar conta nova</div>
             <div class="auth-link" onclick="toggleAuth('reset')" style="color:#ddd;">Esqueci senha</div>
         </div>
 
@@ -211,6 +244,25 @@
             </div>
 
             <!-- VIEW: TASKS -->
+			<div id="view-tasks" class="view-section hidden">
+    <div class="section-title">
+        <h3>Todas as Tarefas</h3>
+    </div>
+    
+    <!-- Nova Área de Filtros -->
+    <div class="filters-box" style="display:flex; gap:10px; margin-bottom:20px;">
+        <input type="text" id="task-search" class="form-control" placeholder="🔍 Buscar por título..." oninput="renderTasks()" style="flex: 2;">
+        
+        <select id="filter-category" class="form-control" style="flex: 1; padding:5px;" onchange="renderTasks()">
+            <option value="all">Todas</option>
+            <option value="Trabalho">Trabalho</option>
+            <option value="Pessoal">Pessoal</option>
+            <option value="Cliente">Clientes</option>
+        </select>
+    </div>
+
+    <div id="tasks-list"></div>
+</div>
             <div id="view-tasks" class="view-section hidden">
                 <div class="section-title">
                     <h3>Todas as Tarefas</h3>
@@ -330,15 +382,15 @@
     // ==========================================
     // 1. CONFIGURAÇÃO DO FIREBASE (PREENCHIDA)
     // ==========================================
-const firebaseConfig = {
-  apiKey: "AIzaSyBhtwWew_DQNX2TZROUShZz4mjK57pRgQk",
-  authDomain: "lembrete-d6c15.firebaseapp.com",
-  projectId: "lembrete-d6c15",
-  storageBucket: "lembrete-d6c15.firebasestorage.app",
-  messagingSenderId: "368296869868",
-  appId: "1:368296869868:web:7a2c0a91f57de5d3a90ac9",
-  measurementId: "G-JE0QH81JG6"
-};
+    const firebaseConfig = {
+      apiKey: "AIzaSyBhtwWew_DQNX2TZROUShZz4mjK57pRgQk",
+      authDomain: "lembrete-d6c15.firebaseapp.com",
+      projectId: "lembrete-d6c15",
+      storageBucket: "lembrete-d6c15.firebasestorage.app",
+      messagingSenderId: "368296869868",
+      appId: "1:368296869868:web:7a2c0a91f57de5d3a90ac9",
+      measurementId: "G-JE0QH81JG6"
+    };
 
     firebase.initializeApp(firebaseConfig);
 
@@ -376,13 +428,13 @@ const firebaseConfig = {
         const email = document.getElementById('log-email').value;
         const pass = document.getElementById('log-pass').value;
         if(!email || !pass) return alert("Preencha os dados");
-        auth.signInWithEmailAndPassword(email, pass).catch(err => alert("Erro: " + err.message));
+        auth.signInWithEmailAndPassword(email, pass).catch(err => alert(err.message));
     }
     function appRegister() {
         const email = document.getElementById('reg-email').value;
         const pass = document.getElementById('reg-pass').value;
         if(!email || !pass) return alert("Preencha os dados");
-        auth.createUserWithEmailAndPassword(email, pass).then(()=>alert("Conta criada!")).catch(err => alert("Erro: " + err.message));
+        auth.createUserWithEmailAndPassword(email, pass).then(()=>alert("Criado!")).catch(err => alert(err.message));
     }
     function appResetPassword() {
         const email = document.getElementById('reset-email').value;
@@ -414,7 +466,7 @@ const firebaseConfig = {
             });
     }
 
-    function saveTask() {
+function saveTask() {
         const title = document.getElementById('t-title').value;
         const date = document.getElementById('t-date').value;
         const time = document.getElementById('t-time').value;
@@ -434,24 +486,68 @@ const firebaseConfig = {
         };
 
         const id = document.getElementById('t-id').value;
+        
+        let dbOperation;
         if(id) {
-            db.collection('users').doc(currentUser.uid).collection('tasks').doc(id).update(data)
-            .then(() => closeModal());
+            dbOperation = db.collection('users').doc(currentUser.uid).collection('tasks').doc(id).update(data);
         } else {
-            db.collection('users').doc(currentUser.uid).collection('tasks').add(data)
-            .then(() => closeModal());
+            dbOperation = db.collection('users').doc(currentUser.uid).collection('tasks').add(data);
         }
-    }
 
-    function toggleTask(id, status) {
-        db.collection('users').doc(currentUser.uid).collection('tasks').doc(id).update({ completed: !status });
+        dbOperation.then(async () => {
+            
+            // --- ENVIO DE E-MAIL ---
+            if (sendEmail && emailAddr) {
+                const btn = document.querySelector('.btn-primary');
+                // Salva o texto original do botão para restaurar depois
+                const originalText = btn ? btn.textContent : "Salvar";
+                if(btn) btn.textContent = "Enviando e-mail...";
+                
+                try {
+                    // AQUI ESTÁ A SUA URL NOVA DO CLOUD RUN:
+                    await fetch('https://enviaremailsdiarios-368296869868.southamerica-east1.run.app/send-email', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            to: emailAddr,
+                            subject: `Compromisso: ${title}`,
+                            html: `
+                                <div style="font-family: Arial, sans-serif; color: #333;">
+                                    <h2 style="color: #0066cc;">📅 Novo Agendamento</h2>
+                                    <p>Olá! Você tem um novo compromisso marcado.</p>
+                                    <hr>
+                                    <p><strong>O que:</strong> ${title}</p>
+                                    <p><strong>Quando:</strong> ${date.split('-').reverse().join('/')} às ${time}</p>
+                                    <p><strong>Valor:</strong> R$ ${val || '0,00'}</p>
+                                    <hr>
+                                    <small>Enviado via App Compromisso Fácil.</small>
+                                </div>
+                            `
+                        })
+                    });
+                    alert("✅ Salvo e e-mail enviado com sucesso!");
+                } catch (error) {
+                    console.error(error);
+                    alert("⚠️ Salvo, mas o e-mail falhou. Verifique se o e-mail do sistema está configurado.");
+                } finally {
+                    if(btn) btn.textContent = originalText;
+                }
+            } else {
+                if(!id) alert("Tarefa criada com sucesso!");
+            }
+            // -----------------------
+
+            closeModal();
+        }).catch(err => {
+            alert("Erro ao salvar: " + err.message);
+        });
     }
     function deleteTask(id) {
         if(confirm("Excluir?")) db.collection('users').doc(currentUser.uid).collection('tasks').doc(id).delete();
     }
 
     // ==========================================
-    // 4. LÓGICA DE UI
+    // 4. LÓGICA DE UI (NAVEGAÇÃO E VIEWS)
     // ==========================================
     let currentView = 'dashboard';
     
@@ -488,20 +584,53 @@ const firebaseConfig = {
         todaysTasks.forEach(t => listEl.appendChild(createTaskElement(t)));
     }
 
-    function renderTasks() {
-        const listEl = document.getElementById('tasks-list');
-        const filter = document.getElementById('filter-category').value;
-        listEl.innerHTML = '';
-        
-        let tasks = [...appData.tasks];
-        if(filter !== 'all') tasks = tasks.filter(t => t.category === filter);
-        
-        if(tasks.length === 0) {
-            listEl.innerHTML = '<div class="empty-state">Nenhuma tarefa.</div>';
-            return;
-        }
-        tasks.forEach(t => listEl.appendChild(createTaskElement(t)));
+// Substitua a função renderTasks antiga por esta:
+function renderTasks() {
+    const listEl = document.getElementById('tasks-list');
+    const filterCat = document.getElementById('filter-category').value;
+    // Pega o termo de busca e converte para minúsculo para facilitar a comparação
+    const searchTerm = document.getElementById('task-search').value.toLowerCase().trim();
+    
+    listEl.innerHTML = '';
+    
+    // Começa com todas as tarefas
+    let tasks = [...appData.tasks];
+    
+    // 1. Aplica filtro de Categoria
+    if(filterCat !== 'all') {
+        tasks = tasks.filter(t => (t.category || "") === filterCat);
     }
+    
+    // 2. Aplica filtro de Texto (Busca)
+    if(searchTerm !== '') {
+        tasks = tasks.filter(t => {
+            // Verifica se o título existe e se contém o termo digitado
+            const titleMatch = t.title && t.title.toLowerCase().includes(searchTerm);
+            return titleMatch;
+        });
+    }
+
+    // Ordenação Opcional: Tarefas pendentes primeiro, depois por data
+    tasks.sort((a, b) => {
+        if (a.completed === b.completed) {
+            return new Date(a.date) - new Date(b.date);
+        }
+        return a.completed ? 1 : -1;
+    });
+    
+    // Renderização visual
+    if(tasks.length === 0) {
+        // Mensagem personalizada dependendo se é uma busca vazia ou não
+        if(searchTerm) {
+            listEl.innerHTML = '<div class="empty-state">Nenhuma tarefa encontrada para "' + searchTerm + '"</div>';
+        } else {
+            listEl.innerHTML = '<div class="empty-state">Nenhuma tarefa nesta categoria.</div>';
+        }
+        return;
+    }
+
+    tasks.forEach(t => listEl.appendChild(createTaskElement(t)));
+}
 
     function createTaskElement(t) {
         const div = document.createElement('div');
@@ -584,9 +713,11 @@ const firebaseConfig = {
                 const taskDate = new Date(`${task.date}T${task.time}:00`);
                 const diffMin = (taskDate - now) / 60000;
 
+                // Alarme 5 min antes
                 if (diffMin <= 5 && diffMin > 0.5 && !task.alarm5MinSent) {
                     triggerAlarm(task, "5MIN");
                 }
+                // Alarme Hora exata
                 if (diffMin <= 0.5 && diffMin > -30 && !task.alarmOnTimeSent) {
                     triggerAlarm(task, "AGORA");
                 }
