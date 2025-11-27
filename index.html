@@ -199,9 +199,15 @@
                         <h3 id="stat-pending">0</h3>
                         <p>Pendentes</p>
                     </div>
+                    <!-- Clientes (Receita) -->
                     <div class="card card-stat">
-                        <h3 id="stat-revenue">R$ 0</h3>
-                        <p>A Receber</p>
+                        <h3 id="stat-revenue" style="color: var(--secondary);">R$ 0</h3>
+                        <p>A Receber (Cliente)</p>
+                    </div>
+                    <!-- Fornecedores (Despesa) -->
+                    <div class="card card-stat">
+                        <h3 id="stat-expense" style="color: var(--danger);">R$ 0</h3>
+                        <p>A Pagar (Fornecedor)</p>
                     </div>
                 </div>
                 <div class="section-title">
@@ -210,7 +216,7 @@
                 </div>
                 <div id="dashboard-list"></div>
 
-                <!-- BOTÃO DE APOIO DISCRETO (NOVO) -->
+                <!-- BOTÃO DE APOIO DISCRETO -->
                 <div style="margin-top: 40px; text-align: center;">
                     <button onclick="openSupportModal()" style="background: white; color: var(--primary); border: 2px solid #f1c40f; padding: 10px 25px; border-radius: 50px; font-weight: bold; font-size: 0.9rem; cursor: pointer; box-shadow: var(--shadow);">
                         Apoiar 💛
@@ -252,6 +258,7 @@
                         <option value="Trabalho">Trabalho</option>
                         <option value="Pessoal">Pessoal</option>
                         <option value="Cliente">Clientes</option>
+                        <option value="Fornecedor">Fornecedor</option>
                     </select>
                 </div>
 
@@ -369,7 +376,12 @@
             <div class="form-group">
                 <label>Categoria</label>
                 <input type="text" id="t-category" class="form-control" list="cat-suggestions">
-                <datalist id="cat-suggestions"><option value="Trabalho"><option value="Pessoal"><option value="Cliente"></datalist>
+                <datalist id="cat-suggestions">
+                    <option value="Trabalho">
+                    <option value="Pessoal">
+                    <option value="Cliente">
+                    <option value="Fornecedor">
+                </datalist>
             </div>
             <div class="form-group">
                 <label>Valor R$</label>
@@ -627,12 +639,30 @@
     function renderDashboard() {
         const listEl = document.getElementById('dashboard-list');
         const todayStr = getLocalDateStr();
-        const todaysTasks = appData.tasks.filter(t => t.date === todayStr && !t.completed);
         
-        document.getElementById('stat-pending').textContent = appData.tasks.filter(t => !t.completed).length;
-        const rev = appData.tasks.filter(t => !t.completed && t.value).reduce((s, t) => s + parseFloat(t.value), 0);
-        document.getElementById('stat-revenue').textContent = `R$ ${rev.toFixed(2)}`;
+        // Tarefas pendentes (não concluídas)
+        const pendingTasks = appData.tasks.filter(t => !t.completed);
+        
+        // 1. Contador de Pendentes
+        document.getElementById('stat-pending').textContent = pendingTasks.length;
 
+        // 2. A Receber (Soma apenas se categoria for 'Cliente')
+        const toReceive = pendingTasks
+            .filter(t => t.category === 'Cliente' && t.value)
+            .reduce((sum, t) => sum + parseFloat(t.value), 0);
+        document.getElementById('stat-revenue').textContent = `R$ ${toReceive.toFixed(2)}`;
+
+        // 3. A Pagar (Soma apenas se categoria for 'Fornecedor')
+        const toPay = pendingTasks
+            .filter(t => t.category === 'Fornecedor' && t.value)
+            .reduce((sum, t) => sum + parseFloat(t.value), 0);
+        
+        // Atualiza o novo elemento (verifica se existe para evitar erro)
+        const elExpense = document.getElementById('stat-expense');
+        if(elExpense) elExpense.textContent = `R$ ${toPay.toFixed(2)}`;
+
+        // Renderiza lista de "Hoje"
+        const todaysTasks = appData.tasks.filter(t => t.date === todayStr && !t.completed);
         listEl.innerHTML = '';
         if(todaysTasks.length === 0) {
             listEl.innerHTML = '<div class="empty-state">Nada pendente para hoje!</div>';
@@ -940,9 +970,22 @@
     // --- UI HELPERS ---
     function openModal() {
         document.getElementById('taskModal').classList.add('open');
+        
+        // Limpa ID (modo criação)
         document.getElementById('t-id').value = '';
+        
+        // Limpa todos os campos visuais
+        document.getElementById('t-title').value = '';
         document.getElementById('t-desc').value = ''; 
-        document.getElementById('t-date').valueAsDate = new Date();
+        document.getElementById('t-date').value = ''; // Inicia sem data
+        document.getElementById('t-time').value = '';
+        document.getElementById('t-category').value = '';
+        document.getElementById('t-value').value = '';
+        document.getElementById('t-email-addr').value = '';
+        
+        // Reseta opções
+        document.getElementById('t-send-email').checked = false;
+        toggleEmailInput();
     }
     function openEditModal(id) {
         const t = appData.tasks.find(x => x.id === id);
