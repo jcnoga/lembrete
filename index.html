@@ -138,6 +138,12 @@
         /* PIX FOOTER */
         .pix-footer { text-align: center; margin-top: 40px; padding-bottom: 20px; font-size: 0.8rem; color: #ccc; cursor: pointer; transition: color 0.3s; }
         .pix-footer:hover { color: var(--primary); text-decoration: underline; }
+
+        /* PIX GRID BUTTONS */
+        .pix-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
+        .btn-pix { padding: 15px; border: 2px solid #f1c40f; background: white; border-radius: 10px; cursor: pointer; font-weight: bold; color: #333; transition: all 0.2s; }
+        .btn-pix:active { background: #f1c40f; }
+        .pix-key-display { background: #f9f9f9; padding: 10px; border-radius: 5px; font-family: monospace; font-size: 0.8rem; color: #555; margin-top: 10px; word-break: break-all; user-select: all; }
     </style>
 </head>
 <body onclick="enableAudio()">
@@ -407,15 +413,27 @@
         </div>
     </div>
 
-    <!-- 5. SUPPORT MODAL (NOVO) -->
+    <!-- 5. SUPPORT MODAL (NOVO COM COPÍA E COLA) -->
     <div class="modal" id="supportModal">
         <div class="modal-content" style="text-align: center;">
             <h3 style="color:var(--primary); margin-top:0;">Apoie o Projeto ☕</h3>
-            <p style="font-size: 1rem; line-height: 1.6; color: #555; margin-bottom: 25px; margin-top:15px;">
-                Este app é 100% gratuito.<br>
-                Se ele está facilitando seu dia, considere apoiar o projeto para que ele continue existindo e melhorando.
+            <p style="font-size: 0.95rem; line-height: 1.4; color: #555; margin-bottom: 20px;">
+                Este app é gratuito. Selecione um valor para gerar o código <b>Pix Copia e Cola</b>:
             </p>
-            <button class="btn-block btn-gold" onclick="copyPix()">Copiar Chave Pix</button>
+            
+            <div class="pix-grid">
+                <button class="btn-pix" onclick="generatePixCopyPaste(5)">R$ 5,00</button>
+                <button class="btn-pix" onclick="generatePixCopyPaste(9)">R$ 9,00</button>
+                <button class="btn-pix" onclick="generatePixCopyPaste(12)">R$ 12,00</button>
+                <button class="btn-pix" onclick="copyPixSimpleKey()">Outro Valor</button>
+            </div>
+            
+            <div id="pix-feedback" style="display:none; color:green; font-weight:bold; margin-bottom:10px;">
+                ✅ Código copiado!
+            </div>
+            
+            <div class="pix-key-display" id="pix-display-area" style="display:none;"></div>
+
             <button class="btn-block btn-secondary" onclick="closeSupportModal()">Fechar</button>
         </div>
     </div>
@@ -428,7 +446,7 @@
 
 <script>
     // ==========================================
-    // 1. CONFIGURAÇÃO DO FIREBASE (PREENCHIDA)
+    // 1. CONFIGURAÇÃO DO FIREBASE
     // ==========================================
     const firebaseConfig = {
       apiKey: "AIzaSyBhtwWew_DQNX2TZROUShZz4mjK57pRgQk",
@@ -949,18 +967,83 @@
         }
     }
     
-    // --- APOIO PIX (COPIAR) ---
-    function copyPix() {
-        const pixKey = "b4648948-d0a8-4402-81f4-8a4047fcf4e5";
-        navigator.clipboard.writeText(pixKey).then(() => {
-            alert("Chave Pix copiada para a área de transferência! \nObrigado pelo seu apoio! ☕");
-        }).catch(err => {
-            alert("Não foi possível copiar automaticamente. A chave é: " + pixKey);
-        });
+    // ==========================================
+    // 7. GERAÇÃO DE PIX COPIA E COLA
+    // ==========================================
+    const PIX_KEY_GLOBAL = "b4648948-d0a8-4402-81f4-8a4047fcf4e5";
+    
+    // Função auxiliar CRC16 (Padrão CCITT-FALSE)
+    function crc16(str) {
+        let crc = 0xFFFF;
+        for (let i = 0; i < str.length; i++) {
+            crc ^= str.charCodeAt(i) << 8;
+            for (let j = 0; j < 8; j++) {
+                if ((crc & 0x8000) !== 0) crc = (crc << 1) ^ 0x1021;
+                else crc = crc << 1;
+            }
+        }
+        return (crc & 0xFFFF).toString(16).toUpperCase().padStart(4, '0');
+    }
+
+    // Gera o payload oficial do BR Code
+    function createPixPayload(amount) {
+        const format = (id, val) => id + val.length.toString().padStart(2, '0') + val;
+        
+        // 00 - Payload Format Indicator (01)
+        // 26 - Merchant Account Information (GUI + Key)
+        const merchantInfo = format('00', 'BR.GOV.BCB.PIX') + format('01', PIX_KEY_GLOBAL);
+        
+        let payload = 
+            format('00', '01') +                          // Format
+            format('26', merchantInfo) +                  // Merchant Info
+            format('52', '0000') +                        // Merchant Category Code (0000 = Geral)
+            format('53', '986');                          // Transaction Currency (986 = BRL)
+
+        if (amount > 0) {
+            payload += format('54', amount.toFixed(2));   // Transaction Amount
+        }
+
+        payload += format('58', 'BR') +                   // Country Code
+                   format('59', 'App Compromisso') +      // Merchant Name (NOME FICTICIO)
+                   format('60', 'Cidade') +               // Merchant City (GENERICO)
+                   format('62', format('05', '***'));     // Additional Data Field (TxID)
+
+        payload += '6304'; // CRC16 ID + Length
+
+        payload += crc16(payload); // Calcula checksum final
+        return payload;
+    }
+
+    function generatePixCopyPaste(amount) {
+        const code = createPixPayload(amount);
+        copyToClipboard(code, "Pix Copia e Cola (R$ "+amount+",00) copiado!");
+        
+        // Mostra visualmente o código
+        const disp = document.getElementById('pix-display-area');
+        disp.style.display = 'block';
+        disp.textContent = code;
+    }
+
+    function copyPixSimpleKey() {
+        copyToClipboard(PIX_KEY_GLOBAL, "Chave Pix copiada! Digite o valor no seu banco.");
+        const disp = document.getElementById('pix-display-area');
+        disp.style.display = 'block';
+        disp.textContent = PIX_KEY_GLOBAL;
+    }
+
+    function copyToClipboard(text, msg) {
+        navigator.clipboard.writeText(text).then(() => {
+            const feed = document.getElementById('pix-feedback');
+            feed.textContent = "✅ " + msg;
+            feed.style.display = 'block';
+            setTimeout(() => feed.style.display = 'none', 4000);
+        }).catch(err => alert("Erro ao copiar: " + text));
     }
 
     // --- MODAL SUPPORT ---
     function openSupportModal() {
+        document.getElementById('pix-display-area').style.display = 'none';
+        document.getElementById('pix-feedback').style.display = 'none';
         document.getElementById('supportModal').classList.add('open');
     }
     function closeSupportModal() {
