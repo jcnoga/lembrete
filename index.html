@@ -124,9 +124,17 @@
 
         .filters-box input, .filters-box select { height: 45px; font-size: 0.95rem; }
         .empty-state { padding: 40px 20px; text-align: center; color: var(--text-light); background: #fff; border-radius: var(--radius); margin-top: 10px; border: 1px dashed #ddd; }
+        
+        /* Switch Toggle */
+        .switch { position: relative; display: inline-block; width: 50px; height: 24px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 34px; }
+        .slider:before { position: absolute; content: ""; height: 16px; width: 16px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider { background-color: var(--primary); }
+        input:checked + .slider:before { transform: translateX(26px); }
     </style>
 </head>
-<body>
+<body onclick="enableAudio()">
 
     <!-- 1. TELA DE AUTENTICAÇÃO -->
     <div id="auth-screen">
@@ -237,10 +245,30 @@
             <!-- VIEW: SETTINGS -->
             <div id="view-settings" class="view-section hidden">
                 <h3>Mais Opções</h3>
+                
+                <div class="card" style="margin-top:15px; display:flex; justify-content:space-between; align-items:center;">
+                    <div>
+                        <strong>Limpeza Automática</strong>
+                        <p style="font-size:0.8rem; color:#777; margin:0;">Excluir lembretes vencidos há 30 dias</p>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" id="auto-cleanup-check" onchange="toggleCleanup(this)">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
                 <div class="card" style="margin-top:15px;">
                     <p><strong>Relatórios</strong></p>
                     <button class="btn-block btn-primary" onclick="exportPDF()">📄 Baixar PDF</button>
                 </div>
+                
+                <div class="card" style="margin-top:15px;">
+                    <p><strong>Backup e Restauração (Local)</strong></p>
+                    <button class="btn-block btn-secondary" onclick="backupData()">📥 Fazer Backup (Baixar Arquivo)</button>
+                    <button class="btn-block btn-secondary" onclick="triggerRestore()">📤 Restaurar Backup (Enviar Arquivo)</button>
+                    <input type="file" id="restore-input" style="display:none" accept=".json" onchange="restoreData(this)">
+                </div>
+
                 <div class="card" style="margin-top:15px;">
                     <p><strong>Conta</strong></p>
                     <p style="font-size:0.8rem; color:#777;">Logado como: <span id="settings-email"></span></p>
@@ -309,7 +337,6 @@
             <div class="form-group hidden" id="div-email-input">
                 <label>E-mail Destino</label>
                 <input type="email" id="t-email-addr" class="form-control" placeholder="cliente@email.com">
-                <!-- MENSAGEM REMOVIDA AQUI -->
             </div>
 
             <div class="form-group">
@@ -341,7 +368,11 @@
         </div>
     </div>
 
+    <!-- Som do Alarme (Loop) -->
     <audio id="audioAlert" loop src="data:audio/mp3;base64,//uQxAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAAUAAACzAAKCg4PEhIWFxsbHiAgIyMoKCsrLzAwMjI2Njg4Ojw8P0BAQkJERkdHSkpMTk5QUFJTU1dXV1lbW11dYGBiYmRmZmdnaGhqam5ucHBydHR3d3l5e3t9fX6AgIGBgoKFhYiIiouLkJCSkpWWlpiYmZmbm52dnp6goKGhoqKkpKWlpqeoqKmqq6ytrq6wsLGxsrK0tLe3uLi6ur29v8DAwsLGxsnJysrMzM7O0NDS0tTX19jY2dvb3Nzd3d7e4ODi4uPj5eXn5+jo6evr7Ozt7u7w8PHx8vL09PX19vf3+Pj6+vv7/Pz9/f7+/v///wAAAqpLdXJ6AAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//uQxAAACkQBOAAAAAEAAAD5AAAAABj3/vT23uAgBPgAPAAAAAAAZAAAAAAAAAAAAAAB//uQxAAACkQBOAAAAAEAAAD5AAAAABj3/vT23uAgBPgAPAAAAAAAZAAAAAAAAAAAAAAB//uQxAAACkQBOAAAAAEAAAD5AAAAABj3/vT23uAgBPgAPAAAAAAAZAAAAAAAAAAAAAAB//uQxAAACkQBOAAAAAEAAAD5AAAAABj3/vT23uAgBPgAPAAAAAAAZAAAAAAAAAAAAAAB//uQxAAACkQBOAAAAAEAAAD5AAAAABj3/vT23uAgBPgAPAAAAAAAZAAAAAAAAAAAAAAB"></audio>
+
+    <!-- Som de Conclusão (Ding curto) -->
+    <audio id="audioDone" src="data:audio/mp3;base64,//uQxAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAAGAAABuAAKCg4PEhIWFxsbHiAgIyMoKCsrLzAwMjI2Njg4Ojw8P0BAQkJERkdHSkpMTk5QUFJTU1dXV1lbW11dYGBiYmRmZmdnaGhqam5ucHBydHR3d3l5e3t9fX6AgIGBgoKFhYiIiouLkJCSkpWWlpiYmZmbm52dnp6goKGhoqKkpKWlpqeoqKmqq6ytrq6wsLGxsrK0tLe3uLi6ur29v8DAwsLGxsnJysrMzM7O0NDS0tTX19jY2dvb3Nzd3d7e4ODi4uPj5eXn5+jo6evr7Ozt7u7w8PHx8vL09PX19vf3+Pj6+vv7/Pz9/f7+/v///wAAAD5LdXJ6AAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//uQxAAACkQBOAAAAAEAAAD5AAAAABj3/vT23uAgBPgAPAAAAAAAZAAAAAAAAAAAAAAB//uQxAAACkQBOAAAAAEAAAD5AAAAABj3/vT23uAgBPgAPAAAAAAAZAAAAAAAAAAAAAAB"></audio>
 
 <script>
     // ==========================================
@@ -367,6 +398,16 @@
 
     let currentUser = null;
     let appData = { tasks: [] };
+    let audioUnlocked = false;
+
+    // Desbloqueia áudio no primeiro clique do usuário
+    function enableAudio() {
+        if (!audioUnlocked) {
+            document.getElementById('audioAlert').load();
+            document.getElementById('audioDone').load();
+            audioUnlocked = true;
+        }
+    }
 
     // ==========================================
     // 2. SISTEMA DE LOGIN
@@ -379,6 +420,11 @@
                 document.getElementById('app-screen').classList.remove('hidden');
                 document.getElementById('user-display').textContent = user.email.split('@')[0];
                 document.getElementById('settings-email').textContent = user.email;
+                
+                // Carrega configuração de limpeza automática
+                const cleanupPref = localStorage.getItem('autoCleanup') === 'true';
+                document.getElementById('auto-cleanup-check').checked = cleanupPref;
+                
                 syncTasks(); 
             } else {
                 currentUser = null;
@@ -428,6 +474,7 @@
                     appData.tasks.push(task);
                 });
                 refreshViews();
+                runAutoCleanup(); // Verifica limpeza ao sincronizar
             });
     }
 
@@ -441,7 +488,7 @@
 
     function saveTask() {
         const title = document.getElementById('t-title').value;
-        const desc = document.getElementById('t-desc').value; // Captura a descrição
+        const desc = document.getElementById('t-desc').value;
         const date = document.getElementById('t-date').value;
         const time = document.getElementById('t-time').value;
         const cat = document.getElementById('t-category').value;
@@ -453,14 +500,13 @@
 
         const data = {
             title, 
-            description: desc, // Salva descrição no banco
+            description: desc,
             date, time, category: cat, value: val,
             sendEmail, emailAddr,
             userId: currentUser.uid, completed: false,
-            // Flags de controle
             alarm5MinSent: false, 
             alarmOnTimeSent: false,
-            emailDailySent: false, // Nova flag para controlar envio diário
+            emailDailySent: false,
             createdAt: firebase.firestore.FieldValue.serverTimestamp()
         };
 
@@ -474,10 +520,6 @@
         }
 
         dbOperation.then(async () => {
-            // REMOVIDO: O envio imediato de e-mail foi retirado daqui.
-            // Agora o e-mail será enviado apenas pelo verificador automático (checkDailyEmails)
-            // se a data for hoje, garantindo "apenas uma vez no dia do compromisso".
-            
             if(!id) alert("Tarefa salva!"); 
             closeModal();
         }).catch(err => {
@@ -485,10 +527,18 @@
         });
     }
 
-    function deleteTask(id) {
-        if(confirm("Excluir?")) db.collection('users').doc(currentUser.uid).collection('tasks').doc(id).delete();
+    function deleteTask(id, confirmAction = true) {
+        if(!confirmAction || confirm("Excluir?")) {
+            db.collection('users').doc(currentUser.uid).collection('tasks').doc(id).delete();
+        }
     }
     function toggleTask(id, status) {
+        // Toca som de conclusão se estiver marcando como feito
+        if(!status) { 
+            const audio = document.getElementById('audioDone');
+            audio.currentTime = 0;
+            audio.play().catch(e => console.log("Audio play blocked", e));
+        }
         db.collection('users').doc(currentUser.uid).collection('tasks').doc(id).update({ completed: !status });
     }
 
@@ -660,21 +710,16 @@
                 }
             }
 
-            // Lógica de Envio de Email (APENAS UMA VEZ NO DIA)
+            // Lógica de Envio de Email
             checkDailyEmails(task, todayStr);
         });
     }
 
     function checkDailyEmails(task, todayStr) {
-        // Se a tarefa é hoje, tem email configurado, e ainda não enviou hoje
         if (task.date === todayStr && task.sendEmail && task.emailAddr && !task.emailDailySent && !task.completed) {
             
-            // Marca como enviado no banco imediatamente para evitar duplicação
             db.collection('users').doc(currentUser.uid).collection('tasks').doc(task.id).update({emailDailySent: true});
             
-            console.log("Tentando enviar e-mail diário para:", task.title);
-
-            // Monta o HTML do E-mail
             let htmlContent = `
                 <div style="font-family: Arial, sans-serif; color: #333;">
                     <h2 style="color: #0066cc;">📅 Lembrete de Hoje</h2>
@@ -682,26 +727,15 @@
                     <hr>
                     <p><strong>O que:</strong> ${task.title}</p>
             `;
-            
-            // Adiciona descrição se houver
-            if (task.description) {
-                htmlContent += `<p><strong>Detalhes:</strong> ${task.description}</p>`;
-            }
-
+            if (task.description) { htmlContent += `<p><strong>Detalhes:</strong> ${task.description}</p>`; }
             htmlContent += `<p><strong>Quando:</strong> ${formatDateBR(task.date)} ${task.time || ''}</p>`;
-            
-            // Adiciona valor APENAS se maior que zero
-            if (task.value && parseFloat(task.value) > 0) {
-                htmlContent += `<p><strong>Valor:</strong> R$ ${task.value}</p>`;
-            }
-
+            if (task.value && parseFloat(task.value) > 0) { htmlContent += `<p><strong>Valor:</strong> R$ ${task.value}</p>`; }
             htmlContent += `
                     <hr>
                     <small>Enviado via App Compromisso Fácil.</small>
                 </div>
             `;
 
-            // Chama o servidor
             fetch('https://enviaremailsdiarios-368296869868.southamerica-east1.run.app/send-email', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -719,7 +753,11 @@
         if(type==="5MIN") db.collection('users').doc(currentUser.uid).collection('tasks').doc(task.id).update({alarm5MinSent:true});
         if(type==="AGORA") db.collection('users').doc(currentUser.uid).collection('tasks').doc(task.id).update({alarmOnTimeSent:true});
 
-        document.getElementById('audioAlert').play().catch(()=>{});
+        // Toca som de alarme
+        const audio = document.getElementById('audioAlert');
+        audio.currentTime = 0;
+        audio.play().catch(()=>{});
+
         document.getElementById('alarm-context').textContent = type==="5MIN" ? "⚠️ Faltam 5 Minutos!" : "🚨 É Agora!";
         document.getElementById('alarm-task-id').value = task.id;
         document.getElementById('alarm-time-display').textContent = task.time;
@@ -733,17 +771,94 @@
         document.getElementById('alarmModal').classList.remove('active');
         document.getElementById('audioAlert').pause();
     }
+
+    // CORREÇÃO: Botão "Concluído" do Alarme agora força a conclusão
     function completeTaskFromAlarm() {
         const id = document.getElementById('alarm-task-id').value;
-        toggleTask(id, false);
+        const audio = document.getElementById('audioDone');
+        audio.currentTime = 0;
+        audio.play().catch(()=>{});
+
+        // Marca como concluído no banco
+        db.collection('users').doc(currentUser.uid).collection('tasks').doc(id).update({ completed: true });
         stopAlarm();
+    }
+
+    // ==========================================
+    // 6. BACKUP, RESTAURAÇÃO E LIMPEZA
+    // ==========================================
+    
+    function backupData() {
+        if(appData.tasks.length === 0) return alert("Nada para salvar.");
+        const dataStr = JSON.stringify(appData.tasks, null, 2);
+        const blob = new Blob([dataStr], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        const date = new Date().toISOString().split('T')[0];
+        a.download = `backup_compromissos_${date}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }
+
+    function triggerRestore() {
+        document.getElementById('restore-input').click();
+    }
+
+    function restoreData(input) {
+        const file = input.files[0];
+        if(!file) return;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const tasks = JSON.parse(e.target.result);
+                if(!Array.isArray(tasks)) return alert("Arquivo inválido!");
+                if(confirm(`Tem certeza? Isso irá adicionar ${tasks.length} tarefas à sua conta.`)) {
+                    tasks.forEach(t => {
+                        delete t.id; 
+                        db.collection('users').doc(currentUser.uid).collection('tasks').add(t);
+                    });
+                    alert("Restauração iniciada!");
+                }
+            } catch(err) { alert("Erro ao ler arquivo: " + err); }
+        };
+        reader.readAsText(file);
+        input.value = ''; 
+    }
+
+    // --- LIMPEZA AUTOMÁTICA DE 30 DIAS ---
+    function toggleCleanup(chk) {
+        localStorage.setItem('autoCleanup', chk.checked);
+        if(chk.checked) runAutoCleanup();
+    }
+
+    function runAutoCleanup() {
+        const isEnabled = localStorage.getItem('autoCleanup') === 'true';
+        if(!isEnabled || !appData.tasks) return;
+
+        const cutoff = new Date();
+        cutoff.setDate(cutoff.getDate() - 30); // 30 dias atrás
+        const cutoffStr = cutoff.toISOString().split('T')[0];
+
+        let count = 0;
+        appData.tasks.forEach(t => {
+            // Se a tarefa for mais antiga que 30 dias
+            if (t.date < cutoffStr) {
+                // Deleta sem perguntar (false)
+                deleteTask(t.id, false);
+                count++;
+            }
+        });
+        if(count > 0) console.log(`Limpeza automática: ${count} tarefas antigas removidas.`);
     }
 
     // --- UI HELPERS ---
     function openModal() {
         document.getElementById('taskModal').classList.add('open');
         document.getElementById('t-id').value = '';
-        document.getElementById('t-desc').value = ''; // Limpa descrição
+        document.getElementById('t-desc').value = ''; 
         document.getElementById('t-date').valueAsDate = new Date();
     }
     function openEditModal(id) {
@@ -751,7 +866,7 @@
         if(!t) return;
         document.getElementById('t-id').value = t.id;
         document.getElementById('t-title').value = t.title;
-        document.getElementById('t-desc').value = t.description || ''; // Carrega descrição
+        document.getElementById('t-desc').value = t.description || ''; 
         document.getElementById('t-date').value = t.date;
         document.getElementById('t-time').value = t.time;
         document.getElementById('t-category').value = t.category||'';
