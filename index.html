@@ -108,6 +108,7 @@
         .btn-primary { background: var(--primary); color: white; }
         .btn-secondary { background: #eee; color: var(--text); margin-top: 10px; }
         .btn-success { background: var(--secondary); color: white; }
+        .btn-danger { background: var(--danger); color: white; margin-top: 10px; }
         
         /* Checkbox Cloud */
         .cloud-option { background: #eef2ff; padding: 12px; border-radius: 8px; border: 1px solid #ccd5ff; display: flex; align-items: center; gap: 10px; margin-bottom: 15px; }
@@ -125,13 +126,9 @@
         .filters-box input, .filters-box select { height: 45px; font-size: 0.95rem; }
         .empty-state { padding: 40px 20px; text-align: center; color: var(--text-light); background: #fff; border-radius: var(--radius); margin-top: 10px; border: 1px dashed #ddd; }
         
-        /* Switch Toggle */
-        .switch { position: relative; display: inline-block; width: 50px; height: 24px; }
-        .switch input { opacity: 0; width: 0; height: 0; }
-        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 34px; }
-        .slider:before { position: absolute; content: ""; height: 16px; width: 16px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
-        input:checked + .slider { background-color: var(--primary); }
-        input:checked + .slider:before { transform: translateX(26px); }
+        /* PIX FOOTER */
+        .pix-footer { text-align: center; margin-top: 25px; padding-top: 15px; border-top: 1px solid #eee; font-size: 0.85rem; color: #999; cursor: pointer; transition: color 0.3s; }
+        .pix-footer:hover { color: var(--primary); }
     </style>
 </head>
 <body onclick="enableAudio()">
@@ -141,8 +138,9 @@
         <div class="auth-box" id="login-form">
             <h2>Compromisso Fácil</h2>
             <p style="margin-bottom: 20px; color: #666;">Sua agenda na nuvem.</p>
-            <input type="email" id="log-email" class="auth-input" placeholder="lembrete91@gmail.com">
-            <input type="password" id="log-pass" class="auth-input" placeholder="pyfz mxbq pqrq btgb">
+            <!-- Campos limpos para o login -->
+            <input type="email" id="log-email" class="auth-input" placeholder="Seu e-mail">
+            <input type="password" id="log-pass" class="auth-input" placeholder="Sua senha">
             <button class="auth-btn" onclick="appLogin()">Entrar</button>
             <div class="auth-link" onclick="toggleAuth('register')">Criar conta nova</div>
             <div class="auth-link" onclick="toggleAuth('reset')" style="color:#ddd;">Esqueci senha</div>
@@ -159,6 +157,7 @@
 
         <div class="auth-box hidden" id="reset-form">
             <h2>Recuperar Senha</h2>
+            <p style="font-size:0.9rem; color:#777; margin-bottom:15px;">Digite seu e-mail para receber um link de redefinição.</p>
             <input type="email" id="reset-email" class="auth-input" placeholder="E-mail cadastrado">
             <button class="auth-btn" onclick="appResetPassword()">Enviar Link</button>
             <div class="auth-link" onclick="toggleAuth('login')">Cancelar</div>
@@ -246,15 +245,9 @@
             <div id="view-settings" class="view-section hidden">
                 <h3>Mais Opções</h3>
                 
-                <div class="card" style="margin-top:15px; display:flex; justify-content:space-between; align-items:center;">
-                    <div>
-                        <strong>Limpeza Automática</strong>
-                        <p style="font-size:0.8rem; color:#777; margin:0;">Excluir lembretes vencidos há 30 dias</p>
-                    </div>
-                    <label class="switch">
-                        <input type="checkbox" id="auto-cleanup-check" onchange="toggleCleanup(this)">
-                        <span class="slider"></span>
-                    </label>
+                <div class="card" style="margin-top:15px;">
+                    <p><strong>Gerenciar Tarefas</strong></p>
+                    <button class="btn-block btn-danger" onclick="clearAllCompleted()">🧹 Limpar Todas as Concluídas</button>
                 </div>
 
                 <div class="card" style="margin-top:15px;">
@@ -273,6 +266,11 @@
                     <p><strong>Conta</strong></p>
                     <p style="font-size:0.8rem; color:#777;">Logado como: <span id="settings-email"></span></p>
                     <button class="btn-block btn-secondary" onclick="appLogout()" style="color:var(--danger)">Sair da Conta</button>
+                    
+                    <!-- PIX DISCRETO -->
+                    <div class="pix-footer" onclick="copyPix()">
+                        ☕ Gostou? Apoie o projeto (Pix)
+                    </div>
                 </div>
             </div>
         </main>
@@ -312,7 +310,7 @@
                 <input type="text" id="t-title" class="form-control" placeholder="Ex: Reunião com João">
             </div>
             
-            <!-- CAMPO NOVO: DESCRIÇÃO -->
+            <!-- CAMPO DESCRIÇÃO -->
             <div class="form-group">
                 <label>Descrição</label>
                 <textarea id="t-desc" class="form-control" rows="3" placeholder="Detalhes do lembrete..."></textarea>
@@ -420,11 +418,6 @@
                 document.getElementById('app-screen').classList.remove('hidden');
                 document.getElementById('user-display').textContent = user.email.split('@')[0];
                 document.getElementById('settings-email').textContent = user.email;
-                
-                // Carrega configuração de limpeza automática
-                const cleanupPref = localStorage.getItem('autoCleanup') === 'true';
-                document.getElementById('auto-cleanup-check').checked = cleanupPref;
-                
                 syncTasks(); 
             } else {
                 currentUser = null;
@@ -450,7 +443,12 @@
     function appResetPassword() {
         const email = document.getElementById('reset-email').value;
         if(!email) return alert("Digite o e-mail");
-        auth.sendPasswordResetEmail(email).then(()=>alert("E-mail de recuperação enviado!")).catch(err => alert("Erro: " + err.message));
+        auth.sendPasswordResetEmail(email)
+            .then(()=>{
+                alert("E-mail de recuperação enviado! Verifique sua caixa de entrada.");
+                toggleAuth('login');
+            })
+            .catch(err => alert("Erro: " + err.message));
     }
     function appLogout() { auth.signOut(); }
     function toggleAuth(v) {
@@ -528,10 +526,26 @@
     }
 
     function deleteTask(id, confirmAction = true) {
-        if(!confirmAction || confirm("Excluir?")) {
+        if(!confirmAction || confirm("Excluir esta tarefa?")) {
             db.collection('users').doc(currentUser.uid).collection('tasks').doc(id).delete();
         }
     }
+    
+    // Botão para limpar TODAS as concluídas manualmente
+    function clearAllCompleted() {
+        const completedTasks = appData.tasks.filter(t => t.completed);
+        if(completedTasks.length === 0) return alert("Nenhuma tarefa concluída para limpar.");
+        
+        if(confirm(`Tem certeza? Isso apagará ${completedTasks.length} tarefas concluídas permanentemente.`)) {
+            let count = 0;
+            completedTasks.forEach(t => {
+                db.collection('users').doc(currentUser.uid).collection('tasks').doc(t.id).delete();
+                count++;
+            });
+            alert(`${count} tarefas foram removidas.`);
+        }
+    }
+
     function toggleTask(id, status) {
         // Toca som de conclusão se estiver marcando como feito
         if(!status) { 
@@ -772,7 +786,7 @@
         document.getElementById('audioAlert').pause();
     }
 
-    // CORREÇÃO: Botão "Concluído" do Alarme agora força a conclusão
+    // Botão "Concluído" do Alarme força a conclusão
     function completeTaskFromAlarm() {
         const id = document.getElementById('alarm-task-id').value;
         const audio = document.getElementById('audioDone');
@@ -827,31 +841,40 @@
         reader.readAsText(file);
         input.value = ''; 
     }
-
-    // --- LIMPEZA AUTOMÁTICA DE 30 DIAS ---
-    function toggleCleanup(chk) {
-        localStorage.setItem('autoCleanup', chk.checked);
-        if(chk.checked) runAutoCleanup();
+    
+    // APOIO PIX (Discreto)
+    function copyPix() {
+        // Chave fixa no código, mas invisível ao usuário até clicar
+        const pixKey = "jose.carlos.nogueira1@gmail.com";
+        navigator.clipboard.writeText(pixKey).then(() => {
+            alert("Chave Pix copiada para a área de transferência! \nObrigado pelo apoio! ☕");
+        }).catch(err => {
+            alert("Não foi possível copiar automaticamente. A chave é: " + pixKey);
+        });
     }
 
+    // --- LIMPEZA AUTOMÁTICA (> 30 DIAS) ---
     function runAutoCleanup() {
-        const isEnabled = localStorage.getItem('autoCleanup') === 'true';
-        if(!isEnabled || !appData.tasks) return;
+        if(!appData.tasks) return;
 
         const cutoff = new Date();
         cutoff.setDate(cutoff.getDate() - 30); // 30 dias atrás
         const cutoffStr = cutoff.toISOString().split('T')[0];
 
-        let count = 0;
-        appData.tasks.forEach(t => {
-            // Se a tarefa for mais antiga que 30 dias
-            if (t.date < cutoffStr) {
-                // Deleta sem perguntar (false)
-                deleteTask(t.id, false);
-                count++;
+        // Filtra apenas tarefas CONCLUÍDAS e ANTIGAS
+        const oldTasks = appData.tasks.filter(t => t.completed && t.date < cutoffStr);
+
+        if (oldTasks.length > 0) {
+            // Pergunta antes de excluir
+            if(confirm(`Encontramos ${oldTasks.length} tarefas concluídas há mais de 30 dias. Deseja limpar para liberar espaço?`)) {
+                let count = 0;
+                oldTasks.forEach(t => {
+                    db.collection('users').doc(currentUser.uid).collection('tasks').doc(t.id).delete();
+                    count++;
+                });
+                console.log(`Limpeza: ${count} tarefas antigas removidas.`);
             }
-        });
-        if(count > 0) console.log(`Limpeza automática: ${count} tarefas antigas removidas.`);
+        }
     }
 
     // --- UI HELPERS ---
