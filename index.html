@@ -143,7 +143,6 @@
         .col label { font-size: 0.8rem; font-weight: normal; color: #666; }
         .col input { padding: 8px; font-size: 0.9rem; }
 
-
         /* --- ALARM MODAL --- */
         .alarm-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 999; justify-content: center; align-items: center; }
         .alarm-modal.active { display: flex; animation: fadeIn 0.3s; }
@@ -390,8 +389,6 @@
                     <p><strong>Relatórios</strong></p>
                     <button class="btn-block btn-primary" onclick="exportPDF()">📄 Baixar PDF</button>
                 </div>
-								
-				<!-- ... outros botões acima ... -->
 
                 <div class="card" style="margin-top:15px; border: 1px solid #0066cc;">
                     <p><strong style="color:var(--primary)">⚡ Teste de Sistema</strong></p>
@@ -399,10 +396,6 @@
                     <button class="btn-block btn-primary" onclick="forceEmailCheck()">📨 Disparar E-mails Agora</button>
                     <div id="email-log-result" style="margin-top:10px; font-size:0.8rem; background:#eee; padding:10px; display:none; border-radius:5px; overflow-x:auto;"></div>
                 </div>
-				
-				
-
-                <!-- ... botão de backup e outros abaixo ... -->
                 
                 <div class="card" style="margin-top:15px;">
                     <p><strong>Backup e Restauração (Local)</strong></p>
@@ -1006,25 +999,24 @@
     // ==========================================
     // 5. ALARMES E EMAILS AUTOMÁTICOS
     // ==========================================
+    
+    // Verifica a cada 10 segundos
     setInterval(checkAlarms, 10000);
 
-function checkAlarms() {
+    function checkAlarms() {
         if(!currentUser) return;
         const now = new Date();
-        // const todayStr = getLocalDateStr(); // Não precisa mais dessa linha aqui se não for usar pra email
+        const todayStr = getLocalDateStr();
 
         appData.tasks.forEach(task => {
             if(task.completed) return; 
 
-            // ------------------------------------------
-            // A. LÓGICA DE ALARME SONORO (APP ABERTO)
-            // ------------------------------------------
+            // ALARME SONORO
             if(task.time) {
                 const taskDateTime = new Date(`${task.date}T${task.time}:00`);
                 const diffMs = taskDateTime - now;
                 const diffMin = diffMs / 60000; 
 
-                // Configurações (fallback)
                 const startMin = task.remStart || defaultConfig.alarmStartMin;
                 const freqMin = task.remInt || defaultConfig.alarmFreqMin;
                 const overFreqMin = task.remOverInt || defaultConfig.alarmOverdueFreq;
@@ -1032,7 +1024,6 @@ function checkAlarms() {
                 let shouldTrigger = false;
                 let triggerType = "";
 
-                // 1. Antecipado
                 if (diffMin > 0 && diffMin <= startMin) {
                     if (isIntervalPassed(task.lastAlarmSent, freqMin * 60000)) {
                         shouldTrigger = true;
@@ -1040,7 +1031,6 @@ function checkAlarms() {
                     }
                 }
                 
-                // 2. Atrasado
                 if (diffMin < -1) { 
                     if (isIntervalPassed(task.lastAlarmSent, overFreqMin * 60000)) {
                         shouldTrigger = true;
@@ -1048,7 +1038,6 @@ function checkAlarms() {
                     }
                 }
 
-                // 3. Na Hora
                 if (Math.abs(diffMin) <= 0.5 && (!task.lastAlarmSent || (now - new Date(task.lastAlarmSent).getTime() > 60000))) {
                      shouldTrigger = true;
                      triggerType = "É AGORA!";
@@ -1056,57 +1045,19 @@ function checkAlarms() {
 
                 if (shouldTrigger) {
                     triggerAlarm(task, triggerType);
-                    // Atualiza timestamp localmente e no banco
                     db.collection('users').doc(currentUser.uid).collection('tasks').doc(task.id).update({
                         lastAlarmSent: now.toISOString()
                     });
                 }
             }
-            
-            // A PARTE DE E-MAIL FOI REMOVIDA DAQUI POIS AGORA RODA NA NUVEM
         });
     }
+
     function isIntervalPassed(lastStr, intervalMs) {
         if (!lastStr) return true;
         const last = new Date(lastStr).getTime();
         const now = new Date().getTime();
         return (now - last) >= intervalMs;
-    }
-
-    function sendEmail(task, subjectPrefix, isOverdue) {
-        const nowIso = new Date().toISOString();
-        let updateData = { lastEmailSent: nowIso };
-        if (isOverdue) {
-            updateData.overdueEmailCount = (task.overdueEmailCount || 0) + 1;
-        }
-
-        db.collection('users').doc(currentUser.uid).collection('tasks').doc(task.id).update(updateData);
-
-        let htmlContent = `
-            <div style="font-family: Arial, sans-serif; color: #333;">
-                <h2 style="color: ${isOverdue ? '#e74c3c' : '#0066cc'};">${subjectPrefix} ${task.title}</h2>
-                <p>Olá! Detalhes do seu compromisso:</p>
-                <hr>
-                <p><strong>Descrição:</strong> ${task.description || 'Sem detalhes.'}</p>
-                <p><strong>Data:</strong> ${formatDateBR(task.date)} ${task.time || ''}</p>
-        `;
-        if (task.value) { htmlContent += `<p><strong>Valor:</strong> R$ ${task.value}</p>`; }
-        htmlContent += `
-                <hr>
-                <small>Compromisso Fácil Cloud Pro.</small>
-            </div>
-        `;
-
-        fetch('https://enviaremailsdiarios-368296869868.southamerica-east1.run.app/send-email', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                to: task.emailAddr,
-                subject: `${subjectPrefix} ${task.title}`,
-                html: htmlContent
-            })
-        }).then(() => console.log("Email enviado para " + task.title))
-          .catch(err => console.error("Erro envio email", err));
     }
 
     function triggerAlarm(task, typeText) {
@@ -1344,56 +1295,52 @@ function checkAlarms() {
     if("Notification" in window) Notification.requestPermission();
 
 
+    // FUNÇÃO DE TESTE MANUAL DE EMAIL (INTEGRADO AO HTML PARA EVITAR ERROS DE ESCOPO)
+    function forceEmailCheck() {
+        // 👇👇 SEU LINK REAL DA CLOUD FUNCTION 👇👇
+        const cloudFunctionUrl = "https://testemanualemail-cg2cq35buq-uc.a.run.app"; 
+        
+        if(!cloudFunctionUrl || cloudFunctionUrl === "") {
+            return alert("Erro: O link da Cloud Function está vazio.");
+        }
 
-// ... (outras funções do seu código) ...
+        const logDiv = document.getElementById('email-log-result');
+        const btn = document.querySelector('button[onclick="forceEmailCheck()"]');
+        
+        if(btn) {
+            btn.disabled = true;
+            btn.textContent = "⏳ Processando...";
+        }
+        
+        if(logDiv) {
+            logDiv.style.display = 'block';
+            logDiv.innerHTML = "Contatando servidor...";
+        }
 
-function forceEmailCheck() {
-    // 👇👇 SEU LINK REAL AQUI 👇👇
-    const cloudFunctionUrl = "https://testemanualemail-cg2cq35buq-uc.a.run.app"; 
-    
-    // VERIFICAÇÃO SIMPLIFICADA: Só reclama se estiver vazio
-    if(!cloudFunctionUrl || cloudFunctionUrl === "") {
-        return alert("Erro: O link da Cloud Function está vazio.");
+        fetch(cloudFunctionUrl)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`Erro HTTP: ${response.status}`);
+                }
+                return response.text();
+            })
+            .then(data => {
+                if(logDiv) logDiv.innerHTML = data; 
+                alert("Verificação concluída! Veja o relatório abaixo do botão.");
+            })
+            .catch(error => {
+                console.error(error);
+                if(logDiv) logDiv.innerHTML = `<span style="color:red">Erro: ${error.message}</span>`;
+                alert("Erro ao contatar servidor. Verifique o console.");
+            })
+            .finally(() => {
+                if(btn) {
+                    btn.disabled = false;
+                    btn.textContent = "📨 Disparar E-mails Agora";
+                }
+            });
     }
 
-    const logDiv = document.getElementById('email-log-result');
-    // Ajuste aqui: certifique-se que o botão no HTML tem exatamente esse onclick, 
-    // ou dê um ID para o botão (ex: id="btn-teste") e use document.getElementById('btn-teste')
-    const btn = document.querySelector('button[onclick="forceEmailCheck()"]');
-    
-    // UI de carregamento
-    if(btn) {
-        btn.disabled = true;
-        btn.textContent = "⏳ Processando...";
-    }
-    
-    if(logDiv) {
-        logDiv.style.display = 'block';
-        logDiv.innerHTML = "Contatando servidor...";
-    }
-
-    fetch(cloudFunctionUrl)
-        .then(response => {
-            if (!response.ok) {
-                throw new Error(`Erro HTTP: ${response.status}`);
-            }
-            return response.text();
-        })
-        .then(data => {
-            if(logDiv) logDiv.innerHTML = data; 
-            alert("Verificação concluída! Veja o relatório abaixo do botão.");
-        })
-        .catch(error => {
-            console.error(error);
-            if(logDiv) logDiv.innerHTML = `<span style="color:red">Erro: ${error.message}</span>`;
-            alert("Erro ao contatar servidor. Verifique se:\n1. O link está correto.\n2. Se é necessário configurar CORS na função.\n3. Veja o console (F12) para detalhes.");
-        })
-        .finally(() => {
-            if(btn) {
-                btn.disabled = false;
-                btn.textContent = "📨 Disparar E-mails Agora";
-            }
-        });
-}</script>
+</script>
 </body>
-</html>
+</html>```
