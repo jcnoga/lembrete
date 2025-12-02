@@ -468,6 +468,19 @@
                 </div>
             </div>
 
+            <!-- CAMPO NOVO: PERIODICIDADE -->
+            <div class="form-group">
+                <label>Periodicidade (Repetir)</label>
+                <select id="t-recurrence" class="form-control">
+                    <option value="unica">Única (Não repetir)</option>
+                    <option value="diaria">Diária (Todo dia)</option>
+                    <option value="semanal">Semanal (Toda semana)</option>
+                    <option value="quinzenal">Quinzenal (A cada 15 dias)</option>
+                    <option value="mensal">Mensal (Todo mês)</option>
+                    <option value="anual">Anual (Todo ano)</option>
+                </select>
+            </div>
+
             <!-- Opção E-mail Cloud -->
             <div class="cloud-option">
                 <input type="checkbox" id="t-send-email" onchange="toggleEmailInput()">
@@ -584,7 +597,7 @@
     </div>
 
     <!-- Som do Alarme (Loop) -->
-    <audio id="audioAlert" loop src="data:audio/mp3;base64,//uQxAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAAUAAACzAAKCg4PEhIWFxsbHiAgIyMoKCsrLzAwMjI2Njg4Ojw8P0BAQkJERkdHSkpMTk5QUFJTU1dXV1lbW11dYGBiYmRmZmdnaGhqam5ucHBydHR3d3l5e3t9fX6AgIGBgoKFhYiIiouLkJCSkpWWlpiYmZmbm52dnp6goKGhoqKkpKWlpqeoqKmqq6ytrq6wsLGxsrK0tLe3uLi6ur29v8DAwsLGxsnJysrMzM7O0NDS0tTX19jY2dvb3Nzd3d7e4ODi4uPj5eXn5+jo6evr7Ozt7u7w8PHx8vL09PX19vf3+Pj6+vv7/Pz9/f7+/v///wAAAqpLdXJ6AAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//uQxAAACkQBOAAAAAEAAAD5AAAAABj3/vT23uAgBPgAPAAAAAAAZAAAAAAAAAAAAAAB//uQxAAACkQBOAAAAAEAAAD5AAAAABj3/vT23uAgBPgAPAAAAAAAZAAAAAAAAAAAAAAB//uQxAAACkQBOAAAAAEAAAD5AAAAABj3/vT23uAgBPgAPAAAAAAAZAAAAAAAAAAAAAAB//uQxAAACkQBOAAAAAEAAAD5AAAAABj3/vT23uAgBPgAPAAAAAAAZAAAAAAAAAAAAAAB//uQxAAACkQBOAAAAAEAAAD5AAAAABj3/vT23uAgBPgAPAAAAAAAZAAAAAAAAAAAAAAB//uQxAAACkQBOAAAAAEAAAD5AAAAABj3/vT23uAgBPgAPAAAAAAAZAAAAAAAAAAAAAAB"></audio>
+    <audio id="audioAlert" loop src="data:audio/mp3;base64,//uQxAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAAUAAACzAAKCg4PEhIWFxsbHiAgIyMoKCsrLzAwMjI2Njg4Ojw8P0BAQkJERkdHSkpMTk5QUFJTU1dXV1lbW11dYGBiYmRmZmdnaGhqam5ucHBydHR3d3l5e3t9fX6AgIGBgoKFhYiIiouLkJCSkpWWlpiYmZmbm52dnp6goKGhoqKkpKWlpqeoqKmqq6ytrq6wsLGxsrK0tLe3uLi6ur29v8DAwsLGxsnJysrMzM7O0NDS0tTX19jY2dvb3Nzd3d7e4ODi4uPj5eXn5+jo6evr7Ozt7u7w8PHx8vL09PX19vf3+Pj6+vv7/Pz9/f7+/v///wAAAqpLdXJ6AAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//uQxAAACkQBOAAAAAEAAAD5AAAAABj3/vT23uAgBPgAPAAAAAAAZAAAAAAAAAAAAAAB//uQxAAACkQBOAAAAAEAAAD5AAAAABj3/vT23uAgBPgAPAAAAAAAZAAAAAAAAAAAAAAB//uQxAAACkQBOAAAAAEAAAD5AAAAABj3/vT23uAgBPgAPAAAAAAAZAAAAAAAAAAAAAAB//uQxAAACkQBOAAAAAEAAAD5AAAAABj3/vT23uAgBPgAPAAAAAAAZAAAAAAAAAAAAAAB//uQxAAACkQBOAAAAAEAAAD5AAAAABj3/vT23uAgBPgAPAAAAAAAZAAAAAAAAAAAAAAB"></audio>
 
     <!-- Som de Conclusão (Ding curto) -->
     <audio id="audioDone" src="data:audio/mp3;base64,//uQxAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAAGAAABuAAKCg4PEhIWFxsbHiAgIyMoKCsrLzAwMjI2Njg4Ojw8P0BAQkJERkdHSkpMTk5QUFJTU1dXV1lbW11dYGBiYmRmZmdnaGhqam5ucHBydHR3d3l5e3t9fX6AgIGBgoKFhYiIiouLkJCSkpWWlpiYmZmbm52dnp6goKGhoqKkpKWlpqeoqKmqq6ytrq6wsLGxsrK0tLe3uLi6ur29v8DAwsLGxsnJysrMzM7O0NDS0tTX19jY2dvb3Nzd3d7e4ODi4uPj5eXn5+jo6evr7Ozt7u7w8PHx8vL09PX19vf3+Pj6+vv7/Pz9/f7+/v///wAAAD5LdXJ6AAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//uQxAAACkQBOAAAAAEAAAD5AAAAABj3/vT23uAgBPgAPAAAAAAAZAAAAAAAAAAAAAAB//uQxAAACkQBOAAAAAEAAAD5AAAAABj3/vT23uAgBPgAPAAAAAAAZAAAAAAAAAAAAAAB"></audio>
@@ -603,13 +616,18 @@
       measurementId: "G-JE0QH81JG6"
     };
 
-    firebase.initializeApp(firebaseConfig);
-
     let auth, db;
     try {
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
         auth = firebase.auth();
         db = firebase.firestore();
-    } catch(e) { console.error("Erro Firebase", e); }
+        console.log("Firebase carregado com sucesso!");
+    } catch(e) { 
+        console.error("ERRO CRÍTICO NO FIREBASE:", e); 
+        alert("Erro ao conectar com o banco de dados. Verifique o console (F12).");
+    }
 
     let currentUser = null;
     let appData = { tasks: [] };
@@ -770,6 +788,7 @@
         const val = document.getElementById('t-value').value;
         const sendEmail = document.getElementById('t-send-email').checked;
         const emailAddr = document.getElementById('t-email-addr').value;
+        const recurrence = document.getElementById('t-recurrence').value;
 
         // Configurações de Lembrete
         const remStart = parseInt(document.getElementById('t-rem-start').value);
@@ -789,6 +808,7 @@
             description: desc,
             date, time, category: cat, value: val,
             sendEmail, emailAddr,
+            recurrence: recurrence,
             userId: currentUser.uid, 
             completed: false,
             
@@ -854,13 +874,62 @@
         }
     }
 
-    function toggleTask(id, status) {
-        if(!status) { 
+    // Função para calcular a próxima data
+    function calculateNextDate(currentDateStr, type) {
+        let [y, m, d] = currentDateStr.split('-').map(Number);
+        let newDate = new Date(y, m - 1, d); // Mês no JS é 0-11
+
+        switch(type) {
+            case 'diaria': newDate.setDate(newDate.getDate() + 1); break;
+            case 'semanal': newDate.setDate(newDate.getDate() + 7); break;
+            case 'quinzenal': newDate.setDate(newDate.getDate() + 15); break;
+            case 'mensal': newDate.setMonth(newDate.getMonth() + 1); break;
+            case 'anual': newDate.setFullYear(newDate.getFullYear() + 1); break;
+        }
+
+        // Retorna no formato YYYY-MM-DD
+        return newDate.toISOString().split('T')[0];
+    }
+
+    // Lógica para Concluir/Reativar Tarefa
+    function toggleTask(id, currentStatus) {
+        const task = appData.tasks.find(t => t.id === id);
+        if (!task) return;
+
+        const isCompleting = !currentStatus; // Estamos marcando o checkbox
+
+        // Se está concluindo E é recorrente (e não é 'unica')
+        if (isCompleting && task.recurrence && task.recurrence !== 'unica') {
+            if(confirm("Esta é uma tarefa recorrente (" + task.recurrence + "). Deseja concluir esta e agendar automaticamente para o próximo período?")) {
+                const nextDate = calculateNextDate(task.date, task.recurrence);
+
+                // Toca som de sucesso
+                const audio = document.getElementById('audioDone');
+                audio.currentTime = 0;
+                audio.play().catch(()=>{});
+
+                // Atualiza a tarefa: nova data, reseta flags, mantém completed = false
+                db.collection('users').doc(currentUser.uid).collection('tasks').doc(id).update({
+                    date: nextDate,
+                    completed: false, // Mantém ativa para a nova data
+                    alarm5MinSent: false,
+                    alarmOnTimeSent: false,
+                    emailDailySent: false,
+                    lastAlarmSent: null,
+                    lastEmailSent: null,
+                    overdueEmailCount: 0
+                });
+                return; // Sai da função
+            }
+        }
+
+        // Comportamento Padrão (Não recorrente ou desmarcando)
+        if (isCompleting) { 
             const audio = document.getElementById('audioDone');
             audio.currentTime = 0;
             audio.play().catch(e => console.log("Audio play blocked", e));
         }
-        db.collection('users').doc(currentUser.uid).collection('tasks').doc(id).update({ completed: !status });
+        db.collection('users').doc(currentUser.uid).collection('tasks').doc(id).update({ completed: isCompleting });
     }
 
     // ==========================================
@@ -940,11 +1009,17 @@
         const waMsg = encodeURIComponent(`${t.title} - ${t.date} ${t.time}`);
         const waBtn = `<button class="btn-icon btn-wa" onclick="window.open('https://wa.me/?text=${waMsg}')">💬</button>`;
         
+        // Ícone de recorrência
+        let recurrenceIcon = '';
+        if (t.recurrence && t.recurrence !== 'unica') {
+            recurrenceIcon = ' 🔄'; 
+        }
+
         div.innerHTML = `
             <div class="task-info" onclick="openEditModal('${t.id}')">
                 <span class="task-title">${t.sendEmail?'📧':''} ${t.title}</span>
                 <div class="task-meta">
-                    <span>📅 ${formatDateBR(t.date)} ${t.time||''}</span>
+                    <span>📅 ${formatDateBR(t.date)} ${t.time||''} ${recurrenceIcon}</span>
                     ${t.category ? `<span class="tag">${t.category}</span>` : ''}
                     ${t.value ? `<span class="tag" style="color:green">R$ ${t.value}</span>` : ''}
                 </div>
@@ -1006,17 +1081,20 @@
     function checkAlarms() {
         if(!currentUser) return;
         const now = new Date();
-        const todayStr = getLocalDateStr();
+        // const todayStr = getLocalDateStr(); // Não precisa mais dessa linha aqui se não for usar pra email
 
         appData.tasks.forEach(task => {
             if(task.completed) return; 
 
-            // ALARME SONORO
+            // ------------------------------------------
+            // A. LÓGICA DE ALARME SONORO (APP ABERTO)
+            // ------------------------------------------
             if(task.time) {
                 const taskDateTime = new Date(`${task.date}T${task.time}:00`);
                 const diffMs = taskDateTime - now;
                 const diffMin = diffMs / 60000; 
 
+                // Configurações (fallback)
                 const startMin = task.remStart || defaultConfig.alarmStartMin;
                 const freqMin = task.remInt || defaultConfig.alarmFreqMin;
                 const overFreqMin = task.remOverInt || defaultConfig.alarmOverdueFreq;
@@ -1024,6 +1102,7 @@
                 let shouldTrigger = false;
                 let triggerType = "";
 
+                // 1. Antecipado
                 if (diffMin > 0 && diffMin <= startMin) {
                     if (isIntervalPassed(task.lastAlarmSent, freqMin * 60000)) {
                         shouldTrigger = true;
@@ -1031,6 +1110,7 @@
                     }
                 }
                 
+                // 2. Atrasado
                 if (diffMin < -1) { 
                     if (isIntervalPassed(task.lastAlarmSent, overFreqMin * 60000)) {
                         shouldTrigger = true;
@@ -1038,6 +1118,7 @@
                     }
                 }
 
+                // 3. Na Hora
                 if (Math.abs(diffMin) <= 0.5 && (!task.lastAlarmSent || (now - new Date(task.lastAlarmSent).getTime() > 60000))) {
                      shouldTrigger = true;
                      triggerType = "É AGORA!";
@@ -1045,14 +1126,16 @@
 
                 if (shouldTrigger) {
                     triggerAlarm(task, triggerType);
+                    // Atualiza timestamp localmente e no banco
                     db.collection('users').doc(currentUser.uid).collection('tasks').doc(task.id).update({
                         lastAlarmSent: now.toISOString()
                     });
                 }
             }
+            
+            // A PARTE DE E-MAIL FOI REMOVIDA DAQUI POIS AGORA RODA NA NUVEM
         });
     }
-
     function isIntervalPassed(lastStr, intervalMs) {
         if (!lastStr) return true;
         const last = new Date(lastStr).getTime();
@@ -1081,10 +1164,9 @@
 
     function completeTaskFromAlarm() {
         const id = document.getElementById('alarm-task-id').value;
-        const audio = document.getElementById('audioDone');
-        audio.currentTime = 0;
-        audio.play().catch(()=>{});
-        db.collection('users').doc(currentUser.uid).collection('tasks').doc(id).update({ completed: true });
+        // Usa a mesma função toggleTask para suportar a recorrência também pelo alarme
+        // toggleTask espera (id, currentStatus). Se estamos aqui, o alarme tocou, logo não está completa (false)
+        toggleTask(id, false); 
         stopAlarm();
     }
 
@@ -1237,7 +1319,8 @@
         document.getElementById('t-email-addr').value = '';
         document.getElementById('t-send-email').checked = false;
         
-        // CARREGA DEFAULTS
+        // Defaults
+        document.getElementById('t-recurrence').value = 'unica';
         document.getElementById('t-rem-start').value = defaultConfig.alarmStartMin;
         document.getElementById('t-rem-int').value = defaultConfig.alarmFreqMin;
         document.getElementById('t-rem-over-int').value = defaultConfig.alarmOverdueFreq;
@@ -1262,7 +1345,8 @@
         document.getElementById('t-send-email').checked = t.sendEmail;
         document.getElementById('t-email-addr').value = t.emailAddr||'';
         
-        // Configs
+        // Recorrência e Configs
+        document.getElementById('t-recurrence').value = t.recurrence || 'unica';
         document.getElementById('t-rem-start').value = t.remStart || defaultConfig.alarmStartMin;
         document.getElementById('t-rem-int').value = t.remInt || defaultConfig.alarmFreqMin;
         document.getElementById('t-rem-over-int').value = t.remOverInt || defaultConfig.alarmOverdueFreq;
@@ -1343,4 +1427,4 @@
 
 </script>
 </body>
-</html>```
+</html>
