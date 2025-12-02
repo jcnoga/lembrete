@@ -995,20 +995,23 @@
     // ==========================================
     setInterval(checkAlarms, 10000);
 
-    function checkAlarms() {
+function checkAlarms() {
         if(!currentUser) return;
         const now = new Date();
-        const todayStr = getLocalDateStr();
+        // const todayStr = getLocalDateStr(); // Não precisa mais dessa linha aqui se não for usar pra email
 
         appData.tasks.forEach(task => {
             if(task.completed) return; 
 
-            // ALARME SONORO
+            // ------------------------------------------
+            // A. LÓGICA DE ALARME SONORO (APP ABERTO)
+            // ------------------------------------------
             if(task.time) {
                 const taskDateTime = new Date(`${task.date}T${task.time}:00`);
                 const diffMs = taskDateTime - now;
                 const diffMin = diffMs / 60000; 
 
+                // Configurações (fallback)
                 const startMin = task.remStart || defaultConfig.alarmStartMin;
                 const freqMin = task.remInt || defaultConfig.alarmFreqMin;
                 const overFreqMin = task.remOverInt || defaultConfig.alarmOverdueFreq;
@@ -1016,6 +1019,7 @@
                 let shouldTrigger = false;
                 let triggerType = "";
 
+                // 1. Antecipado
                 if (diffMin > 0 && diffMin <= startMin) {
                     if (isIntervalPassed(task.lastAlarmSent, freqMin * 60000)) {
                         shouldTrigger = true;
@@ -1023,6 +1027,7 @@
                     }
                 }
                 
+                // 2. Atrasado
                 if (diffMin < -1) { 
                     if (isIntervalPassed(task.lastAlarmSent, overFreqMin * 60000)) {
                         shouldTrigger = true;
@@ -1030,6 +1035,7 @@
                     }
                 }
 
+                // 3. Na Hora
                 if (Math.abs(diffMin) <= 0.5 && (!task.lastAlarmSent || (now - new Date(task.lastAlarmSent).getTime() > 60000))) {
                      shouldTrigger = true;
                      triggerType = "É AGORA!";
@@ -1037,17 +1043,16 @@
 
                 if (shouldTrigger) {
                     triggerAlarm(task, triggerType);
+                    // Atualiza timestamp localmente e no banco
                     db.collection('users').doc(currentUser.uid).collection('tasks').doc(task.id).update({
                         lastAlarmSent: now.toISOString()
                     });
                 }
             }
-
-            // EMAIL
-
+            
+            // A PARTE DE E-MAIL FOI REMOVIDA DAQUI POIS AGORA RODA NA NUVEM
         });
     }
-
     function isIntervalPassed(lastStr, intervalMs) {
         if (!lastStr) return true;
         const last = new Date(lastStr).getTime();
