@@ -43,9 +43,23 @@
         .auth-box { background: white; padding: 30px; border-radius: 15px; width: 100%; max-width: 400px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); text-align: center; }
         .auth-box h2 { color: var(--primary); margin-bottom: 20px; margin-top: 0; }
         .auth-input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 15px; font-size: 1rem; }
-        .auth-btn { width: 100%; padding: 12px; background: var(--primary); color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 1rem; }
+        .auth-btn { width: 100%; padding: 12px; background: var(--primary); color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 1rem; transition: background 0.2s; }
+        .auth-btn:active { transform: scale(0.98); }
         .auth-link { margin-top: 20px; font-size: 0.9rem; color: var(--primary); text-decoration: underline; cursor: pointer; display: block; }
         .hidden { display: none !important; }
+
+        /* ESTILOS GOOGLE LOGIN */
+        .divider { display: flex; align-items: center; margin: 20px 0; color: #ccc; font-size: 0.8rem; }
+        .divider span { flex: 1; height: 1px; background: #eee; }
+        .divider p { margin: 0 10px; }
+        
+        .btn-google {
+            background: #fff; color: #333; border: 1px solid #ddd;
+            display: flex; align-items: center; justify-content: center; gap: 10px;
+            position: relative;
+        }
+        .btn-google:hover { background: #f9f9f9; }
+        .google-icon { width: 18px; height: 18px; }
 
         /* --- APP HEADER --- */
         header { background: var(--white); padding: 15px 20px; box-shadow: 0 1px 5px rgba(0,0,0,0.05); display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; }
@@ -173,7 +187,23 @@
             <input type="password" id="log-pass" class="auth-input" placeholder="Sua senha">
             
             <button class="auth-btn" onclick="appLogin()">Entrar</button>
-            <div class="auth-link" onclick="toggleAuth('register')">Criar conta nova</div>
+
+            <!-- LOGIN COM GOOGLE -->
+            <div class="divider">
+                <span></span><p>OU</p><span></span>
+            </div>
+            
+            <button class="auth-btn btn-google" onclick="appLoginGoogle()">
+                <svg class="google-icon" viewBox="0 0 48 48">
+                    <path fill="#4285F4" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"></path>
+                    <path fill="#34A853" d="M46.98 24.46c0-1.66-.15-3.21-.42-4.72H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.48z"></path>
+                    <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"></path>
+                    <path fill="#EA4335" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"></path>
+                </svg>
+                Entrar com Google
+            </button>
+            
+            <div class="auth-link" onclick="toggleAuth('register')">Criar conta nova (E-mail)</div>
             <div class="auth-link" onclick="toggleAuth('reset')" style="color:#ddd;">Esqueci minha senha</div>
         </div>
 
@@ -608,7 +638,7 @@
                 currentUser = user;
                 document.getElementById('auth-screen').classList.add('hidden');
                 document.getElementById('app-screen').classList.remove('hidden');
-                document.getElementById('user-display').textContent = user.email.split('@')[0];
+                document.getElementById('user-display').textContent = user.email ? user.email.split('@')[0] : "Usuário Google";
                 document.getElementById('settings-email').textContent = user.email;
                 
                 // Carrega configuração de limpeza automática
@@ -663,6 +693,19 @@
         if(!email || !pass) return alert("Preencha os dados");
         auth.signInWithEmailAndPassword(email, pass).catch(err => alert(err.message));
     }
+
+    // LOGIN COM GOOGLE
+    function appLoginGoogle() {
+        const provider = new firebase.auth.GoogleAuthProvider();
+        auth.signInWithPopup(provider)
+        .then((result) => {
+            console.log("Logado com Google", result.user);
+            // onAuthStateChanged cuidará do resto
+        }).catch((error) => {
+            alert("Erro ao logar com Google: " + error.message);
+        });
+    }
+
     function appRegister() {
         const email = document.getElementById('reg-email').value;
         const pass = document.getElementById('reg-pass').value;
@@ -722,7 +765,7 @@
         const sendEmail = document.getElementById('t-send-email').checked;
         const emailAddr = document.getElementById('t-email-addr').value;
 
-        // Configurações de Lembrete (Lê dos inputs ou usa 0 se vazio, mas vamos tratar isso abaixo)
+        // Configurações de Lembrete
         const remStart = parseInt(document.getElementById('t-rem-start').value);
         const remInt = parseInt(document.getElementById('t-rem-int').value);
         const remOverInt = parseInt(document.getElementById('t-rem-over-int').value);
@@ -765,15 +808,12 @@
         
         let dbOperation;
         if(id) {
-            // Em update, não queremos sobrescrever contadores se não mudou a lógica, 
-            // mas aqui simplificado sobrescrevemos configs. Para contadores, ideal seria merge.
-            // Para simplificar, vou manter os contadores antigos se existirem, lendo do appData
             const existing = appData.tasks.find(t => t.id === id);
             if(existing) {
                 data.overdueEmailCount = existing.overdueEmailCount || 0;
                 data.lastAlarmSent = existing.lastAlarmSent || null;
                 data.lastEmailSent = existing.lastEmailSent || null;
-                data.completed = existing.completed; // Mantém estado
+                data.completed = existing.completed; 
             }
             dbOperation = db.collection('users').doc(currentUser.uid).collection('tasks').doc(id).update(data);
         } else {
@@ -951,10 +991,8 @@
     }
 
     // ==========================================
-    // 5. ALARMES E EMAILS AUTOMÁTICOS (LÓGICA REVISADA)
+    // 5. ALARMES E EMAILS AUTOMÁTICOS
     // ==========================================
-    
-    // Verifica a cada 10 segundos
     setInterval(checkAlarms, 10000);
 
     function checkAlarms() {
@@ -963,17 +1001,14 @@
         const todayStr = getLocalDateStr();
 
         appData.tasks.forEach(task => {
-            if(task.completed) return; // Se concluída, não faz nada (a menos que quiséssemos limpar)
+            if(task.completed) return; 
 
-            // ------------------------------------------
-            // A. LÓGICA DE ALARME SONORO (APP ABERTO)
-            // ------------------------------------------
+            // ALARME SONORO
             if(task.time) {
                 const taskDateTime = new Date(`${task.date}T${task.time}:00`);
                 const diffMs = taskDateTime - now;
-                const diffMin = diffMs / 60000; // Negativo se já passou
+                const diffMin = diffMs / 60000; 
 
-                // Configurações do alarme da tarefa (fallback para 0 se undefined, mas devem estar populados)
                 const startMin = task.remStart || defaultConfig.alarmStartMin;
                 const freqMin = task.remInt || defaultConfig.alarmFreqMin;
                 const overFreqMin = task.remOverInt || defaultConfig.alarmOverdueFreq;
@@ -981,17 +1016,13 @@
                 let shouldTrigger = false;
                 let triggerType = "";
 
-                // 1. Alarme Antecipado (Antes do horário)
                 if (diffMin > 0 && diffMin <= startMin) {
-                    // Está na janela de alerta. Verifica intervalo.
-                    if (isIntervalPassed(task.lastAlarmSent, freqMin * 60000)) { // freq em ms
+                    if (isIntervalPassed(task.lastAlarmSent, freqMin * 60000)) {
                         shouldTrigger = true;
                         triggerType = `Faltam ${Math.ceil(diffMin)} min`;
                     }
                 }
                 
-                // 2. Alarme Atrasado (Depois do horário)
-                // Usamos uma tolerância de 1 min para não disparar imediatamente com atrasado se acabou de tocar o 'na hora'
                 if (diffMin < -1) { 
                     if (isIntervalPassed(task.lastAlarmSent, overFreqMin * 60000)) {
                         shouldTrigger = true;
@@ -999,7 +1030,6 @@
                     }
                 }
 
-                // 3. Alarme "Na Hora" (tolerância de 30seg) - Prioridade
                 if (Math.abs(diffMin) <= 0.5 && (!task.lastAlarmSent || (now - new Date(task.lastAlarmSent).getTime() > 60000))) {
                      shouldTrigger = true;
                      triggerType = "É AGORA!";
@@ -1007,25 +1037,20 @@
 
                 if (shouldTrigger) {
                     triggerAlarm(task, triggerType);
-                    // Atualiza timestamp localmente e no banco
                     db.collection('users').doc(currentUser.uid).collection('tasks').doc(task.id).update({
                         lastAlarmSent: now.toISOString()
                     });
                 }
             }
 
-            // ------------------------------------------
-            // B. LÓGICA DE E-MAIL (SERVIDOR/API)
-            // ------------------------------------------
+            // EMAIL
             if (task.sendEmail && task.emailAddr) {
-                const taskDate = new Date(`${task.date}T00:00:00`); // Meia noite do dia da tarefa
-                const todayDate = new Date(`${todayStr}T00:00:00`); // Meia noite de hoje
+                const taskDate = new Date(`${task.date}T00:00:00`); 
+                const todayDate = new Date(`${todayStr}T00:00:00`); 
                 
-                // Diferença em dias (inteiros)
                 const diffTime = taskDate.getTime() - todayDate.getTime();
                 const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
 
-                // Configs
                 const mailStartDays = task.mailDays || defaultConfig.emailDaysBefore;
                 const mailFreqDays = task.mailInt || defaultConfig.emailFreqDays;
                 const mailOverFreq = task.mailOverInt || defaultConfig.emailOverdueFreq;
@@ -1035,21 +1060,14 @@
                 let shouldSend = false;
                 let subjectPrefix = "";
 
-                // 1. Email Antecipado ou No Dia
                 if (diffDays >= 0 && diffDays <= mailStartDays) {
-                    // Verifica se já enviou HOJE ou se passou o intervalo de dias
-                    // Aqui a lógica é: se intervalo é 1 dia, envia todo dia.
-                    // Para simplificar: verificamos se lastEmailSent foi há mais de (freq * 24h) atrás
-                    // Se nunca enviou, envia.
                     if (isIntervalPassed(task.lastEmailSent, mailFreqDays * 86400000)) {
                         shouldSend = true;
                         subjectPrefix = diffDays === 0 ? "HOJE:" : "Lembrete:";
                     }
                 }
 
-                // 2. Email Atrasado
                 if (diffDays < 0) {
-                    // Se ainda não estourou o limite de envios atrasados
                     if (overdueCount < mailMax) {
                         if (isIntervalPassed(task.lastEmailSent, mailOverFreq * 86400000)) {
                             shouldSend = true;
@@ -1065,7 +1083,6 @@
         });
     }
 
-    // Auxiliar para verificar intervalo de tempo
     function isIntervalPassed(lastStr, intervalMs) {
         if (!lastStr) return true;
         const last = new Date(lastStr).getTime();
@@ -1074,7 +1091,6 @@
     }
 
     function sendEmail(task, subjectPrefix, isOverdue) {
-        // Marca como enviado antes do fetch para evitar duplo envio se a conexão for lenta
         const nowIso = new Date().toISOString();
         let updateData = { lastEmailSent: nowIso };
         if (isOverdue) {
@@ -1098,7 +1114,6 @@
             </div>
         `;
 
-        // URL da API (Substitua pela sua URL se necessário, estou usando a do exemplo anterior)
         fetch('https://enviaremailsdiarios-368296869868.southamerica-east1.run.app/send-email', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -1112,7 +1127,6 @@
     }
 
     function triggerAlarm(task, typeText) {
-        // Toca som de alarme
         const audio = document.getElementById('audioAlert');
         audio.currentTime = 0;
         audio.play().catch(()=>{});
@@ -1289,7 +1303,7 @@
         document.getElementById('t-email-addr').value = '';
         document.getElementById('t-send-email').checked = false;
         
-        // CARREGA DEFAULTS NOS INPUTS DO MODAL
+        // CARREGA DEFAULTS
         document.getElementById('t-rem-start').value = defaultConfig.alarmStartMin;
         document.getElementById('t-rem-int').value = defaultConfig.alarmFreqMin;
         document.getElementById('t-rem-over-int').value = defaultConfig.alarmOverdueFreq;
@@ -1314,11 +1328,10 @@
         document.getElementById('t-send-email').checked = t.sendEmail;
         document.getElementById('t-email-addr').value = t.emailAddr||'';
         
-        // Carrega configurações específicas da tarefa ou fallback pro default
+        // Configs
         document.getElementById('t-rem-start').value = t.remStart || defaultConfig.alarmStartMin;
         document.getElementById('t-rem-int').value = t.remInt || defaultConfig.alarmFreqMin;
         document.getElementById('t-rem-over-int').value = t.remOverInt || defaultConfig.alarmOverdueFreq;
-        
         document.getElementById('t-mail-days').value = t.mailDays || defaultConfig.emailDaysBefore;
         document.getElementById('t-mail-int').value = t.mailInt || defaultConfig.emailFreqDays;
         document.getElementById('t-mail-over-int').value = t.mailOverInt || defaultConfig.emailOverdueFreq;
