@@ -390,6 +390,19 @@
                     <p><strong>Relatórios</strong></p>
                     <button class="btn-block btn-primary" onclick="exportPDF()">📄 Baixar PDF</button>
                 </div>
+								
+				<!-- ... outros botões acima ... -->
+
+                <div class="card" style="margin-top:15px; border: 1px solid #0066cc;">
+                    <p><strong style="color:var(--primary)">⚡ Teste de Sistema</strong></p>
+                    <p style="font-size:0.8rem; color:#666;">Forçar o servidor a verificar e enviar e-mails pendentes agora.</p>
+                    <button class="btn-block btn-primary" onclick="forceEmailCheck()">📨 Disparar E-mails Agora</button>
+                    <div id="email-log-result" style="margin-top:10px; font-size:0.8rem; background:#eee; padding:10px; display:none; border-radius:5px; overflow-x:auto;"></div>
+                </div>
+				
+				
+
+                <!-- ... botão de backup e outros abaixo ... -->
                 
                 <div class="card" style="margin-top:15px;">
                     <p><strong>Backup e Restauração (Local)</strong></p>
@@ -1330,6 +1343,42 @@ function checkAlarms() {
     document.getElementById('greeting').textContent = hr<12?"Bom dia!":hr<18?"Boa tarde!":"Boa noite!";
     if("Notification" in window) Notification.requestPermission();
 
+
+
+// ... (outras funções do seu código) ...
+
+    function forceEmailCheck() {
+        // SUBSTITUA PELA URL QUE APARECEU NO SEU TERMINAL DEPOIS DO DEPLOY
+        const cloudFunctionUrl = "https://console.firebase.google.com/u/0/project/lembrete-d6c15/functions"; 
+        
+        if(cloudFunctionUrl === "https://console.firebase.google.com/u/0/project/lembrete-d6c15/functions") {
+            return alert("Você precisa colocar a URL da Cloud Function no código HTML (linha do const cloudFunctionUrl)");
+        }
+
+        const logDiv = document.getElementById('email-log-result');
+        const btn = document.querySelector('button[onclick="forceEmailCheck()"]');
+        
+        // UI de carregamento
+        btn.disabled = true;
+        btn.textContent = "⏳ Processando...";
+        logDiv.style.display = 'block';
+        logDiv.innerHTML = "Contatando servidor...";
+
+        fetch(cloudFunctionUrl)
+            .then(response => response.text())
+            .then(data => {
+                logDiv.innerHTML = data; // Mostra o resultado que veio do servidor
+                alert("Verificação concluída! Veja o relatório abaixo do botão.");
+            })
+            .catch(error => {
+                logDiv.innerHTML = `<span style="color:red">Erro: ${error.message}</span>`;
+                alert("Erro ao contatar servidor.");
+            })
+            .finally(() => {
+                btn.disabled = false;
+                btn.textContent = "📨 Disparar E-mails Agora";
+            });
+    }
 </script>
 </body>
 </html>
