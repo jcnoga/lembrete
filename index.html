@@ -115,6 +115,21 @@
         .cloud-option { background: #eef2ff; padding: 12px; border-radius: 8px; border: 1px solid #ccd5ff; display: flex; align-items: center; gap: 10px; margin-bottom: 15px; }
         .cloud-option input { width: 20px; height: 20px; }
 
+        /* CONFIGURAÇÕES AVANÇADAS NO MODAL */
+        .advanced-settings {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        .advanced-settings h4 { margin-top: 0; color: var(--primary); font-size: 0.95rem; margin-bottom: 10px; border-bottom: 1px solid #ddd; padding-bottom: 5px; }
+        .row { display: flex; gap: 10px; margin-bottom: 10px; }
+        .col { flex: 1; }
+        .col label { font-size: 0.8rem; font-weight: normal; color: #666; }
+        .col input { padding: 8px; font-size: 0.9rem; }
+
+
         /* --- ALARM MODAL --- */
         .alarm-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 999; justify-content: center; align-items: center; }
         .alarm-modal.active { display: flex; animation: fadeIn 0.3s; }
@@ -275,6 +290,55 @@
             <div id="view-settings" class="view-section hidden">
                 <h3>Mais Opções</h3>
                 
+                <!-- CONFIGURAÇÃO DEFAULT DE ALERTAS -->
+                <div class="card" style="margin-top:15px; border:1px solid #cce5ff;">
+                    <p style="margin-top:0; color:var(--primary-dark); font-weight:bold;">🛠️ Configuração Padrão de Alertas</p>
+                    <p style="font-size:0.8rem; color:#666;">Esses valores serão usados automaticamente em novas tarefas.</p>
+                    
+                    <div class="advanced-settings" style="background:white; border:none; padding:0;">
+                        <h4 style="font-size:0.8rem;">⏰ Alarme (Sonoro)</h4>
+                        <div class="row">
+                            <div class="col">
+                                <label>Iniciar (min antes)</label>
+                                <input type="number" id="def-alarm-start" class="form-control" placeholder="15">
+                            </div>
+                            <div class="col">
+                                <label>Repetir (cada min)</label>
+                                <input type="number" id="def-alarm-freq" class="form-control" placeholder="5">
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col">
+                                <label>Se atrasado (cada min)</label>
+                                <input type="number" id="def-alarm-over-freq" class="form-control" placeholder="10">
+                            </div>
+                        </div>
+
+                        <h4 style="font-size:0.8rem; margin-top:10px;">📧 E-mail</h4>
+                        <div class="row">
+                            <div class="col">
+                                <label>Iniciar (dias antes)</label>
+                                <input type="number" id="def-mail-days" class="form-control" placeholder="1">
+                            </div>
+                            <div class="col">
+                                <label>Repetir (cada dias)</label>
+                                <input type="number" id="def-mail-freq" class="form-control" placeholder="1">
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col">
+                                <label>Se atrasado (cada dias)</label>
+                                <input type="number" id="def-mail-over-freq" class="form-control" placeholder="1">
+                            </div>
+                            <div class="col">
+                                <label>Max Envios Atrasados</label>
+                                <input type="number" id="def-mail-over-max" class="form-control" placeholder="3">
+                            </div>
+                        </div>
+                        <button class="btn-block btn-primary" onclick="saveDefaultSettings()">Salvar Padrões</button>
+                    </div>
+                </div>
+
                 <!-- LIMPEZA AUTOMÁTICA (TOGGLE) -->
                 <div class="card" style="margin-top:15px; display:flex; justify-content:space-between; align-items:center;">
                     <div>
@@ -352,7 +416,6 @@
                 <input type="text" id="t-title" class="form-control" placeholder="Ex: Reunião com João">
             </div>
             
-            <!-- CAMPO NOVO: DESCRIÇÃO -->
             <div class="form-group">
                 <label>Descrição</label>
                 <textarea id="t-desc" class="form-control" rows="3" placeholder="Detalhes do lembrete..."></textarea>
@@ -372,11 +435,57 @@
             <!-- Opção E-mail Cloud -->
             <div class="cloud-option">
                 <input type="checkbox" id="t-send-email" onchange="toggleEmailInput()">
-                <label for="t-send-email">Enviar e-mail automático (Cloud)</label>
+                <label for="t-send-email">Enviar e-mails de lembrete</label>
             </div>
             <div class="form-group hidden" id="div-email-input">
                 <label>E-mail Destino</label>
                 <input type="email" id="t-email-addr" class="form-control" placeholder="cliente@email.com">
+                
+                <!-- CONFIGURAÇÃO AVANÇADA DE EMAIL -->
+                <div class="advanced-settings" style="margin-top:10px;">
+                    <h4>Configuração de E-mail</h4>
+                    <div class="row">
+                        <div class="col">
+                            <label>Antecedência (dias)</label>
+                            <input type="number" id="t-mail-days" class="form-control" placeholder="Default">
+                        </div>
+                        <div class="col">
+                            <label>Repetir (dias)</label>
+                            <input type="number" id="t-mail-int" class="form-control" placeholder="Default">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col">
+                            <label>Atrasado: Repetir (dias)</label>
+                            <input type="number" id="t-mail-over-int" class="form-control" placeholder="Default">
+                        </div>
+                        <div class="col">
+                            <label>Max Envios (atraso)</label>
+                            <input type="number" id="t-mail-max" class="form-control" placeholder="Default">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CONFIGURAÇÃO AVANÇADA DE ALARME -->
+            <div class="advanced-settings">
+                <h4>Configuração de Alarme (App Aberto)</h4>
+                <div class="row">
+                    <div class="col">
+                        <label>Acionar (min antes)</label>
+                        <input type="number" id="t-rem-start" class="form-control" placeholder="Default">
+                    </div>
+                    <div class="col">
+                        <label>Repetir (min)</label>
+                        <input type="number" id="t-rem-int" class="form-control" placeholder="Default">
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col">
+                        <label>Se atrasado: Repetir (min)</label>
+                        <input type="number" id="t-rem-over-int" class="form-control" placeholder="Default">
+                    </div>
+                </div>
             </div>
 
             <div class="form-group">
@@ -409,7 +518,7 @@
             <div id="alarm-time-display" style="font-size:1.5rem; font-weight:bold; color:var(--primary); margin:10px 0;"></div>
             <p id="alarm-text-display" style="margin-bottom:20px;"></p>
             <button class="btn-block btn-success" onclick="completeTaskFromAlarm()">✅ Concluir</button>
-            <button class="btn-block btn-secondary" onclick="stopAlarm()">Silenciar</button>
+            <button class="btn-block btn-secondary" onclick="stopAlarm()">Soneca (Silenciar)</button>
         </div>
     </div>
 
@@ -470,6 +579,17 @@
     let appData = { tasks: [] };
     let audioUnlocked = false;
 
+    // Configuração Padrão de Alertas (Default)
+    let defaultConfig = {
+        alarmStartMin: 15,
+        alarmFreqMin: 5,
+        alarmOverdueFreq: 10,
+        emailDaysBefore: 1,
+        emailFreqDays: 1,
+        emailOverdueFreq: 1,
+        emailOverdueMax: 3
+    };
+
     // Desbloqueia áudio no primeiro clique do usuário
     function enableAudio() {
         if (!audioUnlocked) {
@@ -480,7 +600,7 @@
     }
 
     // ==========================================
-    // 2. SISTEMA DE LOGIN
+    // 2. SISTEMA DE LOGIN & DEFAULTS
     // ==========================================
     if(auth) {
         auth.onAuthStateChanged((user) => {
@@ -494,6 +614,9 @@
                 // Carrega configuração de limpeza automática
                 const cleanupPref = localStorage.getItem('autoCleanup') === 'true';
                 document.getElementById('auto-cleanup-check').checked = cleanupPref;
+
+                // Carrega configuração default de alertas
+                loadDefaultSettings();
                 
                 syncTasks(); 
             } else {
@@ -503,6 +626,35 @@
                 document.getElementById('app-screen').classList.add('hidden');
             }
         });
+    }
+
+    function loadDefaultSettings() {
+        const stored = localStorage.getItem('alertConfig');
+        if(stored) {
+            defaultConfig = JSON.parse(stored);
+        }
+        // Preenche inputs da tela de settings
+        document.getElementById('def-alarm-start').value = defaultConfig.alarmStartMin;
+        document.getElementById('def-alarm-freq').value = defaultConfig.alarmFreqMin;
+        document.getElementById('def-alarm-over-freq').value = defaultConfig.alarmOverdueFreq;
+        document.getElementById('def-mail-days').value = defaultConfig.emailDaysBefore;
+        document.getElementById('def-mail-freq').value = defaultConfig.emailFreqDays;
+        document.getElementById('def-mail-over-freq').value = defaultConfig.emailOverdueFreq;
+        document.getElementById('def-mail-over-max').value = defaultConfig.emailOverdueMax;
+    }
+
+    function saveDefaultSettings() {
+        defaultConfig = {
+            alarmStartMin: parseInt(document.getElementById('def-alarm-start').value) || 15,
+            alarmFreqMin: parseInt(document.getElementById('def-alarm-freq').value) || 5,
+            alarmOverdueFreq: parseInt(document.getElementById('def-alarm-over-freq').value) || 10,
+            emailDaysBefore: parseInt(document.getElementById('def-mail-days').value) || 1,
+            emailFreqDays: parseInt(document.getElementById('def-mail-freq').value) || 1,
+            emailOverdueFreq: parseInt(document.getElementById('def-mail-over-freq').value) || 1,
+            emailOverdueMax: parseInt(document.getElementById('def-mail-over-max').value) || 3
+        };
+        localStorage.setItem('alertConfig', JSON.stringify(defaultConfig));
+        alert("Configurações padrão salvas!");
     }
 
     function appLogin() {
@@ -523,7 +675,7 @@
         auth.sendPasswordResetEmail(email)
             .then(() => {
                 alert("E-mail de recuperação enviado! Verifique sua caixa de entrada.");
-                toggleAuth('login'); // Volta para a tela de login
+                toggleAuth('login');
             })
             .catch(err => alert("Erro: " + err.message));
     }
@@ -549,11 +701,10 @@
                     appData.tasks.push(task);
                 });
                 refreshViews();
-                runAutoCleanup(); // Verifica limpeza ao sincronizar
+                runAutoCleanup();
             });
     }
 
-    // FUNÇÃO PARA PEGAR DATA LOCAL CORRETA
     function getLocalDateStr() {
         const d = new Date();
         const offset = d.getTimezoneOffset() * 60000;
@@ -571,6 +722,17 @@
         const sendEmail = document.getElementById('t-send-email').checked;
         const emailAddr = document.getElementById('t-email-addr').value;
 
+        // Configurações de Lembrete (Lê dos inputs ou usa 0 se vazio, mas vamos tratar isso abaixo)
+        const remStart = parseInt(document.getElementById('t-rem-start').value);
+        const remInt = parseInt(document.getElementById('t-rem-int').value);
+        const remOverInt = parseInt(document.getElementById('t-rem-over-int').value);
+        
+        // Configurações de Email
+        const mailDays = parseInt(document.getElementById('t-mail-days').value);
+        const mailInt = parseInt(document.getElementById('t-mail-int').value);
+        const mailOverInt = parseInt(document.getElementById('t-mail-over-int').value);
+        const mailMax = parseInt(document.getElementById('t-mail-max').value);
+
         if(!title || !date) return alert("Preencha título e data");
 
         const data = {
@@ -578,10 +740,24 @@
             description: desc,
             date, time, category: cat, value: val,
             sendEmail, emailAddr,
-            userId: currentUser.uid, completed: false,
-            alarm5MinSent: false, 
-            alarmOnTimeSent: false,
-            emailDailySent: false,
+            userId: currentUser.uid, 
+            completed: false,
+            
+            // Novos campos de configuração
+            remStart: isNaN(remStart) ? defaultConfig.alarmStartMin : remStart,
+            remInt: isNaN(remInt) ? defaultConfig.alarmFreqMin : remInt,
+            remOverInt: isNaN(remOverInt) ? defaultConfig.alarmOverdueFreq : remOverInt,
+            
+            mailDays: isNaN(mailDays) ? defaultConfig.emailDaysBefore : mailDays,
+            mailInt: isNaN(mailInt) ? defaultConfig.emailFreqDays : mailInt,
+            mailOverInt: isNaN(mailOverInt) ? defaultConfig.emailOverdueFreq : mailOverInt,
+            mailMax: isNaN(mailMax) ? defaultConfig.emailOverdueMax : mailMax,
+            
+            // Estado
+            overdueEmailCount: 0,
+            lastAlarmSent: null,
+            lastEmailSent: null,
+            
             createdAt: firebase.firestore.FieldValue.serverTimestamp()
         };
 
@@ -589,6 +765,16 @@
         
         let dbOperation;
         if(id) {
+            // Em update, não queremos sobrescrever contadores se não mudou a lógica, 
+            // mas aqui simplificado sobrescrevemos configs. Para contadores, ideal seria merge.
+            // Para simplificar, vou manter os contadores antigos se existirem, lendo do appData
+            const existing = appData.tasks.find(t => t.id === id);
+            if(existing) {
+                data.overdueEmailCount = existing.overdueEmailCount || 0;
+                data.lastAlarmSent = existing.lastAlarmSent || null;
+                data.lastEmailSent = existing.lastEmailSent || null;
+                data.completed = existing.completed; // Mantém estado
+            }
             dbOperation = db.collection('users').doc(currentUser.uid).collection('tasks').doc(id).update(data);
         } else {
             dbOperation = db.collection('users').doc(currentUser.uid).collection('tasks').add(data);
@@ -608,7 +794,6 @@
         }
     }
     
-    // LIMPAR TAREFAS CONCLUÍDAS (MANUAL)
     function clearAllCompleted() {
         const completedTasks = appData.tasks.filter(t => t.completed);
         if(completedTasks.length === 0) return alert("Nenhuma tarefa concluída para limpar.");
@@ -624,7 +809,6 @@
     }
 
     function toggleTask(id, status) {
-        // Toca som de conclusão se estiver marcando como feito
         if(!status) { 
             const audio = document.getElementById('audioDone');
             audio.currentTime = 0;
@@ -653,33 +837,24 @@
         if(currentView === 'calendar') renderCalendar();
     }
 
-    // --- RENDERERS ---
     function renderDashboard() {
         const listEl = document.getElementById('dashboard-list');
         const todayStr = getLocalDateStr();
-        
-        // Tarefas pendentes (não concluídas)
         const pendingTasks = appData.tasks.filter(t => !t.completed);
         
-        // 1. Contador de Pendentes
         document.getElementById('stat-pending').textContent = pendingTasks.length;
 
-        // 2. A Receber (Soma apenas se categoria for 'Cliente')
         const toReceive = pendingTasks
             .filter(t => t.category === 'Cliente' && t.value)
             .reduce((sum, t) => sum + parseFloat(t.value), 0);
         document.getElementById('stat-revenue').textContent = `R$ ${toReceive.toFixed(2)}`;
 
-        // 3. A Pagar (Soma apenas se categoria for 'Fornecedor')
         const toPay = pendingTasks
             .filter(t => t.category === 'Fornecedor' && t.value)
             .reduce((sum, t) => sum + parseFloat(t.value), 0);
-        
-        // Atualiza o novo elemento (verifica se existe para evitar erro)
         const elExpense = document.getElementById('stat-expense');
         if(elExpense) elExpense.textContent = `R$ ${toPay.toFixed(2)}`;
 
-        // Renderiza lista de "Hoje"
         const todaysTasks = appData.tasks.filter(t => t.date === todayStr && !t.completed);
         listEl.innerHTML = '';
         if(todaysTasks.length === 0) {
@@ -695,36 +870,20 @@
         const searchTerm = document.getElementById('task-search').value.toLowerCase().trim();
         
         listEl.innerHTML = '';
-        
         let tasks = [...appData.tasks];
         
-        if(filterCat !== 'all') {
-            tasks = tasks.filter(t => (t.category || "") === filterCat);
-        }
-        
-        if(searchTerm !== '') {
-            tasks = tasks.filter(t => {
-                const titleMatch = t.title && t.title.toLowerCase().includes(searchTerm);
-                return titleMatch;
-            });
-        }
+        if(filterCat !== 'all') tasks = tasks.filter(t => (t.category || "") === filterCat);
+        if(searchTerm !== '') tasks = tasks.filter(t => (t.title && t.title.toLowerCase().includes(searchTerm)));
 
         tasks.sort((a, b) => {
-            if (a.completed === b.completed) {
-                return new Date(a.date) - new Date(b.date);
-            }
+            if (a.completed === b.completed) return new Date(a.date) - new Date(b.date);
             return a.completed ? 1 : -1;
         });
         
         if(tasks.length === 0) {
-            if(searchTerm) {
-                listEl.innerHTML = '<div class="empty-state">Nenhuma tarefa encontrada para "' + searchTerm + '"</div>';
-            } else {
-                listEl.innerHTML = '<div class="empty-state">Nenhuma tarefa nesta categoria.</div>';
-            }
+            listEl.innerHTML = '<div class="empty-state">Nenhuma tarefa encontrada.</div>';
             return;
         }
-
         tasks.forEach(t => listEl.appendChild(createTaskElement(t)));
     }
 
@@ -753,7 +912,6 @@
         return div;
     }
 
-    // --- CALENDAR LOGIC ---
     let displayMonth = new Date().getMonth();
     let displayYear = new Date().getFullYear();
 
@@ -773,10 +931,8 @@
             const el = document.createElement('div');
             el.className = 'cal-day';
             el.textContent = i;
-            
             if(appData.tasks.some(t => t.date === dStr && !t.completed)) el.classList.add('has-task');
             if(dStr === getLocalDateStr()) el.classList.add('today');
-
             el.onclick = () => {
                 const list = document.getElementById('calendar-task-list');
                 list.innerHTML = '';
@@ -795,9 +951,10 @@
     }
 
     // ==========================================
-    // 5. ALARMES E EMAILS AUTOMÁTICOS
+    // 5. ALARMES E EMAILS AUTOMÁTICOS (LÓGICA REVISADA)
     // ==========================================
     
+    // Verifica a cada 10 segundos
     setInterval(checkAlarms, 10000);
 
     function checkAlarms() {
@@ -806,74 +963,167 @@
         const todayStr = getLocalDateStr();
 
         appData.tasks.forEach(task => {
-            // Lógica de Alarme Sonoro
-            if(task.time && !task.completed) {
-                const taskDate = new Date(`${task.date}T${task.time}:00`);
-                const diffMin = (taskDate - now) / 60000;
+            if(task.completed) return; // Se concluída, não faz nada (a menos que quiséssemos limpar)
 
-                if (diffMin <= 5 && diffMin > 0.5 && !task.alarm5MinSent) {
-                    triggerAlarm(task, "5MIN");
+            // ------------------------------------------
+            // A. LÓGICA DE ALARME SONORO (APP ABERTO)
+            // ------------------------------------------
+            if(task.time) {
+                const taskDateTime = new Date(`${task.date}T${task.time}:00`);
+                const diffMs = taskDateTime - now;
+                const diffMin = diffMs / 60000; // Negativo se já passou
+
+                // Configurações do alarme da tarefa (fallback para 0 se undefined, mas devem estar populados)
+                const startMin = task.remStart || defaultConfig.alarmStartMin;
+                const freqMin = task.remInt || defaultConfig.alarmFreqMin;
+                const overFreqMin = task.remOverInt || defaultConfig.alarmOverdueFreq;
+                
+                let shouldTrigger = false;
+                let triggerType = "";
+
+                // 1. Alarme Antecipado (Antes do horário)
+                if (diffMin > 0 && diffMin <= startMin) {
+                    // Está na janela de alerta. Verifica intervalo.
+                    if (isIntervalPassed(task.lastAlarmSent, freqMin * 60000)) { // freq em ms
+                        shouldTrigger = true;
+                        triggerType = `Faltam ${Math.ceil(diffMin)} min`;
+                    }
                 }
-                if (diffMin <= 0.5 && diffMin > -30 && !task.alarmOnTimeSent) {
-                    triggerAlarm(task, "AGORA");
+                
+                // 2. Alarme Atrasado (Depois do horário)
+                // Usamos uma tolerância de 1 min para não disparar imediatamente com atrasado se acabou de tocar o 'na hora'
+                if (diffMin < -1) { 
+                    if (isIntervalPassed(task.lastAlarmSent, overFreqMin * 60000)) {
+                        shouldTrigger = true;
+                        triggerType = "ATRASADO!";
+                    }
+                }
+
+                // 3. Alarme "Na Hora" (tolerância de 30seg) - Prioridade
+                if (Math.abs(diffMin) <= 0.5 && (!task.lastAlarmSent || (now - new Date(task.lastAlarmSent).getTime() > 60000))) {
+                     shouldTrigger = true;
+                     triggerType = "É AGORA!";
+                }
+
+                if (shouldTrigger) {
+                    triggerAlarm(task, triggerType);
+                    // Atualiza timestamp localmente e no banco
+                    db.collection('users').doc(currentUser.uid).collection('tasks').doc(task.id).update({
+                        lastAlarmSent: now.toISOString()
+                    });
                 }
             }
 
-            // Lógica de Envio de Email
-            checkDailyEmails(task, todayStr);
+            // ------------------------------------------
+            // B. LÓGICA DE E-MAIL (SERVIDOR/API)
+            // ------------------------------------------
+            if (task.sendEmail && task.emailAddr) {
+                const taskDate = new Date(`${task.date}T00:00:00`); // Meia noite do dia da tarefa
+                const todayDate = new Date(`${todayStr}T00:00:00`); // Meia noite de hoje
+                
+                // Diferença em dias (inteiros)
+                const diffTime = taskDate.getTime() - todayDate.getTime();
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+
+                // Configs
+                const mailStartDays = task.mailDays || defaultConfig.emailDaysBefore;
+                const mailFreqDays = task.mailInt || defaultConfig.emailFreqDays;
+                const mailOverFreq = task.mailOverInt || defaultConfig.emailOverdueFreq;
+                const mailMax = task.mailMax || defaultConfig.emailOverdueMax;
+                const overdueCount = task.overdueEmailCount || 0;
+
+                let shouldSend = false;
+                let subjectPrefix = "";
+
+                // 1. Email Antecipado ou No Dia
+                if (diffDays >= 0 && diffDays <= mailStartDays) {
+                    // Verifica se já enviou HOJE ou se passou o intervalo de dias
+                    // Aqui a lógica é: se intervalo é 1 dia, envia todo dia.
+                    // Para simplificar: verificamos se lastEmailSent foi há mais de (freq * 24h) atrás
+                    // Se nunca enviou, envia.
+                    if (isIntervalPassed(task.lastEmailSent, mailFreqDays * 86400000)) {
+                        shouldSend = true;
+                        subjectPrefix = diffDays === 0 ? "HOJE:" : "Lembrete:";
+                    }
+                }
+
+                // 2. Email Atrasado
+                if (diffDays < 0) {
+                    // Se ainda não estourou o limite de envios atrasados
+                    if (overdueCount < mailMax) {
+                        if (isIntervalPassed(task.lastEmailSent, mailOverFreq * 86400000)) {
+                            shouldSend = true;
+                            subjectPrefix = "ATRASADO:";
+                        }
+                    }
+                }
+
+                if (shouldSend) {
+                    sendEmail(task, subjectPrefix, diffDays < 0);
+                }
+            }
         });
     }
 
-    function checkDailyEmails(task, todayStr) {
-        if (task.date === todayStr && task.sendEmail && task.emailAddr && !task.emailDailySent && !task.completed) {
-            
-            db.collection('users').doc(currentUser.uid).collection('tasks').doc(task.id).update({emailDailySent: true});
-            
-            let htmlContent = `
-                <div style="font-family: Arial, sans-serif; color: #333;">
-                    <h2 style="color: #0066cc;">📅 Lembrete de Hoje</h2>
-                    <p>Olá! Este é o seu lembrete diário.</p>
-                    <hr>
-                    <p><strong>O que:</strong> ${task.title}</p>
-            `;
-            if (task.description) { htmlContent += `<p><strong>Detalhes:</strong> ${task.description}</p>`; }
-            htmlContent += `<p><strong>Quando:</strong> ${formatDateBR(task.date)} ${task.time || ''}</p>`;
-            if (task.value && parseFloat(task.value) > 0) { htmlContent += `<p><strong>Valor:</strong> R$ ${task.value}</p>`; }
-            htmlContent += `
-                    <hr>
-                    <small>Enviado via App Compromisso Fácil.</small>
-                </div>
-            `;
-
-            fetch('https://enviaremailsdiarios-368296869868.southamerica-east1.run.app/send-email', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    to: task.emailAddr,
-                    subject: `Lembrete: ${task.title}`,
-                    html: htmlContent
-                })
-            }).then(() => console.log("E-mail enviado!"))
-              .catch(err => console.error("Erro email:", err));
-        }
+    // Auxiliar para verificar intervalo de tempo
+    function isIntervalPassed(lastStr, intervalMs) {
+        if (!lastStr) return true;
+        const last = new Date(lastStr).getTime();
+        const now = new Date().getTime();
+        return (now - last) >= intervalMs;
     }
 
-    function triggerAlarm(task, type) {
-        if(type==="5MIN") db.collection('users').doc(currentUser.uid).collection('tasks').doc(task.id).update({alarm5MinSent:true});
-        if(type==="AGORA") db.collection('users').doc(currentUser.uid).collection('tasks').doc(task.id).update({alarmOnTimeSent:true});
+    function sendEmail(task, subjectPrefix, isOverdue) {
+        // Marca como enviado antes do fetch para evitar duplo envio se a conexão for lenta
+        const nowIso = new Date().toISOString();
+        let updateData = { lastEmailSent: nowIso };
+        if (isOverdue) {
+            updateData.overdueEmailCount = (task.overdueEmailCount || 0) + 1;
+        }
 
+        db.collection('users').doc(currentUser.uid).collection('tasks').doc(task.id).update(updateData);
+
+        let htmlContent = `
+            <div style="font-family: Arial, sans-serif; color: #333;">
+                <h2 style="color: ${isOverdue ? '#e74c3c' : '#0066cc'};">${subjectPrefix} ${task.title}</h2>
+                <p>Olá! Detalhes do seu compromisso:</p>
+                <hr>
+                <p><strong>Descrição:</strong> ${task.description || 'Sem detalhes.'}</p>
+                <p><strong>Data:</strong> ${formatDateBR(task.date)} ${task.time || ''}</p>
+        `;
+        if (task.value) { htmlContent += `<p><strong>Valor:</strong> R$ ${task.value}</p>`; }
+        htmlContent += `
+                <hr>
+                <small>Compromisso Fácil Cloud Pro.</small>
+            </div>
+        `;
+
+        // URL da API (Substitua pela sua URL se necessário, estou usando a do exemplo anterior)
+        fetch('https://enviaremailsdiarios-368296869868.southamerica-east1.run.app/send-email', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                to: task.emailAddr,
+                subject: `${subjectPrefix} ${task.title}`,
+                html: htmlContent
+            })
+        }).then(() => console.log("Email enviado para " + task.title))
+          .catch(err => console.error("Erro envio email", err));
+    }
+
+    function triggerAlarm(task, typeText) {
         // Toca som de alarme
         const audio = document.getElementById('audioAlert');
         audio.currentTime = 0;
         audio.play().catch(()=>{});
 
-        document.getElementById('alarm-context').textContent = type==="5MIN" ? "⚠️ Faltam 5 Minutos!" : "🚨 É Agora!";
+        document.getElementById('alarm-context').textContent = typeText;
         document.getElementById('alarm-task-id').value = task.id;
         document.getElementById('alarm-time-display').textContent = task.time;
         document.getElementById('alarm-text-display').textContent = task.title;
         document.getElementById('alarmModal').classList.add('active');
         
-        if(Notification.permission==="granted") new Notification(type==="5MIN" ? `5 min: ${task.title}` : `Agora: ${task.title}`);
+        if(Notification.permission==="granted") new Notification(`${typeText}: ${task.title}`);
     }
 
     function stopAlarm() {
@@ -881,14 +1131,11 @@
         document.getElementById('audioAlert').pause();
     }
 
-    // Botão "Concluído" do Alarme força a conclusão
     function completeTaskFromAlarm() {
         const id = document.getElementById('alarm-task-id').value;
         const audio = document.getElementById('audioDone');
         audio.currentTime = 0;
         audio.play().catch(()=>{});
-
-        // Marca como concluído no banco
         db.collection('users').doc(currentUser.uid).collection('tasks').doc(id).update({ completed: true });
         stopAlarm();
     }
@@ -896,7 +1143,6 @@
     // ==========================================
     // 6. BACKUP, RESTAURAÇÃO E LIMPEZA
     // ==========================================
-    
     function backupData() {
         if(appData.tasks.length === 0) return alert("Nada para salvar.");
         const dataStr = JSON.stringify(appData.tasks, null, 2);
@@ -937,7 +1183,6 @@
         input.value = ''; 
     }
 
-    // --- LIMPEZA AUTOMÁTICA DE 30 DIAS ---
     function toggleCleanup(chk) {
         localStorage.setItem('autoCleanup', chk.checked);
         if(chk.checked) runAutoCleanup();
@@ -948,21 +1193,18 @@
         if(!isEnabled || !appData.tasks) return;
 
         const cutoff = new Date();
-        cutoff.setDate(cutoff.getDate() - 30); // 30 dias atrás
+        cutoff.setDate(cutoff.getDate() - 30); 
         const cutoffStr = cutoff.toISOString().split('T')[0];
-
-        // Filtra apenas tarefas CONCLUÍDAS e ANTIGAS
         const oldTasks = appData.tasks.filter(t => t.completed && t.date < cutoffStr);
 
         if (oldTasks.length > 0) {
-            // AVISO ANTES DE EXCLUIR
             if(confirm(`Limpeza Automática: Existem ${oldTasks.length} tarefas concluídas há mais de 30 dias. Deseja apagá-las para liberar espaço?`)) {
                 let count = 0;
                 oldTasks.forEach(t => {
                     db.collection('users').doc(currentUser.uid).collection('tasks').doc(t.id).delete();
                     count++;
                 });
-                console.log(`Limpeza automática: ${count} tarefas antigas removidas.`);
+                console.log(`Limpeza automática: ${count} removidas.`);
             }
         }
     }
@@ -972,7 +1214,6 @@
     // ==========================================
     const PIX_KEY_GLOBAL = "b4648948-d0a8-4402-81f4-8a4047fcf4e5";
     
-    // Função auxiliar CRC16 (Padrão CCITT-FALSE)
     function crc16(str) {
         let crc = 0xFFFF;
         for (let i = 0; i < str.length; i++) {
@@ -985,47 +1226,31 @@
         return (crc & 0xFFFF).toString(16).toUpperCase().padStart(4, '0');
     }
 
-    // Gera o payload oficial do BR Code
     function createPixPayload(amount) {
         const format = (id, val) => id + val.length.toString().padStart(2, '0') + val;
-        
-        // 00 - Payload Format Indicator (01)
-        // 26 - Merchant Account Information (GUI + Key)
         const merchantInfo = format('00', 'BR.GOV.BCB.PIX') + format('01', PIX_KEY_GLOBAL);
-        
         let payload = 
-            format('00', '01') +                          // Format
-            format('26', merchantInfo) +                  // Merchant Info
-            format('52', '0000') +                        // Merchant Category Code (0000 = Geral)
-            format('53', '986');                          // Transaction Currency (986 = BRL)
-
-        if (amount > 0) {
-            payload += format('54', amount.toFixed(2));   // Transaction Amount
-        }
-
-        payload += format('58', 'BR') +                   // Country Code
-                   format('59', 'App Compromisso') +      // Merchant Name (NOME FICTICIO)
-                   format('60', 'Cidade') +               // Merchant City (GENERICO)
-                   format('62', format('05', '***'));     // Additional Data Field (TxID)
-
-        payload += '6304'; // CRC16 ID + Length
-
-        payload += crc16(payload); // Calcula checksum final
+            format('00', '01') + 
+            format('26', merchantInfo) + 
+            format('52', '0000') + 
+            format('53', '986');
+        if (amount > 0) payload += format('54', amount.toFixed(2));
+        payload += format('58', 'BR') + format('59', 'App Compromisso') + format('60', 'Cidade') + format('62', format('05', '***'));
+        payload += '6304';
+        payload += crc16(payload);
         return payload;
     }
 
     function generatePixCopyPaste(amount) {
         const code = createPixPayload(amount);
         copyToClipboard(code, "Pix Copia e Cola (R$ "+amount+",00) copiado!");
-        
-        // Mostra visualmente o código
         const disp = document.getElementById('pix-display-area');
         disp.style.display = 'block';
         disp.textContent = code;
     }
 
     function copyPixSimpleKey() {
-        copyToClipboard(PIX_KEY_GLOBAL, "Chave Pix copiada! Digite o valor no seu banco.");
+        copyToClipboard(PIX_KEY_GLOBAL, "Chave Pix copiada!");
         const disp = document.getElementById('pix-display-area');
         disp.style.display = 'block';
         disp.textContent = PIX_KEY_GLOBAL;
@@ -1040,7 +1265,6 @@
         }).catch(err => alert("Erro ao copiar: " + text));
     }
 
-    // --- MODAL SUPPORT ---
     function openSupportModal() {
         document.getElementById('pix-display-area').style.display = 'none';
         document.getElementById('pix-feedback').style.display = 'none';
@@ -1053,23 +1277,30 @@
     // --- UI HELPERS ---
     function openModal() {
         document.getElementById('taskModal').classList.add('open');
-        
-        // Limpa ID (modo criação)
         document.getElementById('t-id').value = '';
         
-        // Limpa todos os campos visuais
+        // Limpa campos
         document.getElementById('t-title').value = '';
         document.getElementById('t-desc').value = ''; 
-        document.getElementById('t-date').value = ''; // Inicia sem data
+        document.getElementById('t-date').value = ''; 
         document.getElementById('t-time').value = '';
         document.getElementById('t-category').value = '';
         document.getElementById('t-value').value = '';
         document.getElementById('t-email-addr').value = '';
-        
-        // Reseta opções
         document.getElementById('t-send-email').checked = false;
+        
+        // CARREGA DEFAULTS NOS INPUTS DO MODAL
+        document.getElementById('t-rem-start').value = defaultConfig.alarmStartMin;
+        document.getElementById('t-rem-int').value = defaultConfig.alarmFreqMin;
+        document.getElementById('t-rem-over-int').value = defaultConfig.alarmOverdueFreq;
+        document.getElementById('t-mail-days').value = defaultConfig.emailDaysBefore;
+        document.getElementById('t-mail-int').value = defaultConfig.emailFreqDays;
+        document.getElementById('t-mail-over-int').value = defaultConfig.emailOverdueFreq;
+        document.getElementById('t-mail-max').value = defaultConfig.emailOverdueMax;
+        
         toggleEmailInput();
     }
+
     function openEditModal(id) {
         const t = appData.tasks.find(x => x.id === id);
         if(!t) return;
@@ -1082,9 +1313,21 @@
         document.getElementById('t-value').value = t.value||'';
         document.getElementById('t-send-email').checked = t.sendEmail;
         document.getElementById('t-email-addr').value = t.emailAddr||'';
+        
+        // Carrega configurações específicas da tarefa ou fallback pro default
+        document.getElementById('t-rem-start').value = t.remStart || defaultConfig.alarmStartMin;
+        document.getElementById('t-rem-int').value = t.remInt || defaultConfig.alarmFreqMin;
+        document.getElementById('t-rem-over-int').value = t.remOverInt || defaultConfig.alarmOverdueFreq;
+        
+        document.getElementById('t-mail-days').value = t.mailDays || defaultConfig.emailDaysBefore;
+        document.getElementById('t-mail-int').value = t.mailInt || defaultConfig.emailFreqDays;
+        document.getElementById('t-mail-over-int').value = t.mailOverInt || defaultConfig.emailOverdueFreq;
+        document.getElementById('t-mail-max').value = t.mailMax || defaultConfig.emailOverdueMax;
+
         toggleEmailInput();
         document.getElementById('taskModal').classList.add('open');
     }
+    
     function closeModal() { document.getElementById('taskModal').classList.remove('open'); }
     function toggleEmailInput() { 
         const chk = document.getElementById('t-send-email').checked; 
