@@ -1347,12 +1347,13 @@ function checkAlarms() {
 
 // ... (outras funções do seu código) ...
 
-    function forceEmailCheck() {
-        // SUBSTITUA PELA URL QUE APARECEU NO SEU TERMINAL DEPOIS DO DEPLOY
-        const cloudFunctionUrl = "https://console.firebase.google.com/u/0/project/lembrete-d6c15/functions"; 
+function forceEmailCheck() {
+        // 👇👇 COLE O LINK QUE TERMINA EM .run.app DENTRO DAS ASPAS ABAIXO 👇👇
+        const cloudFunctionUrl = "https://testemanualemail-cg2cq35buq-uc.a.run.app"; 
         
-        if(cloudFunctionUrl === "https://console.firebase.google.com/u/0/project/lembrete-d6c15/functions") {
-            return alert("Você precisa colocar a URL da Cloud Function no código HTML (linha do const cloudFunctionUrl)");
+        // Verifica se você esqueceu de trocar o link
+        if(cloudFunctionUrl.includes("https://testemanualemail-cg2cq35buq-uc.a.run.app") || cloudFunctionUrl.includes("console.firebase")) {
+            return alert("Erro: Você colocou o link errado no código HTML. Precisa ser o link que termina em .run.app (veja no terminal)");
         }
 
         const logDiv = document.getElementById('email-log-result');
@@ -1367,12 +1368,12 @@ function checkAlarms() {
         fetch(cloudFunctionUrl)
             .then(response => response.text())
             .then(data => {
-                logDiv.innerHTML = data; // Mostra o resultado que veio do servidor
+                logDiv.innerHTML = data; 
                 alert("Verificação concluída! Veja o relatório abaixo do botão.");
             })
             .catch(error => {
                 logDiv.innerHTML = `<span style="color:red">Erro: ${error.message}</span>`;
-                alert("Erro ao contatar servidor.");
+                alert("Erro ao contatar servidor. Verifique o console (F12).");
             })
             .finally(() => {
                 btn.disabled = false;
