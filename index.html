@@ -1044,42 +1044,7 @@
             }
 
             // EMAIL
-            if (task.sendEmail && task.emailAddr) {
-                const taskDate = new Date(`${task.date}T00:00:00`); 
-                const todayDate = new Date(`${todayStr}T00:00:00`); 
-                
-                const diffTime = taskDate.getTime() - todayDate.getTime();
-                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
 
-                const mailStartDays = task.mailDays || defaultConfig.emailDaysBefore;
-                const mailFreqDays = task.mailInt || defaultConfig.emailFreqDays;
-                const mailOverFreq = task.mailOverInt || defaultConfig.emailOverdueFreq;
-                const mailMax = task.mailMax || defaultConfig.emailOverdueMax;
-                const overdueCount = task.overdueEmailCount || 0;
-
-                let shouldSend = false;
-                let subjectPrefix = "";
-
-                if (diffDays >= 0 && diffDays <= mailStartDays) {
-                    if (isIntervalPassed(task.lastEmailSent, mailFreqDays * 86400000)) {
-                        shouldSend = true;
-                        subjectPrefix = diffDays === 0 ? "HOJE:" : "Lembrete:";
-                    }
-                }
-
-                if (diffDays < 0) {
-                    if (overdueCount < mailMax) {
-                        if (isIntervalPassed(task.lastEmailSent, mailOverFreq * 86400000)) {
-                            shouldSend = true;
-                            subjectPrefix = "ATRASADO:";
-                        }
-                    }
-                }
-
-                if (shouldSend) {
-                    sendEmail(task, subjectPrefix, diffDays < 0);
-                }
-            }
         });
     }
 
