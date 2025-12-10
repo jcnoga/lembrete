@@ -2,846 +2,1364 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SRA Milho - IAC 100 (2022)</title>
-    <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- FontAwesome -->
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Compromisso Fácil Cloud Pro</title>
     
+    <!-- Bibliotecas PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+    
+    <!-- FIREBASE SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <!-- MANIFEST PWA -->
+    <link rel="manifest" href="manifest.json">
+
     <style>
         :root {
-            --primary-green: #2e7d32;
-            --light-green: #e8f5e9;
-            --highlight-border: #43a047;
-            --locked-bg: #e9ecef;
-            --soil-brown: #795548;
+            --primary: #0066cc;
+            --primary-dark: #004c99;
+            --secondary: #00cc99;
+            --bg: #f4f7f6;
+            --text: #333;
+            --text-light: #777;
+            --white: #fff;
+            --danger: #e74c3c;
+            --warning: #f39c12;
+            --radius: 12px;
+            --shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
-        body {
-            background-color: #f4f6f8;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-        
-        /* CABEÇALHO E CARDS */
-        .header-app {
-            background: linear-gradient(135deg, #1b5e20 0%, #2e7d32 100%);
-            color: white;
-            padding: 25px 0;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-        }
-        .card-custom {
-            border: none;
-            border-radius: 15px;
-            box-shadow: 0 8px 20px rgba(0,0,0,0.06);
-            margin-bottom: 30px;
-            background: white;
-            overflow: hidden;
-            transition: transform 0.2s;
-        }
-        .section-header {
-            background-color: var(--light-green);
-            color: var(--primary-green);
-            padding: 15px 20px;
-            font-weight: 700;
-            border-bottom: 2px solid rgba(46, 125, 50, 0.1);
-            display: flex;
-            align-items: center;
-            font-size: 1.1rem;
-        }
-        .section-header i { margin-right: 12px; }
 
-        /* INPUTS DESTACADOS */
-        .form-label {
-            font-weight: 600;
-            color: #444;
-            margin-bottom: 5px;
-            font-size: 0.95rem;
+        * { box-sizing: border-box; outline: none; -webkit-tap-highlight-color: transparent; }
+        body { margin: 0; font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background: var(--bg); color: var(--text); height: 100vh; display: flex; flex-direction: column; }
+
+        /* --- TELA DE LOGIN --- */
+        #auth-screen {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            z-index: 5000; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px;
         }
-        .form-control, .form-select {
-            border: 2px solid #ccc;
-            padding: 10px 12px;
-            font-size: 1.05rem;
+        .auth-box { background: white; padding: 30px; border-radius: 15px; width: 100%; max-width: 400px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); text-align: center; }
+        .auth-box h2 { color: var(--primary); margin-bottom: 20px; margin-top: 0; }
+        .auth-input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 15px; font-size: 1rem; }
+        .auth-btn { width: 100%; padding: 12px; background: var(--primary); color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 1rem; transition: background 0.2s; }
+        .auth-btn:active { transform: scale(0.98); }
+        .auth-link { margin-top: 20px; font-size: 0.9rem; color: var(--primary); text-decoration: underline; cursor: pointer; display: block; }
+        .hidden { display: none !important; }
+
+        /* ESTILOS GOOGLE LOGIN */
+        .divider { display: flex; align-items: center; margin: 20px 0; color: #ccc; font-size: 0.8rem; }
+        .divider span { flex: 1; height: 1px; background: #eee; }
+        .divider p { margin: 0 10px; }
+        
+        .btn-google {
+            background: #fff; color: #333; border: 1px solid #ddd;
+            display: flex; align-items: center; justify-content: center; gap: 10px;
+            position: relative;
+        }
+        .btn-google:hover { background: #f9f9f9; }
+        .google-icon { width: 18px; height: 18px; }
+
+        /* --- APP HEADER --- */
+        header { background: var(--white); padding: 15px 20px; box-shadow: 0 1px 5px rgba(0,0,0,0.05); display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; }
+        .app-name { font-size: 1.2rem; color: var(--primary); display: flex; align-items: center; gap: 8px; font-weight: bold; }
+        .user-status { font-size: 0.8rem; color: #777; display:flex; align-items: center; gap: 5px; }
+
+        /* --- MAIN CONTAINER --- */
+        main { flex: 1; overflow-y: auto; padding: 20px; padding-bottom: 80px; }
+
+        /* --- DASHBOARD WIDGETS --- */
+        .dashboard-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 25px; }
+        .card { background: var(--white); padding: 15px; border-radius: var(--radius); box-shadow: var(--shadow); position: relative; }
+        .card-stat h3 { font-size: 2rem; color: var(--primary); margin: 0; }
+        .card-stat p { font-size: 0.9rem; color: var(--text-light); margin: 0; }
+        .welcome-card { background: linear-gradient(135deg, var(--primary), var(--primary-dark)); color: white; grid-column: 1 / -1; }
+        
+        /* --- TASK LIST --- */
+        .section-title { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; margin-top: 10px; }
+        .section-title h3 { margin: 0; }
+        .task-item { background: var(--white); padding: 15px; margin-bottom: 10px; border-radius: var(--radius); display: flex; align-items: center; justify-content: space-between; border-left: 5px solid transparent; box-shadow: 0 2px 5px rgba(0,0,0,0.02); }
+        .task-item.priority-normal { border-left-color: var(--primary); }
+        .task-item.done { opacity: 0.6; text-decoration: line-through; border-left-color: var(--secondary); }
+        
+        .task-info { flex: 1; padding-right: 10px; cursor: pointer; }
+        .task-title { font-weight: 600; font-size: 1rem; margin-bottom: 4px; display: block; }
+        .task-meta { font-size: 0.8rem; color: var(--text-light); display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+        .tag { background: #eee; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; }
+        
+        .task-actions { display: flex; gap: 8px; align-items: center; }
+        .btn-icon { background: none; border: none; font-size: 1.2rem; cursor: pointer; color: var(--text-light); padding: 4px; }
+        .btn-wa { color: #25D366; }
+
+        /* --- CALENDAR --- */
+        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; margin-top: 10px; text-align: center; }
+        .cal-day-header { font-weight: bold; font-size: 0.8rem; color: var(--text-light); padding-bottom: 10px; }
+        .cal-day { padding: 10px; background: white; border-radius: 8px; font-size: 0.9rem; position: relative; cursor: pointer; }
+        .cal-day.today { background: var(--primary); color: white; }
+        .cal-day.has-task::after { content: ''; position: absolute; bottom: 4px; left: 50%; transform: translateX(-50%); width: 4px; height: 4px; background: var(--danger); border-radius: 50%; }
+
+        /* --- NAVIGATION BAR --- */
+        nav { background: var(--white); border-top: 1px solid #eee; display: flex; justify-content: space-around; padding: 10px 0; position: fixed; bottom: 0; width: 100%; z-index: 100; height: 60px; }
+        .nav-item { display: flex; flex-direction: column; align-items: center; color: var(--text-light); text-decoration: none; font-size: 0.75rem; background: none; border: none; cursor: pointer; width: 25%; }
+        .nav-item svg { width: 24px; height: 24px; margin-bottom: 4px; fill: currentColor; }
+        .nav-item.active { color: var(--primary); font-weight: 600; }
+
+        /* --- FAB BUTTON --- */
+        .fab { position: fixed; bottom: 80px; right: 20px; background: var(--primary); color: white; width: 56px; height: 56px; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 24px; box-shadow: 0 4px 15px rgba(0,102,204,0.4); border: none; cursor: pointer; z-index: 200; transition: transform 0.2s; }
+        .fab:active { transform: scale(0.95); }
+
+        /* --- MODALS --- */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 300; justify-content: center; align-items: flex-end; }
+        .modal.open { display: flex; animation: slideUp 0.3s ease; }
+        .modal-content { background: var(--white); width: 100%; max-width: 600px; padding: 25px; border-radius: 20px 20px 0 0; max-height: 90vh; overflow-y: auto; }
+        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: 600; font-size: 0.9rem; }
+        .form-control { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 1rem; }
+        .btn-block { width: 100%; padding: 15px; border: none; border-radius: 8px; font-size: 1rem; font-weight: 600; cursor: pointer; margin-top: 10px; }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-secondary { background: #eee; color: var(--text); margin-top: 10px; }
+        .btn-success { background: var(--secondary); color: white; }
+        .btn-danger { background: var(--danger); color: white; margin-top: 10px; }
+        .btn-gold { background: #f1c40f; color: #333; margin-top: 10px; }
+        
+        /* Checkbox Cloud */
+        .cloud-option { background: #eef2ff; padding: 12px; border-radius: 8px; border: 1px solid #ccd5ff; display: flex; align-items: center; gap: 10px; margin-bottom: 15px; }
+        .cloud-option input { width: 20px; height: 20px; }
+
+        /* CONFIGURAÇÕES AVANÇADAS NO MODAL */
+        .advanced-settings {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
             border-radius: 8px;
-            background-color: #fcfcfc;
-            transition: all 0.3s ease;
-        }
-        .form-control:focus, .form-select:focus {
-            border-color: var(--highlight-border);
-            background-color: #fff;
-            box-shadow: 0 0 0 4px rgba(67, 160, 71, 0.2);
-        }
-        /* CAMPO TRAVADO (DEMO OU READONLY) */
-        .demo-locked {
-            pointer-events: none;
-            background-color: var(--locked-bg) !important;
-            opacity: 0.7;
-            border-color: #b0b0b0;
-            color: #666;
-            cursor: not-allowed;
-        }
-
-        /* BOTÕES */
-        .btn-action {
             padding: 15px;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            border-radius: 10px;
-            font-size: 1.1rem;
+            margin-bottom: 15px;
         }
+        .advanced-settings h4 { margin-top: 0; color: var(--primary); font-size: 0.95rem; margin-bottom: 10px; border-bottom: 1px solid #ddd; padding-bottom: 5px; }
+        .row { display: flex; gap: 10px; margin-bottom: 10px; }
+        .col { flex: 1; }
+        .col label { font-size: 0.8rem; font-weight: normal; color: #666; }
+        .col input { padding: 8px; font-size: 0.9rem; }
 
-        /* TELA DE AUTENTICAÇÃO */
-        .auth-overlay {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(255,255,255,0.98);
-            z-index: 9999;
-            display: flex; align-items: center; justify-content: center;
-            overflow-y: auto;
-        }
+
+        /* --- ALARM MODAL --- */
+        .alarm-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 999; justify-content: center; align-items: center; }
+        .alarm-modal.active { display: flex; animation: fadeIn 0.3s; }
+        .alarm-card { background: white; padding: 30px; border-radius: 15px; text-align: center; width: 90%; max-width: 400px; border-top: 10px solid var(--warning); }
+        .alarm-icon { font-size: 3rem; display: block; margin-bottom: 10px; animation: bounce 1s infinite; }
+        .alarm-title { font-size: 1.5rem; font-weight: bold; margin-bottom: 10px; }
+        @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        .filters-box input, .filters-box select { height: 45px; font-size: 0.95rem; }
+        .empty-state { padding: 40px 20px; text-align: center; color: var(--text-light); background: #fff; border-radius: var(--radius); margin-top: 10px; border: 1px dashed #ddd; }
         
-        /* MARCA D'ÁGUA */
-        .watermark {
-            position: absolute;
-            top: 40%; left: 50%;
-            transform: translate(-50%, -50%) rotate(-30deg);
-            font-size: 4rem;
-            color: rgba(220, 53, 69, 0.15);
-            font-weight: 900;
-            border: 8px solid rgba(220, 53, 69, 0.15);
-            padding: 20px;
-            text-align: center;
-            pointer-events: none;
-            z-index: 5;
-            white-space: nowrap;
-        }
+        /* Switch Toggle */
+        .switch { position: relative; display: inline-block; width: 50px; height: 24px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 34px; }
+        .slider:before { position: absolute; content: ""; height: 16px; width: 16px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider { background-color: var(--primary); }
+        input:checked + .slider:before { transform: translateX(26px); }
 
-        /* RESULTADOS */
-        .report-box {
-            font-family: 'Courier New', Courier, monospace;
-            white-space: pre-wrap;
-            background: #fff;
-            border: 2px solid #ced4da;
-            padding: 25px;
-            border-radius: 10px;
-            font-size: 0.95rem;
-            line-height: 1.5;
-        }
-        .nav-pills .nav-link.active {
-            background-color: var(--primary-green);
-        }
-        .nav-pills .nav-link {
-            color: var(--primary-green);
-        }
+        /* PIX FOOTER */
+        .pix-footer { text-align: center; margin-top: 40px; padding-bottom: 20px; font-size: 0.8rem; color: #ccc; cursor: pointer; transition: color 0.3s; }
+        .pix-footer:hover { color: var(--primary); text-decoration: underline; }
+
+        /* PIX GRID BUTTONS */
+        .pix-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
+        .btn-pix { padding: 15px; border: 2px solid #f1c40f; background: white; border-radius: 10px; cursor: pointer; font-weight: bold; color: #333; transition: all 0.2s; }
+        .btn-pix:active { background: #f1c40f; }
+        .pix-key-display { background: #f9f9f9; padding: 10px; border-radius: 5px; font-family: monospace; font-size: 0.8rem; color: #555; margin-top: 10px; word-break: break-all; user-select: all; }
     </style>
 </head>
-<body>
+<body onclick="enableAudio()">
 
-    <!-- TELA DE LOGIN / AUTORIZAÇÃO -->
-    <div id="authScreen" class="auth-overlay">
-        <div class="card shadow-lg p-5 border-0" style="max-width: 600px; width: 95%; border-radius: 20px;">
-            <div class="text-center mb-4">
-                <div class="bg-success text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 80px; height: 80px;">
-                    <i class="fas fa-seedling fa-3x"></i>
-                </div>
-                <h2 class="fw-bold text-dark">SRA Milho - IAC 100</h2>
-                <p class="text-muted">Acesso Seguro & Rastreável</p>
-                
-                <!-- Alerta se já houver créditos salvos -->
-                <div id="existingCreditsMsg" class="alert alert-success d-none text-start">
-                    <div class="d-flex align-items-center">
-                        <i class="fas fa-check-circle fa-2x me-3"></i>
-                        <div>
-                            <strong>Bem-vindo de volta!</strong><br>
-                            Você possui <strong id="savedCreditsCount">0</strong> recomendações salvas.
-                        </div>
-                    </div>
-                </div>
+    <!-- 1. TELA DE AUTENTICAÇÃO -->
+    <div id="auth-screen">
+        <div class="auth-box" id="login-form">
+            <h2>Compromisso Fácil</h2>
+            <p style="margin-bottom: 20px; color: #666;">Sua agenda na nuvem.</p>
+            
+            <input type="email" id="log-email" class="auth-input" placeholder="Seu e-mail">
+            <input type="password" id="log-pass" class="auth-input" placeholder="Sua senha">
+            
+            <button class="auth-btn" onclick="appLogin()">Entrar</button>
+
+            <!-- LOGIN COM GOOGLE -->
+            <div class="divider">
+                <span></span><p>OU</p><span></span>
             </div>
+            
+            <button class="auth-btn btn-google" onclick="appLoginGoogle()">
+                <svg class="google-icon" viewBox="0 0 48 48">
+                    <path fill="#4285F4" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"></path>
+                    <path fill="#34A853" d="M46.98 24.46c0-1.66-.15-3.21-.42-4.72H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.48z"></path>
+                    <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"></path>
+                    <path fill="#EA4335" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"></path>
+                </svg>
+                Entrar com Google
+            </button>
+            
+            <div class="auth-link" onclick="toggleAuth('register')">Criar conta nova (E-mail)</div>
+            <div class="auth-link" onclick="toggleAuth('reset')" style="color:#ddd;">Esqueci minha senha</div>
+        </div>
 
-            <!-- Passo 1: Login -->
-            <div id="stepLogin">
-                <div class="d-grid gap-3">
-                    <button id="btnLogin" class="btn btn-outline-dark btn-lg py-3" onclick="simulateGoogleLogin()">
-                        <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="G" width="24" class="me-2">
-                        Entrar com Google
-                    </button>
-                    
-                    <button id="btnUseSaved" class="btn btn-success btn-lg py-3 d-none fw-bold" onclick="useSavedCredits()">
-                        <i class="fas fa-play me-2"></i> USAR CRÉDITOS SALVOS
-                    </button>
-                </div>
-                <p class="mt-4 small text-center text-muted">© 2025 Sistema de Recomendação Agronômica</p>
-            </div>
+        <div class="auth-box hidden" id="register-form">
+            <h2>Criar Conta</h2>
+            <p style="font-size:0.9rem; color:#777;">Preencha para acessar o sistema</p>
+            <input type="email" id="reg-email" class="auth-input" placeholder="E-mail">
+            <input type="password" id="reg-pass" class="auth-input" placeholder="Senha (min 6)">
+            <button class="auth-btn" onclick="appRegister()">Cadastrar</button>
+            <div class="auth-link" onclick="toggleAuth('login')">Voltar para Login</div>
+        </div>
 
-            <!-- Passo 2: Código e Validação -->
-            <div id="stepCode" style="display: none;">
-                <div class="alert alert-warning border-warning shadow-sm">
-                    <i class="fas fa-lock me-2"></i> <strong>Atenção:</strong> Código de segurança gerado.<br><br>
-                    Envie este código para <strong>websitelogx@gmail.com</strong> ou WhatsApp <strong>(34) 9 9782-4990</strong> e solicite a liberação.
-                </div>
-                
-                <div class="bg-light p-4 rounded-3 text-center mb-4 border border-2">
-                    <small class="text-uppercase text-muted fw-bold ls-1">Seu Código de Segurança</small>
-                    <h1 class="text-primary fw-bold display-3 m-0" id="displayAuthCode">----</h1>
-                </div>
-
-                <div class="row g-2 mb-4">
-                    <div class="col-6 d-grid">
-                         <a id="btnSendWhatsapp" href="#" target="_blank" class="btn btn-success fw-bold">
-                            <i class="fab fa-whatsapp me-2"></i> Enviar Whats
-                        </a>
-                    </div>
-                    <div class="col-6 d-grid">
-                        <a id="btnSendEmail" href="#" class="btn btn-secondary fw-bold">
-                            <i class="fas fa-envelope me-2"></i> Enviar E-mail
-                        </a>
-                    </div>
-                </div>
-
-                <div class="mb-4">
-                    <label class="form-label">Senha de Liberação</label>
-                    <input type="text" id="inputPassword" class="form-control text-center form-control-lg" placeholder="Cole a senha recebida aqui">
-                    <div class="form-text text-center small text-muted">A senha contém o código hash + quantidade de créditos.</div>
-                </div>
-
-                <div class="d-grid gap-2">
-                    <button class="btn btn-success btn-lg fw-bold" onclick="validateAccess()">
-                        <i class="fas fa-check-circle me-2"></i> VALIDAR ACESSO
-                    </button>
-                    <button class="btn btn-link text-danger text-decoration-none mt-2" onclick="startUnauthorized()">
-                        Continuar sem autorização (Modo Fictício)
-                    </button>
-                </div>
-            </div>
+        <div class="auth-box hidden" id="reset-form">
+            <h2>Recuperar Senha</h2>
+            <p style="font-size:0.9rem; color:#777; margin-bottom:15px;">Digite seu e-mail para receber o link de redefinição.</p>
+            <input type="email" id="reset-email" class="auth-input" placeholder="E-mail cadastrado">
+            <button class="auth-btn" onclick="appResetPassword()">Enviar Link</button>
+            <div class="auth-link" onclick="toggleAuth('login')">Cancelar</div>
         </div>
     </div>
 
-    <!-- APLICAÇÃO PRINCIPAL -->
-    <div id="appContainer" style="display: none;">
-        
-        <header class="header-app sticky-top">
-            <div class="container d-flex justify-content-between align-items-center">
-                <div class="d-flex align-items-center">
-                    <i class="fas fa-tractor fa-2x me-3"></i>
-                    <div style="line-height: 1.2;">
-                        <h4 class="m-0 fw-bold">Recomendação Milho</h4>
-                        <small style="opacity: 0.9;">Boletim Técnico IAC 100 (2022)</small>
-                    </div>
-                </div>
-                <div>
-                    <span class="badge bg-white text-success p-2 shadow-sm me-2">
-                        <i class="fas fa-ticket-alt"></i> Créditos: <span id="creditCounter" class="fw-bold fs-6">0</span>
-                    </span>
-                    <button class="btn btn-sm btn-outline-light" onclick="clearCreditsAndExit()">Sair</button>
-                </div>
+    <!-- 2. APP PRINCIPAL -->
+    <div id="app-screen" class="hidden">
+        <header>
+            <div class="app-name">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg>
+                Compromisso Fácil
+            </div>
+            <div class="user-status">
+                <span id="user-display"></span>
+                <button onclick="appLogout()" style="background:none; border:none; cursor:pointer; font-size:1.2rem; color:var(--danger);" title="Sair">🚪</button>
             </div>
         </header>
 
-        <div class="container mt-4 pb-5">
-            
-            <!-- ALERTA MODO DEMONSTRAÇÃO / EXEMPLO -->
-            <div id="unauthAlert" class="alert alert-danger shadow-sm border-2 border-danger" style="display: none;">
-                <div class="d-flex align-items-center">
-                    <div class="fs-1 me-3"><i class="fas fa-ban"></i></div>
-                    <div>
-                        <h5 class="fw-bold m-0" id="alertTitle">MODO DE SIMULAÇÃO</h5>
-                        <p class="m-0 small" id="alertMsg">Estes dados são aleatórios e fictícios. O cálculo não consumirá seus créditos.</p>
+        <main>
+            <!-- VIEW: DASHBOARD -->
+            <div id="view-dashboard" class="view-section">
+                <div class="dashboard-grid">
+                    <div class="card welcome-card">
+                        <h2 id="greeting">Olá!</h2>
+                        <p>Suas tarefas estão sincronizadas na nuvem.</p>
                     </div>
+                    <div class="card card-stat">
+                        <h3 id="stat-pending">0</h3>
+                        <p>Pendentes</p>
+                    </div>
+                    <!-- Clientes (Receita) -->
+                    <div class="card card-stat">
+                        <h3 id="stat-revenue" style="color: var(--secondary);">R$ 0</h3>
+                        <p>A Receber (Cliente)</p>
+                    </div>
+                    <!-- Fornecedores (Despesa) -->
+                    <div class="card card-stat">
+                        <h3 id="stat-expense" style="color: var(--danger);">R$ 0</h3>
+                        <p>A Pagar (Fornecedor)</p>
+                    </div>
+                </div>
+                <div class="section-title">
+                    <h3>Para Hoje</h3>
+                    <a href="#" onclick="switchTab('tasks')" style="color:var(--primary); text-decoration:none;">Ver todas</a>
+                </div>
+                <div id="dashboard-list"></div>
+
+                <!-- BOTÃO DE APOIO DISCRETO -->
+                <div style="margin-top: 40px; text-align: center;">
+                    <button onclick="openSupportModal()" style="background: white; color: var(--primary); border: 2px solid #f1c40f; padding: 10px 25px; border-radius: 50px; font-weight: bold; font-size: 0.9rem; cursor: pointer; box-shadow: var(--shadow);">
+                        Apoiar 💛
+                    </button>
                 </div>
             </div>
 
-            <form id="agronomicForm">
+            <!-- VIEW: CALENDAR -->
+            <div id="view-calendar" class="view-section hidden">
+                <div class="section-title">
+                    <h3 id="calendar-month-year">Mês</h3>
+                    <div style="display:flex; gap:10px;">
+                        <button class="btn-icon" onclick="changeMonth(-1)">◀</button>
+                        <button class="btn-icon" onclick="changeMonth(1)">▶</button>
+                    </div>
+                </div>
+                <div class="calendar-grid">
+                    <div class="cal-day-header">D</div><div class="cal-day-header">S</div><div class="cal-day-header">T</div><div class="cal-day-header">Q</div><div class="cal-day-header">Q</div><div class="cal-day-header">S</div><div class="cal-day-header">S</div>
+                </div>
+                <div id="calendar-days" class="calendar-grid"></div>
+                <div style="margin-top:20px;">
+                    <h4>Tarefas do dia:</h4>
+                    <div id="calendar-task-list" style="margin-top:10px;">Selecione um dia</div>
+                </div>
+            </div>
+
+            <!-- VIEW: TASKS -->
+            <div id="view-tasks" class="view-section hidden">
+                <div class="section-title">
+                    <h3>Todas as Tarefas</h3>
+                </div>
                 
-                <div class="d-flex justify-content-end mb-3">
-                    <button type="button" id="btnAutoFill" class="btn btn-outline-primary fw-bold" onclick="triggerExampleData()">
-                        <i class="fas fa-magic me-2"></i> Preencher com Dados de Exemplo
-                    </button>
+                <!-- Nova Área de Filtros -->
+                <div class="filters-box" style="display:flex; gap:10px; margin-bottom:20px;">
+                    <input type="text" id="task-search" class="form-control" placeholder="🔍 Buscar por título..." oninput="renderTasks()" style="flex: 2;">
+                    
+                    <select id="filter-category" class="form-control" style="flex: 1; padding:5px;" onchange="renderTasks()">
+                        <option value="all">Todas</option>
+                        <option value="Trabalho">Trabalho</option>
+                        <option value="Pessoal">Pessoal</option>
+                        <option value="Cliente">Clientes</option>
+                        <option value="Fornecedor">Fornecedor</option>
+                    </select>
                 </div>
 
-                <!-- 1. IDENTIFICAÇÃO -->
-                <div class="card card-custom">
-                    <div class="section-header"><i class="fas fa-user-tag"></i> 1. Identificação da Amostra</div>
-                    <div class="card-body p-4">
-                        <div class="row g-3">
-                            <div class="col-md-5">
-                                <label class="form-label">Nome do Proprietário</label>
-                                <input type="text" class="form-control" id="ownerName" required>
+                <div id="tasks-list"></div>
+            </div>
+
+            <!-- VIEW: SETTINGS -->
+            <div id="view-settings" class="view-section hidden">
+                <h3>Mais Opções</h3>
+                
+                <!-- CONFIGURAÇÃO DEFAULT DE ALERTAS -->
+                <div class="card" style="margin-top:15px; border:1px solid #cce5ff;">
+                    <p style="margin-top:0; color:var(--primary-dark); font-weight:bold;">🛠️ Configuração Padrão de Alertas</p>
+                    <p style="font-size:0.8rem; color:#666;">Esses valores serão usados automaticamente em novas tarefas.</p>
+                    
+                    <div class="advanced-settings" style="background:white; border:none; padding:0;">
+                        <h4 style="font-size:0.8rem;">⏰ Alarme (Sonoro)</h4>
+                        <div class="row">
+                            <div class="col">
+                                <label>Iniciar (min antes)</label>
+                                <input type="number" id="def-alarm-start" class="form-control" placeholder="15">
                             </div>
-                            <div class="col-md-5">
-                                <label class="form-label">Nome da Propriedade</label>
-                                <input type="text" class="form-control" id="propName" required>
-                            </div>
-                            <div class="col-md-2">
-                                <label class="form-label">Protocolo</label>
-                                <input type="text" class="form-control" id="protocolId">
+                            <div class="col">
+                                <label>Repetir (cada min)</label>
+                                <input type="number" id="def-alarm-freq" class="form-control" placeholder="5">
                             </div>
                         </div>
+                        <div class="row">
+                            <div class="col">
+                                <label>Se atrasado (cada min)</label>
+                                <input type="number" id="def-alarm-over-freq" class="form-control" placeholder="10">
+                            </div>
+                        </div>
+
+                        <h4 style="font-size:0.8rem; margin-top:10px;">📧 E-mail</h4>
+                        <div class="row">
+                            <div class="col">
+                                <label>Iniciar (dias antes)</label>
+                                <input type="number" id="def-mail-days" class="form-control" placeholder="1">
+                            </div>
+                            <div class="col">
+                                <label>Repetir (cada dias)</label>
+                                <input type="number" id="def-mail-freq" class="form-control" placeholder="1">
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col">
+                                <label>Se atrasado (cada dias)</label>
+                                <input type="number" id="def-mail-over-freq" class="form-control" placeholder="1">
+                            </div>
+                            <div class="col">
+                                <label>Max Envios Atrasados</label>
+                                <input type="number" id="def-mail-over-max" class="form-control" placeholder="3">
+                            </div>
+                        </div>
+                        <button class="btn-block btn-primary" onclick="saveDefaultSettings()">Salvar Padrões</button>
                     </div>
                 </div>
 
-                <!-- 2. SISTEMA DE PRODUÇÃO -->
-                <div class="card card-custom">
-                    <div class="section-header"><i class="fas fa-chart-line"></i> 2. Sistema de Produção</div>
-                    <div class="card-body p-4">
-                        <div class="row g-3">
-                            <div class="col-md-4">
-                                <label class="form-label">Safra</label>
-                                <select class="form-select" id="cropSeason">
-                                    <option value="verao">Verão (Safra Normal)</option>
-                                    <option value="safrinha">Safrinha (2ª Safra) [-20% N e K]</option>
-                                </select>
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label">Expectativa de Produção</label>
-                                <div class="input-group">
-                                    <input type="number" class="form-control" id="targetYield" placeholder="Ex: 150" required>
-                                    <span class="input-group-text fw-bold">sc/ha</span>
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label">Cultura Anterior</label>
-                                <select class="form-select" id="prevCulture">
-                                    <option value="milho">Milho (Resteva Incorporada)</option>
-                                    <option value="graminea">Gramíneas (Pastagem/Braquiária)</option>
-                                    <option value="leguminosa">Leguminosa (Soja/Feijão) ou Pousio</option>
-                                </select>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label">Sistema de Plantio</label>
-                                <select class="form-select" id="systemType">
-                                    <option value="conv">Convencional / PD Recente</option>
-                                    <option value="spd_consolidado">Plantio Direto Consolidado (>5 anos)</option>
-                                </select>
-                                <div class="form-text small">Afeta a antecipação de adubos.</div>
-                            </div>
+                <!-- LIMPEZA AUTOMÁTICA (TOGGLE) -->
+                <div class="card" style="margin-top:15px; display:flex; justify-content:space-between; align-items:center;">
+                    <div>
+                        <strong>Limpeza Automática</strong>
+                        <p style="font-size:0.8rem; color:#777; margin:0;">Excluir lembretes vencidos há 30 dias</p>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" id="auto-cleanup-check" onchange="toggleCleanup(this)">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
+                <div class="card" style="margin-top:15px;">
+                    <p><strong>Gerenciar Tarefas</strong></p>
+                    <button class="btn-block btn-danger" onclick="clearAllCompleted()">🧹 Limpar Todas as Concluídas</button>
+                </div>
+
+                <div class="card" style="margin-top:15px;">
+                    <p><strong>Relatórios</strong></p>
+                    <button class="btn-block btn-primary" onclick="exportPDF()">📄 Baixar PDF</button>
+                </div>
+                
+                <div class="card" style="margin-top:15px;">
+                    <p><strong>Backup e Restauração (Local)</strong></p>
+                    <button class="btn-block btn-secondary" onclick="backupData()">📥 Fazer Backup (Baixar Arquivo)</button>
+                    <button class="btn-block btn-secondary" onclick="triggerRestore()">📤 Restaurar Backup (Enviar Arquivo)</button>
+                    <input type="file" id="restore-input" style="display:none" accept=".json" onchange="restoreData(this)">
+                </div>
+
+                <div class="card" style="margin-top:15px;">
+                    <p><strong>Conta</strong></p>
+                    <p style="font-size:0.8rem; color:#777;">Logado como: <span id="settings-email"></span></p>
+                    <button class="btn-block btn-secondary" onclick="appLogout()" style="color:var(--danger)">Sair da Conta</button>
+                </div>
+                
+                <!-- PIX DISCRETO (ABA MAIS) -->
+                <div class="pix-footer" onclick="openSupportModal()">
+                    ☕ Apoie o desenvolvimento (Pix)
+                </div>
+            </div>
+        </main>
+
+        <!-- FAB -->
+        <button class="fab" onclick="openModal()">+</button>
+
+        <!-- NAVIGATION BAR -->
+        <nav>
+            <button class="nav-item active" onclick="switchTab('dashboard')" id="nav-dashboard">
+                <svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
+                Início
+            </button>
+            <button class="nav-item" onclick="switchTab('calendar')" id="nav-calendar">
+                <svg viewBox="0 0 24 24"><path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.89-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.95-2-2.05-2zM5 20V9h14v11H5z"/></svg>
+                Agenda
+            </button>
+            <button class="nav-item" onclick="switchTab('tasks')" id="nav-tasks">
+                <svg viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>
+                Tarefas
+            </button>
+            <button class="nav-item" onclick="switchTab('settings')" id="nav-settings">
+                <svg viewBox="0 0 24 24"><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>
+                Mais
+            </button>
+        </nav>
+    </div>
+
+    <!-- 3. MODAL ADD/EDIT -->
+    <div class="modal" id="taskModal">
+        <div class="modal-content">
+            <h3 id="modal-title" style="margin-top:0;">Novo Compromisso</h3>
+            <input type="hidden" id="t-id">
+            
+            <div class="form-group">
+                <label>Título *</label>
+                <input type="text" id="t-title" class="form-control" placeholder="Ex: Reunião com João">
+            </div>
+            
+            <div class="form-group">
+                <label>Descrição</label>
+                <textarea id="t-desc" class="form-control" rows="3" placeholder="Detalhes do lembrete..."></textarea>
+            </div>
+
+            <div style="display:flex; gap:10px;">
+                <div class="form-group" style="flex:1">
+                    <label>Data *</label>
+                    <input type="date" id="t-date" class="form-control">
+                </div>
+                <div class="form-group" style="flex:1">
+                    <label>Hora</label>
+                    <input type="time" id="t-time" class="form-control">
+                </div>
+            </div>
+
+            <!-- Opção E-mail Cloud -->
+            <div class="cloud-option">
+                <input type="checkbox" id="t-send-email" onchange="toggleEmailInput()">
+                <label for="t-send-email">Enviar e-mails de lembrete</label>
+            </div>
+            <div class="form-group hidden" id="div-email-input">
+                <label>E-mail Destino</label>
+                <input type="email" id="t-email-addr" class="form-control" placeholder="cliente@email.com">
+                
+                <!-- CONFIGURAÇÃO AVANÇADA DE EMAIL -->
+                <div class="advanced-settings" style="margin-top:10px;">
+                    <h4>Configuração de E-mail</h4>
+                    <div class="row">
+                        <div class="col">
+                            <label>Antecedência (dias)</label>
+                            <input type="number" id="t-mail-days" class="form-control" placeholder="Default">
+                        </div>
+                        <div class="col">
+                            <label>Repetir (dias)</label>
+                            <input type="number" id="t-mail-int" class="form-control" placeholder="Default">
                         </div>
                     </div>
-                </div>
-
-                <!-- 3. ANÁLISE DE SOLO -->
-                <div class="card card-custom">
-                    <div class="section-header"><i class="fas fa-flask"></i> 3. Dados da Análise de Solo (0-20 cm)</div>
-                    <div class="card-body p-4">
-                        <div class="row g-3">
-                            
-                            <!-- Física -->
-                            <div class="col-12"><h6 class="text-secondary border-bottom pb-2">Física do Solo</h6></div>
-                            <div class="col-md-4">
-                                <label class="form-label">Teor de Argila (%)</label>
-                                <input type="number" class="form-control" id="soilClay" step="0.1" placeholder="Ex: 35" required>
-                            </div>
-                            
-                            <!-- Química -->
-                            <div class="col-12 mt-4"><h6 class="text-secondary border-bottom pb-2">Química do Solo</h6></div>
-                            <div class="col-md-3">
-                                <label class="form-label">P-resina (mg/dm³)</label>
-                                <input type="number" class="form-control" id="soilP" step="0.1" required>
-                            </div>
-                            <div class="col-md-3">
-                                <label class="form-label">K (mmolc/dm³)</label>
-                                <input type="number" class="form-control" id="soilK" step="0.1" oninput="calculateSB()" required>
-                            </div>
-                            <div class="col-md-3">
-                                <label class="form-label">Ca (mmolc/dm³)</label>
-                                <input type="number" class="form-control" id="soilCa" step="0.1" oninput="calculateSB()" required>
-                            </div>
-                            <div class="col-md-3">
-                                <label class="form-label">Mg (mmolc/dm³)</label>
-                                <input type="number" class="form-control" id="soilMg" step="0.1" oninput="calculateSB()" required>
-                            </div>
-
-                            <div class="col-md-3">
-                                <label class="form-label">Na (mmolc/dm³)</label>
-                                <input type="number" class="form-control" id="soilNa" value="0" step="0.1" oninput="calculateSB()">
-                                <div class="form-text small">Use 0 se não informado.</div>
-                            </div>
-
-                            <div class="col-md-3">
-                                <label class="form-label bg-light rounded px-2 border border-secondary">SB (Calc: Ca+Mg+K+Na)</label>
-                                <input type="number" class="form-control bg-light fw-bold" id="soilSB" readonly>
-                            </div>
-
-                            <div class="col-md-3">
-                                <label class="form-label">CTC pH 7 (mmolc/dm³)</label>
-                                <input type="number" class="form-control" id="soilCTC" step="0.1" required>
-                            </div>
-                            <div class="col-md-3">
-                                <label class="form-label">V% (Saturação)</label>
-                                <input type="number" class="form-control" id="soilV" step="0.1" required>
-                            </div>
-
-                            <div class="col-md-4 mt-4">
-                                <label class="form-label">PRNT do Calcário (%)</label>
-                                <input type="number" class="form-control" id="limePRNT" value="80">
-                            </div>
+                    <div class="row">
+                        <div class="col">
+                            <label>Atrasado: Repetir (dias)</label>
+                            <input type="number" id="t-mail-over-int" class="form-control" placeholder="Default">
                         </div>
-                    </div>
-                </div>
-
-                <div class="d-grid mb-5">
-                    <button type="button" id="btnCalculate" class="btn btn-success btn-action shadow" onclick="generateRecommendation()">
-                        <i class="fas fa-calculator me-2"></i> CALCULAR E DEBITAR CRÉDITO
-                    </button>
-                </div>
-            </form>
-
-            <!-- RESULTADOS -->
-            <div id="resultsSection" style="display: none;">
-                <div class="card card-custom border border-2 border-success">
-                    <div class="card-body p-4">
-                        <h3 class="text-center text-success fw-bold mb-4"><i class="fas fa-clipboard-check"></i> Relatório de Recomendação</h3>
-                        
-                        <ul class="nav nav-pills mb-3 justify-content-center" id="pills-tab" role="tablist">
-                            <li class="nav-item" role="presentation">
-                                <button class="nav-link active fw-bold" id="pills-farmer-tab" data-bs-toggle="pill" data-bs-target="#pills-farmer" type="button">Relatório Completo</button>
-                            </li>
-                            <li class="nav-item" role="presentation">
-                                <button class="nav-link fw-bold" id="pills-tech-tab" data-bs-toggle="pill" data-bs-target="#pills-tech" type="button">Resumo Técnico</button>
-                            </li>
-                        </ul>
-
-                        <div class="tab-content" id="pills-tabContent">
-                            
-                            <!-- RELATÓRIO TEXTUAL -->
-                            <div class="tab-pane fade show active position-relative" id="pills-farmer">
-                                <div class="watermark" id="watermarkResult" style="display:none;">SIMULAÇÃO<br>GRÁTIS</div>
-                                <textarea id="finalReportText" class="form-control report-box shadow-sm" rows="25" readonly></textarea>
-                                
-                                <div class="row mt-4 g-2">
-                                    <div class="col-md-6 d-grid">
-                                        <button class="btn btn-success fw-bold py-3" onclick="shareWhatsapp()">
-                                            <i class="fab fa-whatsapp fa-lg me-2"></i> Enviar por WhatsApp
-                                        </button>
-                                    </div>
-                                    <div class="col-md-6 d-grid">
-                                        <button class="btn btn-primary fw-bold py-3" onclick="shareEmail()">
-                                            <i class="fas fa-envelope fa-lg me-2"></i> Enviar por E-mail
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- TABELA TÉCNICA -->
-                            <div class="tab-pane fade" id="pills-tech">
-                                <div class="table-responsive">
-                                    <table class="table table-bordered table-striped table-hover align-middle text-center">
-                                        <thead class="table-success">
-                                            <tr>
-                                                <th>Parâmetro</th>
-                                                <th>Valor Calculado</th>
-                                                <th>Unidade</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody id="techTableBody">
-                                            <!-- Preenchido via JS -->
-                                        </tbody>
-                                    </table>
-                                </div>
-                                <div class="alert alert-info small mt-2">
-                                    <i class="fas fa-info-circle"></i> Fonte: Boletim Técnico 100 do IAC (2022).<br>
-                                    Cálculo de Calagem: Método da Saturação por Bases (V2=70%).
-                                </div>
-                            </div>
+                        <div class="col">
+                            <label>Max Envios (atraso)</label>
+                            <input type="number" id="t-mail-max" class="form-control" placeholder="Default">
                         </div>
                     </div>
                 </div>
             </div>
 
+            <!-- CONFIGURAÇÃO AVANÇADA DE ALARME -->
+            <div class="advanced-settings">
+                <h4>Configuração de Alarme (App Aberto)</h4>
+                <div class="row">
+                    <div class="col">
+                        <label>Acionar (min antes)</label>
+                        <input type="number" id="t-rem-start" class="form-control" placeholder="Default">
+                    </div>
+                    <div class="col">
+                        <label>Repetir (min)</label>
+                        <input type="number" id="t-rem-int" class="form-control" placeholder="Default">
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col">
+                        <label>Se atrasado: Repetir (min)</label>
+                        <input type="number" id="t-rem-over-int" class="form-control" placeholder="Default">
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Categoria</label>
+                <input type="text" id="t-category" class="form-control" list="cat-suggestions">
+                <datalist id="cat-suggestions">
+                    <option value="Trabalho">
+                    <option value="Pessoal">
+                    <option value="Cliente">
+                    <option value="Fornecedor">
+                </datalist>
+            </div>
+            <div class="form-group">
+                <label>Valor R$</label>
+                <input type="number" id="t-value" class="form-control" step="0.01">
+            </div>
+
+            <button class="btn-block btn-primary" onclick="saveTask()">Salvar</button>
+            <button class="btn-block btn-secondary" onclick="closeModal()">Cancelar</button>
         </div>
     </div>
 
-    <!-- Bootstrap JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- 4. ALARM MODAL -->
+    <div class="alarm-modal" id="alarmModal">
+        <div class="alarm-card">
+            <input type="hidden" id="alarm-task-id">
+            <span class="alarm-icon">⏰</span>
+            <div id="alarm-context" style="font-weight:bold; color:var(--danger); margin-bottom:5px;"></div>
+            <div class="alarm-title">Lembrete!</div>
+            <div id="alarm-time-display" style="font-size:1.5rem; font-weight:bold; color:var(--primary); margin:10px 0;"></div>
+            <p id="alarm-text-display" style="margin-bottom:20px;"></p>
+            <button class="btn-block btn-success" onclick="completeTaskFromAlarm()">✅ Concluir</button>
+            <button class="btn-block btn-secondary" onclick="stopAlarm()">Soneca (Silenciar)</button>
+        </div>
+    </div>
 
-    <script>
-        // --- ESTADO DA APLICAÇÃO ---
-        let appState = {
-            authorized: false,
-            credits: 0,
-            generatedCode: null,
-            emailTarget: 'websitelogx@gmail.com',
-            whatsappTarget: '5534997824990',
-            isDemo: false,
-            isFreeExample: false // Nova flag para controlar exemplos no modo logado
-        };
-
-        // --- HELPER ALEATORIEDADE ---
-        function getRandom(min, max, decimals = 1) {
-            const val = Math.random() * (max - min) + min;
-            return parseFloat(val.toFixed(decimals));
-        }
-
-        // --- INICIALIZAÇÃO E PERSISTÊNCIA ---
-        window.onload = function() {
-            const savedCredits = localStorage.getItem('sra_credits_milho');
-            if (savedCredits && parseInt(savedCredits) > 0) {
-                appState.credits = parseInt(savedCredits);
-                document.getElementById('existingCreditsMsg').classList.remove('d-none');
-                document.getElementById('savedCreditsCount').innerText = appState.credits;
-                document.getElementById('btnLogin').classList.add('d-none');
-                document.getElementById('btnUseSaved').classList.remove('d-none');
-            }
-        };
-
-        function calculateSB() {
-            const ca = parseFloat(document.getElementById('soilCa').value) || 0;
-            const mg = parseFloat(document.getElementById('soilMg').value) || 0;
-            const k = parseFloat(document.getElementById('soilK').value) || 0;
-            const na = parseFloat(document.getElementById('soilNa').value) || 0;
+    <!-- 5. SUPPORT MODAL (NOVO COM COPÍA E COLA) -->
+    <div class="modal" id="supportModal">
+        <div class="modal-content" style="text-align: center;">
+            <h3 style="color:var(--primary); margin-top:0;">Apoie o Projeto ☕</h3>
+            <p style="font-size: 0.95rem; line-height: 1.4; color: #555; margin-bottom: 20px;">
+                Este app é gratuito. Selecione um valor para gerar o código <b>Pix Copia e Cola</b>:
+            </p>
             
-            const sb = ca + mg + k + na;
-            document.getElementById('soilSB').value = sb.toFixed(2);
-        }
-
-        // --- SISTEMA DE ACESSO ---
-        function useSavedCredits() {
-            appState.authorized = true;
-            appState.isDemo = false;
-            unlockApp();
-        }
-
-        function simulateGoogleLogin() {
-            const btn = document.getElementById('btnLogin');
-            btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Conectando...';
-            btn.disabled = true;
+            <div class="pix-grid">
+                <button class="btn-pix" onclick="generatePixCopyPaste(5)">R$ 5,00</button>
+                <button class="btn-pix" onclick="generatePixCopyPaste(9)">R$ 9,00</button>
+                <button class="btn-pix" onclick="generatePixCopyPaste(12)">R$ 12,00</button>
+                <button class="btn-pix" onclick="copyPixSimpleKey()">Outro Valor</button>
+            </div>
             
-            setTimeout(() => {
-                document.getElementById('stepLogin').style.display = 'none';
-                document.getElementById('stepCode').style.display = 'block';
-                
-                appState.generatedCode = Math.floor(Math.random() * 9000) + 1000;
-                document.getElementById('displayAuthCode').innerText = appState.generatedCode;
-                
-                const hashEsperado = (appState.generatedCode + 13) * 9 + 1954;
-                console.clear();
-                console.log(`SENHA DEBUG: ${hashEsperado}10`);
+            <div id="pix-feedback" style="display:none; color:green; font-weight:bold; margin-bottom:10px;">
+                ✅ Código copiado!
+            </div>
+            
+            <div class="pix-key-display" id="pix-display-area" style="display:none;"></div>
 
-                const subject = `Solicitação App Milho - Cód: ${appState.generatedCode}`;
-                const body = `Olá, solicito código de liberação.\nMeu código de segurança: ${appState.generatedCode}`;
-                const wppMsg = `Olá, solicito liberação do App Milho IAC.\nCódigo de Segurança: *${appState.generatedCode}*`;
-                
-                document.getElementById('btnSendEmail').setAttribute('href', `mailto:${appState.emailTarget}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`);
-                document.getElementById('btnSendWhatsapp').setAttribute('href', `https://wa.me/${appState.whatsappTarget}?text=${encodeURIComponent(wppMsg)}`);
-            }, 1500);
+            <button class="btn-block btn-secondary" onclick="closeSupportModal()">Fechar</button>
+        </div>
+    </div>
+
+    <!-- Som do Alarme (Loop) -->
+    <audio id="audioAlert" loop src="data:audio/mp3;base64,//uQxAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAAUAAACzAAKCg4PEhIWFxsbHiAgIyMoKCsrLzAwMjI2Njg4Ojw8P0BAQkJERkdHSkpMTk5QUFJTU1dXV1lbW11dYGBiYmRmZmdnaGhqam5ucHBydHR3d3l5e3t9fX6AgIGBgoKFhYiIiouLkJCSkpWWlpiYmZmbm52dnp6goKGhoqKkpKWlpqeoqKmqq6ytrq6wsLGxsrK0tLe3uLi6ur29v8DAwsLGxsnJysrMzM7O0NDS0tTX19jY2dvb3Nzd3d7e4ODi4uPj5eXn5+jo6evr7Ozt7u7w8PHx8vL09PX19vf3+Pj6+vv7/Pz9/f7+/v///wAAAqpLdXJ6AAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//uQxAAACkQBOAAAAAEAAAD5AAAAABj3/vT23uAgBPgAPAAAAAAAZAAAAAAAAAAAAAAB//uQxAAACkQBOAAAAAEAAAD5AAAAABj3/vT23uAgBPgAPAAAAAAAZAAAAAAAAAAAAAAB//uQxAAACkQBOAAAAAEAAAD5AAAAABj3/vT23uAgBPgAPAAAAAAAZAAAAAAAAAAAAAAB//uQxAAACkQBOAAAAAEAAAD5AAAAABj3/vT23uAgBPgAPAAAAAAAZAAAAAAAAAAAAAAB//uQxAAACkQBOAAAAAEAAAD5AAAAABj3/vT23uAgBPgAPAAAAAAAZAAAAAAAAAAAAAAB//uQxAAACkQBOAAAAAEAAAD5AAAAABj3/vT23uAgBPgAPAAAAAAAZAAAAAAAAAAAAAAB"></audio>
+
+    <!-- Som de Conclusão (Ding curto) -->
+    <audio id="audioDone" src="data:audio/mp3;base64,//uQxAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAAGAAABuAAKCg4PEhIWFxsbHiAgIyMoKCsrLzAwMjI2Njg4Ojw8P0BAQkJERkdHSkpMTk5QUFJTU1dXV1lbW11dYGBiYmRmZmdnaGhqam5ucHBydHR3d3l5e3t9fX6AgIGBgoKFhYiIiouLkJCSkpWWlpiYmZmbm52dnp6goKGhoqKkpKWlpqeoqKmqq6ytrq6wsLGxsrK0tLe3uLi6ur29v8DAwsLGxsnJysrMzM7O0NDS0tTX19jY2dvb3Nzd3d7e4ODi4uPj5eXn5+jo6evr7Ozt7u7w8PHx8vL09PX19vf3+Pj6+vv7/Pz9/f7+/v///wAAAD5LdXJ6AAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//uQxAAACkQBOAAAAAEAAAD5AAAAABj3/vT23uAgBPgAPAAAAAAAZAAAAAAAAAAAAAAB//uQxAAACkQBOAAAAAEAAAD5AAAAABj3/vT23uAgBPgAPAAAAAAAZAAAAAAAAAAAAAAB"></audio>
+
+<script>
+    // ==========================================
+    // 1. CONFIGURAÇÃO DO FIREBASE
+    // ==========================================
+    const firebaseConfig = {
+      apiKey: "AIzaSyBhtwWew_DQNX2TZROUShZz4mjK57pRgQk",
+      authDomain: "lembrete-d6c15.firebaseapp.com",
+      projectId: "lembrete-d6c15",
+      storageBucket: "lembrete-d6c15.firebasestorage.app",
+      messagingSenderId: "368296869868",
+      appId: "1:368296869868:web:7a2c0a91f57de5d3a90ac9",
+      measurementId: "G-JE0QH81JG6"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+
+    let auth, db;
+    try {
+        auth = firebase.auth();
+        db = firebase.firestore();
+    } catch(e) { console.error("Erro Firebase", e); }
+
+    let currentUser = null;
+    let appData = { tasks: [] };
+    let audioUnlocked = false;
+
+    // Configuração Padrão de Alertas (Default)
+    let defaultConfig = {
+        alarmStartMin: 15,
+        alarmFreqMin: 5,
+        alarmOverdueFreq: 10,
+        emailDaysBefore: 1,
+        emailFreqDays: 1,
+        emailOverdueFreq: 1,
+        emailOverdueMax: 3
+    };
+
+    // Desbloqueia áudio no primeiro clique do usuário
+    function enableAudio() {
+        if (!audioUnlocked) {
+            document.getElementById('audioAlert').load();
+            document.getElementById('audioDone').load();
+            audioUnlocked = true;
         }
+    }
 
-        function validateAccess() {
-            const inputClean = document.getElementById('inputPassword').value.replace(/\D/g, ''); 
-            if (inputClean.length < 6) {
-                alert('Senha inválida. Certifique-se de copiar o número completo enviado.');
-                return;
-            }
+    // ==========================================
+    // 2. SISTEMA DE LOGIN & DEFAULTS
+    // ==========================================
+    if(auth) {
+        auth.onAuthStateChanged((user) => {
+            if (user) {
+                currentUser = user;
+                document.getElementById('auth-screen').classList.add('hidden');
+                document.getElementById('app-screen').classList.remove('hidden');
+                document.getElementById('user-display').textContent = user.email ? user.email.split('@')[0] : "Usuário Google";
+                document.getElementById('settings-email').textContent = user.email;
+                
+                // Carrega configuração de limpeza automática
+                const cleanupPref = localStorage.getItem('autoCleanup') === 'true';
+                document.getElementById('auto-cleanup-check').checked = cleanupPref;
 
-            const inputHash = parseInt(inputClean.substring(0, 5));
-            const inputCredits = parseInt(inputClean.substring(5));
-            const expectedHash = (appState.generatedCode + 13) * 9 + 1954;
-
-            if (inputHash === expectedHash && inputCredits > 0) {
-                appState.authorized = true;
-                appState.credits = inputCredits;
-                appState.isDemo = false;
-                localStorage.setItem('sra_credits_milho', appState.credits);
-                unlockApp();
+                // Carrega configuração default de alertas
+                loadDefaultSettings();
+                
+                syncTasks(); 
             } else {
-                alert('Senha incorreta para este código de segurança.');
+                currentUser = null;
+                appData.tasks = [];
+                document.getElementById('auth-screen').classList.remove('hidden');
+                document.getElementById('app-screen').classList.add('hidden');
             }
+        });
+    }
+
+    function loadDefaultSettings() {
+        const stored = localStorage.getItem('alertConfig');
+        if(stored) {
+            defaultConfig = JSON.parse(stored);
         }
+        // Preenche inputs da tela de settings
+        document.getElementById('def-alarm-start').value = defaultConfig.alarmStartMin;
+        document.getElementById('def-alarm-freq').value = defaultConfig.alarmFreqMin;
+        document.getElementById('def-alarm-over-freq').value = defaultConfig.alarmOverdueFreq;
+        document.getElementById('def-mail-days').value = defaultConfig.emailDaysBefore;
+        document.getElementById('def-mail-freq').value = defaultConfig.emailFreqDays;
+        document.getElementById('def-mail-over-freq').value = defaultConfig.emailOverdueFreq;
+        document.getElementById('def-mail-over-max').value = defaultConfig.emailOverdueMax;
+    }
 
-        function startUnauthorized() {
-            appState.authorized = false;
-            appState.credits = 0;
-            appState.isDemo = true;
-            unlockApp();
-            
-            // Exibir alerta de Demo
-            const alertBox = document.getElementById('unauthAlert');
-            alertBox.style.display = 'block';
-            document.getElementById('alertTitle').innerText = "MODO DEMONSTRAÇÃO - ACESSO NÃO AUTORIZADO";
-            document.getElementById('alertMsg').innerText = "Dados aleatórios e travados. O cálculo é apenas uma simulação visual.";
+    function saveDefaultSettings() {
+        defaultConfig = {
+            alarmStartMin: parseInt(document.getElementById('def-alarm-start').value) || 15,
+            alarmFreqMin: parseInt(document.getElementById('def-alarm-freq').value) || 5,
+            alarmOverdueFreq: parseInt(document.getElementById('def-alarm-over-freq').value) || 10,
+            emailDaysBefore: parseInt(document.getElementById('def-mail-days').value) || 1,
+            emailFreqDays: parseInt(document.getElementById('def-mail-freq').value) || 1,
+            emailOverdueFreq: parseInt(document.getElementById('def-mail-over-freq').value) || 1,
+            emailOverdueMax: parseInt(document.getElementById('def-mail-over-max').value) || 3
+        };
+        localStorage.setItem('alertConfig', JSON.stringify(defaultConfig));
+        alert("Configurações padrão salvas!");
+    }
 
-            document.getElementById('watermarkResult').style.display = 'block';
-            document.getElementById('btnAutoFill').style.display = 'none'; // Esconde botão de exemplo pois já é tudo exemplo
-            
-            // Gera e trava dados
-            fillFictitiousData(true, true);
-        }
+    function appLogin() {
+        const email = document.getElementById('log-email').value;
+        const pass = document.getElementById('log-pass').value;
+        if(!email || !pass) return alert("Preencha os dados");
+        auth.signInWithEmailAndPassword(email, pass).catch(err => alert(err.message));
+    }
 
-        function unlockApp() {
-            document.getElementById('authScreen').style.display = 'none';
-            document.getElementById('appContainer').style.display = 'block';
-            updateCreditDisplay();
-        }
+    // LOGIN COM GOOGLE
+    function appLoginGoogle() {
+        const provider = new firebase.auth.GoogleAuthProvider();
+        auth.signInWithPopup(provider)
+        .then((result) => {
+            console.log("Logado com Google", result.user);
+            // onAuthStateChanged cuidará do resto
+        }).catch((error) => {
+            alert("Erro ao logar com Google: " + error.message);
+        });
+    }
 
-        function updateCreditDisplay() {
-            const display = document.getElementById('creditCounter');
-            if(appState.isDemo) {
-                display.innerText = "DEMO";
-                display.parentElement.className = "badge bg-danger p-2 shadow-sm me-2";
-            } else {
-                display.innerText = appState.credits;
-            }
-        }
+    function appRegister() {
+        const email = document.getElementById('reg-email').value;
+        const pass = document.getElementById('reg-pass').value;
+        if(!email || !pass) return alert("Preencha os dados");
+        auth.createUserWithEmailAndPassword(email, pass).then(()=>alert("Criado!")).catch(err => alert(err.message));
+    }
+    function appResetPassword() {
+        const email = document.getElementById('reset-email').value;
+        if(!email) return alert("Digite o e-mail");
+        auth.sendPasswordResetEmail(email)
+            .then(() => {
+                alert("E-mail de recuperação enviado! Verifique sua caixa de entrada.");
+                toggleAuth('login');
+            })
+            .catch(err => alert("Erro: " + err.message));
+    }
+    function appLogout() { auth.signOut(); }
+    function toggleAuth(v) {
+        document.querySelectorAll('.auth-box').forEach(e=>e.classList.add('hidden'));
+        document.getElementById(v === 'login' ? 'login-form' : v === 'register' ? 'register-form' : 'reset-form').classList.remove('hidden');
+    }
 
-        function clearCreditsAndExit() {
-            location.reload();
-        }
-
-        // --- LÓGICA DO BOTÃO "PREENCHER EXEMPLO" (Mesmo logado) ---
-        function triggerExampleData() {
-            // Marca como exemplo grátis
-            appState.isFreeExample = true;
-            
-            // Exibe marca d'água de simulação
-            document.getElementById('watermarkResult').style.display = 'block';
-            document.getElementById('watermarkResult').innerHTML = "SIMULAÇÃO<br>GRÁTIS";
-
-            // Preenche com dados aleatórios (true) e trava os campos (true)
-            fillFictitiousData(true, true);
-
-            // Altera visual do botão de calcular
-            const btnCalc = document.getElementById('btnCalculate');
-            btnCalc.classList.remove('btn-success');
-            btnCalc.classList.add('btn-warning');
-            btnCalc.innerHTML = '<i class="fas fa-calculator me-2"></i> SIMULAR (GRÁTIS)';
-
-            // Mostra aviso visual
-            const alertBox = document.getElementById('unauthAlert');
-            alertBox.style.display = 'block';
-            alertBox.classList.remove('alert-danger');
-            alertBox.classList.add('alert-warning');
-            document.getElementById('alertTitle').innerText = "DADOS DE EXEMPLO";
-            document.getElementById('alertMsg').innerText = "Amostra gerada aleatoriamente para teste. Não será cobrado crédito.";
-        }
-
-        // --- GERAÇÃO DE DADOS ---
-        function fillFictitiousData(lock, isRandom) {
-            const set = (id, val) => document.getElementById(id).value = val;
-            
-            // Agora sempre gera aleatório se isRandom=true, o que é o caso do botão "Exemplo" e do "Demo Mode"
-            if (isRandom) {
-                set('ownerName', 'Agricultor Teste ' + Math.floor(Math.random()*1000));
-                set('propName', 'Sítio Aleatório ' + String.fromCharCode(65+Math.random()*25));
-                set('protocolId', 'SIM-' + Math.floor(Math.random()*9999));
-                set('cropSeason', Math.random() > 0.5 ? 'verao' : 'safrinha');
-                set('targetYield', Math.floor(getRandom(80, 180)));
-                set('prevCulture', Math.random() > 0.5 ? 'graminea' : 'milho');
-                set('systemType', Math.random() > 0.5 ? 'spd_consolidado' : 'conv');
-                
-                // Solos aleatórios
-                set('soilClay', getRandom(15, 75));
-                set('soilP', getRandom(4, 50));
-                set('soilK', getRandom(0.5, 4.0));
-                set('soilCa', getRandom(10, 45));
-                set('soilMg', getRandom(2, 12));
-                set('soilNa', getRandom(0, 0.5));
-                set('soilCTC', getRandom(40, 120));
-                set('soilV', getRandom(20, 85));
-                set('limePRNT', Math.floor(getRandom(70, 100)));
-            }
-            
-            calculateSB();
-
-            if(lock) {
-                const form = document.getElementById('agronomicForm');
-                const inputs = form.querySelectorAll('input, select');
-                inputs.forEach(el => {
-                    el.readOnly = true;
-                    el.classList.add('demo-locked');
-                    if(el.tagName === 'SELECT') el.disabled = true;
+    // ==========================================
+    // 3. SINCRONIA DE DADOS (CLOUD -> APP)
+    // ==========================================
+    function syncTasks() {
+        if(!currentUser) return;
+        
+        db.collection('users').doc(currentUser.uid).collection('tasks')
+            .orderBy('date')
+            .onSnapshot(snapshot => {
+                appData.tasks = [];
+                snapshot.forEach(doc => {
+                    let task = doc.data();
+                    task.id = doc.id;
+                    appData.tasks.push(task);
                 });
+                refreshViews();
+                runAutoCleanup();
+            });
+    }
+
+    function getLocalDateStr() {
+        const d = new Date();
+        const offset = d.getTimezoneOffset() * 60000;
+        const localDate = new Date(d.getTime() - offset);
+        return localDate.toISOString().split('T')[0];
+    }
+
+    function saveTask() {
+        const title = document.getElementById('t-title').value;
+        const desc = document.getElementById('t-desc').value;
+        const date = document.getElementById('t-date').value;
+        const time = document.getElementById('t-time').value;
+        const cat = document.getElementById('t-category').value;
+        const val = document.getElementById('t-value').value;
+        const sendEmail = document.getElementById('t-send-email').checked;
+        const emailAddr = document.getElementById('t-email-addr').value;
+
+        // Configurações de Lembrete
+        const remStart = parseInt(document.getElementById('t-rem-start').value);
+        const remInt = parseInt(document.getElementById('t-rem-int').value);
+        const remOverInt = parseInt(document.getElementById('t-rem-over-int').value);
+        
+        // Configurações de Email
+        const mailDays = parseInt(document.getElementById('t-mail-days').value);
+        const mailInt = parseInt(document.getElementById('t-mail-int').value);
+        const mailOverInt = parseInt(document.getElementById('t-mail-over-int').value);
+        const mailMax = parseInt(document.getElementById('t-mail-max').value);
+
+        if(!title || !date) return alert("Preencha título e data");
+
+        const data = {
+            title, 
+            description: desc,
+            date, time, category: cat, value: val,
+            sendEmail, emailAddr,
+            userId: currentUser.uid, 
+            completed: false,
+            
+            // Novos campos de configuração
+            remStart: isNaN(remStart) ? defaultConfig.alarmStartMin : remStart,
+            remInt: isNaN(remInt) ? defaultConfig.alarmFreqMin : remInt,
+            remOverInt: isNaN(remOverInt) ? defaultConfig.alarmOverdueFreq : remOverInt,
+            
+            mailDays: isNaN(mailDays) ? defaultConfig.emailDaysBefore : mailDays,
+            mailInt: isNaN(mailInt) ? defaultConfig.emailFreqDays : mailInt,
+            mailOverInt: isNaN(mailOverInt) ? defaultConfig.emailOverdueFreq : mailOverInt,
+            mailMax: isNaN(mailMax) ? defaultConfig.emailOverdueMax : mailMax,
+            
+            // Estado
+            overdueEmailCount: 0,
+            lastAlarmSent: null,
+            lastEmailSent: null,
+            
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        };
+
+        const id = document.getElementById('t-id').value;
+        
+        let dbOperation;
+        if(id) {
+            const existing = appData.tasks.find(t => t.id === id);
+            if(existing) {
+                data.overdueEmailCount = existing.overdueEmailCount || 0;
+                data.lastAlarmSent = existing.lastAlarmSent || null;
+                data.lastEmailSent = existing.lastEmailSent || null;
+                data.completed = existing.completed; 
             }
+            dbOperation = db.collection('users').doc(currentUser.uid).collection('tasks').doc(id).update(data);
+        } else {
+            dbOperation = db.collection('users').doc(currentUser.uid).collection('tasks').add(data);
         }
 
-        // --- MOTOR DE CÁLCULO (IAC 100 - 2022) ---
-        function generateRecommendation() {
-            // LÓGICA DE COBRANÇA
-            // Só cobra se: Estiver autorizado E NÃO for demo E NÃO for exemplo grátis
-            let shouldCharge = appState.authorized && !appState.isDemo && !appState.isFreeExample;
+        dbOperation.then(async () => {
+            if(!id) alert("Tarefa salva!"); 
+            closeModal();
+        }).catch(err => {
+            alert("Erro ao salvar: " + err.message);
+        });
+    }
 
-            if(shouldCharge) {
-                if(appState.credits <= 0) {
-                    alert("Seus créditos acabaram. Reinicie o aplicativo para solicitar mais.");
-                    return;
-                }
-                appState.credits--;
-                localStorage.setItem('sra_credits_milho', appState.credits);
-                updateCreditDisplay();
-            } else {
-                // Se for gratuito (Demo ou Exemplo), não faz nada com o crédito
-            }
+    function deleteTask(id, confirmAction = true) {
+        if(!confirmAction || confirm("Excluir esta tarefa?")) {
+            db.collection('users').doc(currentUser.uid).collection('tasks').doc(id).delete();
+        }
+    }
+    
+    function clearAllCompleted() {
+        const completedTasks = appData.tasks.filter(t => t.completed);
+        if(completedTasks.length === 0) return alert("Nenhuma tarefa concluída para limpar.");
+        
+        if(confirm(`Tem certeza? Isso apagará ${completedTasks.length} tarefas concluídas permanentemente.`)) {
+            let count = 0;
+            completedTasks.forEach(t => {
+                db.collection('users').doc(currentUser.uid).collection('tasks').doc(t.id).delete();
+                count++;
+            });
+            alert(`${count} tarefas foram removidas.`);
+        }
+    }
 
-            // 1. Coleta de Dados
-            const getVal = (id) => parseFloat(document.getElementById(id).value) || 0;
-            const inputs = {
-                owner: document.getElementById('ownerName').value,
-                prop: document.getElementById('propName').value,
-                season: document.getElementById('cropSeason').value, 
-                yield: getVal('targetYield'),
-                prevCult: document.getElementById('prevCulture').value,
-                sysType: document.getElementById('systemType').value,
-                clay: getVal('soilClay'),
-                P: getVal('soilP'),
-                K: getVal('soilK'),
-                Ca: getVal('soilCa'),
-                Mg: getVal('soilMg'),
-                CTC: getVal('soilCTC'),
-                V: getVal('soilV'),
-                PRNT: getVal('limePRNT') || 100
+    function toggleTask(id, status) {
+        if(!status) { 
+            const audio = document.getElementById('audioDone');
+            audio.currentTime = 0;
+            audio.play().catch(e => console.log("Audio play blocked", e));
+        }
+        db.collection('users').doc(currentUser.uid).collection('tasks').doc(id).update({ completed: !status });
+    }
+
+    // ==========================================
+    // 4. LÓGICA DE UI (NAVEGAÇÃO E VIEWS)
+    // ==========================================
+    let currentView = 'dashboard';
+    
+    function switchTab(tab) {
+        document.querySelectorAll('.nav-item').forEach(e => e.classList.remove('active'));
+        document.getElementById('nav-'+tab).classList.add('active');
+        document.querySelectorAll('.view-section').forEach(e => e.classList.add('hidden'));
+        document.getElementById('view-'+tab).classList.remove('hidden');
+        currentView = tab;
+        refreshViews();
+    }
+
+    function refreshViews() {
+        if(currentView === 'dashboard') renderDashboard();
+        if(currentView === 'tasks') renderTasks();
+        if(currentView === 'calendar') renderCalendar();
+    }
+
+    function renderDashboard() {
+        const listEl = document.getElementById('dashboard-list');
+        const todayStr = getLocalDateStr();
+        const pendingTasks = appData.tasks.filter(t => !t.completed);
+        
+        document.getElementById('stat-pending').textContent = pendingTasks.length;
+
+        const toReceive = pendingTasks
+            .filter(t => t.category === 'Cliente' && t.value)
+            .reduce((sum, t) => sum + parseFloat(t.value), 0);
+        document.getElementById('stat-revenue').textContent = `R$ ${toReceive.toFixed(2)}`;
+
+        const toPay = pendingTasks
+            .filter(t => t.category === 'Fornecedor' && t.value)
+            .reduce((sum, t) => sum + parseFloat(t.value), 0);
+        const elExpense = document.getElementById('stat-expense');
+        if(elExpense) elExpense.textContent = `R$ ${toPay.toFixed(2)}`;
+
+        const todaysTasks = appData.tasks.filter(t => t.date === todayStr && !t.completed);
+        listEl.innerHTML = '';
+        if(todaysTasks.length === 0) {
+            listEl.innerHTML = '<div class="empty-state">Nada pendente para hoje!</div>';
+            return;
+        }
+        todaysTasks.forEach(t => listEl.appendChild(createTaskElement(t)));
+    }
+
+    function renderTasks() {
+        const listEl = document.getElementById('tasks-list');
+        const filterCat = document.getElementById('filter-category').value;
+        const searchTerm = document.getElementById('task-search').value.toLowerCase().trim();
+        
+        listEl.innerHTML = '';
+        let tasks = [...appData.tasks];
+        
+        if(filterCat !== 'all') tasks = tasks.filter(t => (t.category || "") === filterCat);
+        if(searchTerm !== '') tasks = tasks.filter(t => (t.title && t.title.toLowerCase().includes(searchTerm)));
+
+        tasks.sort((a, b) => {
+            if (a.completed === b.completed) return new Date(a.date) - new Date(b.date);
+            return a.completed ? 1 : -1;
+        });
+        
+        if(tasks.length === 0) {
+            listEl.innerHTML = '<div class="empty-state">Nenhuma tarefa encontrada.</div>';
+            return;
+        }
+        tasks.forEach(t => listEl.appendChild(createTaskElement(t)));
+    }
+
+    function createTaskElement(t) {
+        const div = document.createElement('div');
+        div.className = `task-item ${t.completed ? 'done' : ''} priority-normal`;
+        
+        const waMsg = encodeURIComponent(`${t.title} - ${t.date} ${t.time}`);
+        const waBtn = `<button class="btn-icon btn-wa" onclick="window.open('https://wa.me/?text=${waMsg}')">💬</button>`;
+        
+        div.innerHTML = `
+            <div class="task-info" onclick="openEditModal('${t.id}')">
+                <span class="task-title">${t.sendEmail?'📧':''} ${t.title}</span>
+                <div class="task-meta">
+                    <span>📅 ${formatDateBR(t.date)} ${t.time||''}</span>
+                    ${t.category ? `<span class="tag">${t.category}</span>` : ''}
+                    ${t.value ? `<span class="tag" style="color:green">R$ ${t.value}</span>` : ''}
+                </div>
+            </div>
+            <div class="task-actions">
+                ${waBtn}
+                <button class="btn-icon" onclick="toggleTask('${t.id}', ${t.completed})">${t.completed?'↩️':'✅'}</button>
+                <button class="btn-icon" onclick="deleteTask('${t.id}')" style="color:var(--danger)">🗑️</button>
+            </div>
+        `;
+        return div;
+    }
+
+    let displayMonth = new Date().getMonth();
+    let displayYear = new Date().getFullYear();
+
+    function renderCalendar() {
+        const monthNames = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
+        document.getElementById('calendar-month-year').textContent = `${monthNames[displayMonth]} ${displayYear}`;
+        const daysContainer = document.getElementById('calendar-days');
+        daysContainer.innerHTML = '';
+
+        const firstDay = new Date(displayYear, displayMonth, 1);
+        const lastDay = new Date(displayYear, displayMonth + 1, 0);
+
+        for(let i=0; i<firstDay.getDay(); i++) daysContainer.appendChild(document.createElement('div'));
+
+        for(let i=1; i<=lastDay.getDate(); i++) {
+            const dStr = `${displayYear}-${String(displayMonth+1).padStart(2,'0')}-${String(i).padStart(2,'0')}`;
+            const el = document.createElement('div');
+            el.className = 'cal-day';
+            el.textContent = i;
+            if(appData.tasks.some(t => t.date === dStr && !t.completed)) el.classList.add('has-task');
+            if(dStr === getLocalDateStr()) el.classList.add('today');
+            el.onclick = () => {
+                const list = document.getElementById('calendar-task-list');
+                list.innerHTML = '';
+                const tasks = appData.tasks.filter(t => t.date === dStr);
+                if(tasks.length === 0) list.innerHTML = 'Nada neste dia.';
+                else tasks.forEach(t => list.appendChild(createTaskElement(t)));
             };
+            daysContainer.appendChild(el);
+        }
+    }
+    function changeMonth(o) {
+        displayMonth += o;
+        if(displayMonth>11) { displayMonth=0; displayYear++; }
+        if(displayMonth<0) { displayMonth=11; displayYear--; }
+        renderCalendar();
+    }
 
-            // 2. Classificação Textura
-            let textureClass = "";
-            if(inputs.clay <= 20) textureClass = "arenosa";
-            else if(inputs.clay <= 60) textureClass = "media";
-            else textureClass = "argilosa";
+    // ==========================================
+    // 5. ALARMES E EMAILS AUTOMÁTICOS
+    // ==========================================
+    setInterval(checkAlarms, 10000);
 
-            // 3. Calagem (NC)
-            let nc = 0;
-            const V2 = 70;
-            if(inputs.V < V2) {
-                nc = ((V2 - inputs.V) * inputs.CTC) / (inputs.PRNT * 10);
-            }
-            nc = Math.max(0, nc);
-            
-            let limeType = (inputs.Mg >= 5) ? "Calcítico" : "Dolomítico ou Magnesiano";
-            let limeDesc = (inputs.Mg < 5) ? `Aplicar Calcário ${limeType} (Teor Mg < 5 mmolc/dm³)` : `Pode-se usar Calcário ${limeType}`;
+    function checkAlarms() {
+        if(!currentUser) return;
+        const now = new Date();
+        const todayStr = getLocalDateStr();
 
-            // 4. Fósforo (P2O5)
-            let recP = 0;
-            if(textureClass === "arenosa") {
-                if(inputs.P <= 10) recP = 80; else if(inputs.P <= 20) recP = 60; else if(inputs.P <= 30) recP = 40; else recP = 20;
-            } else if(textureClass === "media") {
-                if(inputs.P <= 10) recP = 100; else if(inputs.P <= 20) recP = 80; else if(inputs.P <= 30) recP = 60; else recP = 40;
-            } else { 
-                if(inputs.P <= 10) recP = 120; else if(inputs.P <= 20) recP = 100; else if(inputs.P <= 30) recP = 80; else recP = 60;
-            }
+        appData.tasks.forEach(task => {
+            if(task.completed) return; 
 
-            // 5. Potássio (K2O)
-            let recK = 0;
-            if(textureClass === "arenosa") {
-                if(inputs.K <= 0.8) recK = 80; else if(inputs.K <= 1.5) recK = 60; else if(inputs.K <= 2.5) recK = 40; else recK = 20;
-            } else if(textureClass === "media") {
-                if(inputs.K <= 1.0) recK = 100; else if(inputs.K <= 2.0) recK = 80; else if(inputs.K <= 3.5) recK = 60; else recK = 40;
-            } else { 
-                if(inputs.K <= 1.2) recK = 120; else if(inputs.K <= 2.5) recK = 100; else if(inputs.K <= 4.5) recK = 80; else recK = 60;
-            }
+            // ALARME SONORO
+            if(task.time) {
+                const taskDateTime = new Date(`${task.date}T${task.time}:00`);
+                const diffMs = taskDateTime - now;
+                const diffMin = diffMs / 60000; 
 
-            // 6. Nitrogênio (N)
-            let recN = 0;
-            const highYield = inputs.yield > 100;
-            if(inputs.prevCult === "milho") recN = highYield ? 80 : 60;
-            else if(inputs.prevCult === "graminea") recN = highYield ? 100 : 80;
-            else recN = highYield ? 60 : 40;
+                const startMin = task.remStart || defaultConfig.alarmStartMin;
+                const freqMin = task.remInt || defaultConfig.alarmFreqMin;
+                const overFreqMin = task.remOverInt || defaultConfig.alarmOverdueFreq;
+                
+                let shouldTrigger = false;
+                let triggerType = "";
 
-            // 7. Ajuste Safrinha
-            let warningSafrinha = "";
-            if(inputs.season === "safrinha") {
-                recN *= 0.8; recK *= 0.8;
-                warningSafrinha = "(Valores de N e K reduzidos em 20% para Safrinha)";
-            }
+                if (diffMin > 0 && diffMin <= startMin) {
+                    if (isIntervalPassed(task.lastAlarmSent, freqMin * 60000)) {
+                        shouldTrigger = true;
+                        triggerType = `Faltam ${Math.ceil(diffMin)} min`;
+                    }
+                }
+                
+                if (diffMin < -1) { 
+                    if (isIntervalPassed(task.lastAlarmSent, overFreqMin * 60000)) {
+                        shouldTrigger = true;
+                        triggerType = "ATRASADO!";
+                    }
+                }
 
-            // 8. Fontes
-            let mapKg = recP / 0.52; 
-            let nFromMap = mapKg * 0.11;
-            let remainingN = Math.max(0, recN - nFromMap);
-            let ureaKg = remainingN / 0.45; 
-            let kKCl = recK / 0.60;
-            let kSulco = 0, kCob1 = 0, kCob2 = 0;
+                if (Math.abs(diffMin) <= 0.5 && (!task.lastAlarmSent || (now - new Date(task.lastAlarmSent).getTime() > 60000))) {
+                     shouldTrigger = true;
+                     triggerType = "É AGORA!";
+                }
 
-            if(textureClass === "arenosa") {
-                kSulco = kKCl / 3; kCob1 = kKCl / 3; kCob2 = kKCl / 3;
-            } else {
-                kSulco = kKCl / 2; kCob1 = kKCl / 2;
+                if (shouldTrigger) {
+                    triggerAlarm(task, triggerType);
+                    db.collection('users').doc(currentUser.uid).collection('tasks').doc(task.id).update({
+                        lastAlarmSent: now.toISOString()
+                    });
+                }
             }
 
-            let gessoTon = (inputs.clay * 50) / 1000;
+            // EMAIL
+            if (task.sendEmail && task.emailAddr) {
+                const taskDate = new Date(`${task.date}T00:00:00`); 
+                const todayDate = new Date(`${todayStr}T00:00:00`); 
+                
+                const diffTime = taskDate.getTime() - todayDate.getTime();
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
 
-            // Textos
-            let microText = `Zinco (Zn): 300-400 g/ha\nBoro (B): 150-200 g/ha`;
-            let orgText = `Esterco de Curral: 15-20 t/ha ou Aves: 4-6 t/ha`;
+                const mailStartDays = task.mailDays || defaultConfig.emailDaysBefore;
+                const mailFreqDays = task.mailInt || defaultConfig.emailFreqDays;
+                const mailOverFreq = task.mailOverInt || defaultConfig.emailOverdueFreq;
+                const mailMax = task.mailMax || defaultConfig.emailOverdueMax;
+                const overdueCount = task.overdueEmailCount || 0;
 
-            let demoMsg = (appState.isDemo || appState.isFreeExample) ? "*** SIMULAÇÃO COM DADOS FICTÍCIOS - NÃO VÁLIDO PARA USO AGRONÔMICO ***\n" : "";
-            const dateStr = new Date().toLocaleDateString('pt-BR');
+                let shouldSend = false;
+                let subjectPrefix = "";
 
-            let report = `
-${demoMsg}
-=== RECOMENDAÇÃO AGRONÔMICA MILHO (IAC 100) ===
-Data: ${dateStr}
-Propriedade: ${inputs.prop} | Produtor: ${inputs.owner}
-Safra: ${inputs.season.toUpperCase()} | Meta: ${inputs.yield} sc/ha
-Solo: ${inputs.clay}% Argila (${textureClass.toUpperCase()})
+                if (diffDays >= 0 && diffDays <= mailStartDays) {
+                    if (isIntervalPassed(task.lastEmailSent, mailFreqDays * 86400000)) {
+                        shouldSend = true;
+                        subjectPrefix = diffDays === 0 ? "HOJE:" : "Lembrete:";
+                    }
+                }
 
-1. CORREÇÃO DO SOLO (CALAGEM)
---------------------------------------------------
-Necessidade (NC): ${nc.toFixed(1)} t/ha
-Recomendação: ${limeDesc}
-Meta: Elevar V% a 70% e Mg > 5 mmolc/dm³.
+                if (diffDays < 0) {
+                    if (overdueCount < mailMax) {
+                        if (isIntervalPassed(task.lastEmailSent, mailOverFreq * 86400000)) {
+                            shouldSend = true;
+                            subjectPrefix = "ATRASADO:";
+                        }
+                    }
+                }
 
-2. GESSAGEM
---------------------------------------------------
-Dose Estimada: ${gessoTon.toFixed(1)} t/ha
+                if (shouldSend) {
+                    sendEmail(task, subjectPrefix, diffDays < 0);
+                }
+            }
+        });
+    }
 
-3. ADUBAÇÃO MINERAL (N-P-K)
---------------------------------------------------
-> N: ${recN.toFixed(0)} kg/ha ${warningSafrinha}
-> P2O5: ${recP} kg/ha
-> K2O: ${recK.toFixed(0)} kg/ha ${warningSafrinha}
+    function isIntervalPassed(lastStr, intervalMs) {
+        if (!lastStr) return true;
+        const last = new Date(lastStr).getTime();
+        const now = new Date().getTime();
+        return (now - last) >= intervalMs;
+    }
 
-SUGESTÃO DE MANEJO:
-A) PLANTIO
-   > MAP: ${Math.round(mapKg)} kg/ha
-   > KCl: ${Math.round(kSulco)} kg/ha
-
-B) COBERTURA
-   > Ureia Total: ${Math.round(ureaKg)} kg/ha
-   > KCl Restante: ${Math.round(kKCl - kSulco)} kg/ha
-   
-   Aplicação:
-   - V4-V6: ${textureClass === 'arenosa' ? '50% do N, 1/3 do K' : '100% do N, Restante do K'}
-   ${textureClass === 'arenosa' ? '- V8-V10: 50% do N, 1/3 do K' : ''}
-
-4. MICRONUTRIENTES
---------------------------------------------------
-${microText}
-
-5. ORGÂNICA
---------------------------------------------------
-${orgText}
-
---------------------------------------------------
-Responsável Técnico: _________________________
-Gerado por SRA
-`;
-
-            // Renderizar
-            document.getElementById('resultsSection').style.display = 'block';
-            document.getElementById('finalReportText').value = report.trim();
-            
-            const tbody = document.getElementById('techTableBody');
-            tbody.innerHTML = `
-                <tr><td>Soma de Bases</td><td>${document.getElementById('soilSB').value}</td><td>mmolc/dm³</td></tr>
-                <tr><td>Calagem</td><td>${nc.toFixed(1)}</td><td>t/ha</td></tr>
-                <tr><td>Gesso</td><td>${gessoTon.toFixed(1)}</td><td>t/ha</td></tr>
-                <tr><td>N Total</td><td>${recN.toFixed(0)}</td><td>kg/ha</td></tr>
-                <tr><td>P2O5</td><td>${recP}</td><td>kg/ha</td></tr>
-                <tr><td>K2O</td><td>${recK.toFixed(0)}</td><td>kg/ha</td></tr>
-            `;
-
-            document.getElementById('resultsSection').scrollIntoView({behavior: 'smooth'});
+    function sendEmail(task, subjectPrefix, isOverdue) {
+        const nowIso = new Date().toISOString();
+        let updateData = { lastEmailSent: nowIso };
+        if (isOverdue) {
+            updateData.overdueEmailCount = (task.overdueEmailCount || 0) + 1;
         }
 
-        // --- EXPORTAR ---
-        function shareWhatsapp() {
-            const txt = document.getElementById('finalReportText').value;
-            window.open(`https://wa.me/?text=${encodeURIComponent(txt)}`, '_blank');
-        }
-        function shareEmail() {
-            const txt = document.getElementById('finalReportText').value;
-            const subj = `Recomendação Milho - ${document.getElementById('ownerName').value}`;
-            window.location.href = `mailto:?subject=${encodeURIComponent(subj)}&body=${encodeURIComponent(txt)}`;
-        }
+        db.collection('users').doc(currentUser.uid).collection('tasks').doc(task.id).update(updateData);
 
-    </script>
+        let htmlContent = `
+            <div style="font-family: Arial, sans-serif; color: #333;">
+                <h2 style="color: ${isOverdue ? '#e74c3c' : '#0066cc'};">${subjectPrefix} ${task.title}</h2>
+                <p>Olá! Detalhes do seu compromisso:</p>
+                <hr>
+                <p><strong>Descrição:</strong> ${task.description || 'Sem detalhes.'}</p>
+                <p><strong>Data:</strong> ${formatDateBR(task.date)} ${task.time || ''}</p>
+        `;
+        if (task.value) { htmlContent += `<p><strong>Valor:</strong> R$ ${task.value}</p>`; }
+        htmlContent += `
+                <hr>
+                <small>Compromisso Fácil Cloud Pro.</small>
+            </div>
+        `;
+
+        fetch('https://enviaremailsdiarios-368296869868.southamerica-east1.run.app/send-email', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                to: task.emailAddr,
+                subject: `${subjectPrefix} ${task.title}`,
+                html: htmlContent
+            })
+        }).then(() => console.log("Email enviado para " + task.title))
+          .catch(err => console.error("Erro envio email", err));
+    }
+
+    function triggerAlarm(task, typeText) {
+        const audio = document.getElementById('audioAlert');
+        audio.currentTime = 0;
+        audio.play().catch(()=>{});
+
+        document.getElementById('alarm-context').textContent = typeText;
+        document.getElementById('alarm-task-id').value = task.id;
+        document.getElementById('alarm-time-display').textContent = task.time;
+        document.getElementById('alarm-text-display').textContent = task.title;
+        document.getElementById('alarmModal').classList.add('active');
+        
+        if(Notification.permission==="granted") new Notification(`${typeText}: ${task.title}`);
+    }
+
+    function stopAlarm() {
+        document.getElementById('alarmModal').classList.remove('active');
+        document.getElementById('audioAlert').pause();
+    }
+
+    function completeTaskFromAlarm() {
+        const id = document.getElementById('alarm-task-id').value;
+        const audio = document.getElementById('audioDone');
+        audio.currentTime = 0;
+        audio.play().catch(()=>{});
+        db.collection('users').doc(currentUser.uid).collection('tasks').doc(id).update({ completed: true });
+        stopAlarm();
+    }
+
+    // ==========================================
+    // 6. BACKUP, RESTAURAÇÃO E LIMPEZA
+    // ==========================================
+    function backupData() {
+        if(appData.tasks.length === 0) return alert("Nada para salvar.");
+        const dataStr = JSON.stringify(appData.tasks, null, 2);
+        const blob = new Blob([dataStr], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        const date = new Date().toISOString().split('T')[0];
+        a.download = `backup_compromissos_${date}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }
+
+    function triggerRestore() {
+        document.getElementById('restore-input').click();
+    }
+
+    function restoreData(input) {
+        const file = input.files[0];
+        if(!file) return;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const tasks = JSON.parse(e.target.result);
+                if(!Array.isArray(tasks)) return alert("Arquivo inválido!");
+                if(confirm(`Tem certeza? Isso irá adicionar ${tasks.length} tarefas à sua conta.`)) {
+                    tasks.forEach(t => {
+                        delete t.id; 
+                        db.collection('users').doc(currentUser.uid).collection('tasks').add(t);
+                    });
+                    alert("Restauração iniciada!");
+                }
+            } catch(err) { alert("Erro ao ler arquivo: " + err); }
+        };
+        reader.readAsText(file);
+        input.value = ''; 
+    }
+
+    function toggleCleanup(chk) {
+        localStorage.setItem('autoCleanup', chk.checked);
+        if(chk.checked) runAutoCleanup();
+    }
+
+    function runAutoCleanup() {
+        const isEnabled = localStorage.getItem('autoCleanup') === 'true';
+        if(!isEnabled || !appData.tasks) return;
+
+        const cutoff = new Date();
+        cutoff.setDate(cutoff.getDate() - 30); 
+        const cutoffStr = cutoff.toISOString().split('T')[0];
+        const oldTasks = appData.tasks.filter(t => t.completed && t.date < cutoffStr);
+
+        if (oldTasks.length > 0) {
+            if(confirm(`Limpeza Automática: Existem ${oldTasks.length} tarefas concluídas há mais de 30 dias. Deseja apagá-las para liberar espaço?`)) {
+                let count = 0;
+                oldTasks.forEach(t => {
+                    db.collection('users').doc(currentUser.uid).collection('tasks').doc(t.id).delete();
+                    count++;
+                });
+                console.log(`Limpeza automática: ${count} removidas.`);
+            }
+        }
+    }
+    
+    // ==========================================
+    // 7. GERAÇÃO DE PIX COPIA E COLA
+    // ==========================================
+    const PIX_KEY_GLOBAL = "b4648948-d0a8-4402-81f4-8a4047fcf4e5";
+    
+    function crc16(str) {
+        let crc = 0xFFFF;
+        for (let i = 0; i < str.length; i++) {
+            crc ^= str.charCodeAt(i) << 8;
+            for (let j = 0; j < 8; j++) {
+                if ((crc & 0x8000) !== 0) crc = (crc << 1) ^ 0x1021;
+                else crc = crc << 1;
+            }
+        }
+        return (crc & 0xFFFF).toString(16).toUpperCase().padStart(4, '0');
+    }
+
+    function createPixPayload(amount) {
+        const format = (id, val) => id + val.length.toString().padStart(2, '0') + val;
+        const merchantInfo = format('00', 'BR.GOV.BCB.PIX') + format('01', PIX_KEY_GLOBAL);
+        let payload = 
+            format('00', '01') + 
+            format('26', merchantInfo) + 
+            format('52', '0000') + 
+            format('53', '986');
+        if (amount > 0) payload += format('54', amount.toFixed(2));
+        payload += format('58', 'BR') + format('59', 'App Compromisso') + format('60', 'Cidade') + format('62', format('05', '***'));
+        payload += '6304';
+        payload += crc16(payload);
+        return payload;
+    }
+
+    function generatePixCopyPaste(amount) {
+        const code = createPixPayload(amount);
+        copyToClipboard(code, "Pix Copia e Cola (R$ "+amount+",00) copiado!");
+        const disp = document.getElementById('pix-display-area');
+        disp.style.display = 'block';
+        disp.textContent = code;
+    }
+
+    function copyPixSimpleKey() {
+        copyToClipboard(PIX_KEY_GLOBAL, "Chave Pix copiada!");
+        const disp = document.getElementById('pix-display-area');
+        disp.style.display = 'block';
+        disp.textContent = PIX_KEY_GLOBAL;
+    }
+
+    function copyToClipboard(text, msg) {
+        navigator.clipboard.writeText(text).then(() => {
+            const feed = document.getElementById('pix-feedback');
+            feed.textContent = "✅ " + msg;
+            feed.style.display = 'block';
+            setTimeout(() => feed.style.display = 'none', 4000);
+        }).catch(err => alert("Erro ao copiar: " + text));
+    }
+
+    function openSupportModal() {
+        document.getElementById('pix-display-area').style.display = 'none';
+        document.getElementById('pix-feedback').style.display = 'none';
+        document.getElementById('supportModal').classList.add('open');
+    }
+    function closeSupportModal() {
+        document.getElementById('supportModal').classList.remove('open');
+    }
+
+    // --- UI HELPERS ---
+    function openModal() {
+        document.getElementById('taskModal').classList.add('open');
+        document.getElementById('t-id').value = '';
+        
+        // Limpa campos
+        document.getElementById('t-title').value = '';
+        document.getElementById('t-desc').value = ''; 
+        document.getElementById('t-date').value = ''; 
+        document.getElementById('t-time').value = '';
+        document.getElementById('t-category').value = '';
+        document.getElementById('t-value').value = '';
+        document.getElementById('t-email-addr').value = '';
+        document.getElementById('t-send-email').checked = false;
+        
+        // CARREGA DEFAULTS
+        document.getElementById('t-rem-start').value = defaultConfig.alarmStartMin;
+        document.getElementById('t-rem-int').value = defaultConfig.alarmFreqMin;
+        document.getElementById('t-rem-over-int').value = defaultConfig.alarmOverdueFreq;
+        document.getElementById('t-mail-days').value = defaultConfig.emailDaysBefore;
+        document.getElementById('t-mail-int').value = defaultConfig.emailFreqDays;
+        document.getElementById('t-mail-over-int').value = defaultConfig.emailOverdueFreq;
+        document.getElementById('t-mail-max').value = defaultConfig.emailOverdueMax;
+        
+        toggleEmailInput();
+    }
+
+    function openEditModal(id) {
+        const t = appData.tasks.find(x => x.id === id);
+        if(!t) return;
+        document.getElementById('t-id').value = t.id;
+        document.getElementById('t-title').value = t.title;
+        document.getElementById('t-desc').value = t.description || ''; 
+        document.getElementById('t-date').value = t.date;
+        document.getElementById('t-time').value = t.time;
+        document.getElementById('t-category').value = t.category||'';
+        document.getElementById('t-value').value = t.value||'';
+        document.getElementById('t-send-email').checked = t.sendEmail;
+        document.getElementById('t-email-addr').value = t.emailAddr||'';
+        
+        // Configs
+        document.getElementById('t-rem-start').value = t.remStart || defaultConfig.alarmStartMin;
+        document.getElementById('t-rem-int').value = t.remInt || defaultConfig.alarmFreqMin;
+        document.getElementById('t-rem-over-int').value = t.remOverInt || defaultConfig.alarmOverdueFreq;
+        document.getElementById('t-mail-days').value = t.mailDays || defaultConfig.emailDaysBefore;
+        document.getElementById('t-mail-int').value = t.mailInt || defaultConfig.emailFreqDays;
+        document.getElementById('t-mail-over-int').value = t.mailOverInt || defaultConfig.emailOverdueFreq;
+        document.getElementById('t-mail-max').value = t.mailMax || defaultConfig.emailOverdueMax;
+
+        toggleEmailInput();
+        document.getElementById('taskModal').classList.add('open');
+    }
+    
+    function closeModal() { document.getElementById('taskModal').classList.remove('open'); }
+    function toggleEmailInput() { 
+        const chk = document.getElementById('t-send-email').checked; 
+        document.getElementById('div-email-input').classList.toggle('hidden', !chk);
+    }
+    function formatDateBR(d) { return d.split('-').reverse().join('/'); }
+    function exportPDF() {
+        if(!window.jspdf) return alert("Carregando libs...");
+        const doc = new window.jspdf.jsPDF();
+        doc.text("Relatório Tarefas", 10, 10);
+        const rows = appData.tasks.map(t=>[formatDateBR(t.date), t.title, t.completed?'OK':'Pending']);
+        doc.autoTable({ head:[['Data','Tarefa','Status']], body:rows });
+        doc.save('relatorio.pdf');
+    }
+
+    const hr = new Date().getHours();
+    document.getElementById('greeting').textContent = hr<12?"Bom dia!":hr<18?"Boa tarde!":"Boa noite!";
+    if("Notification" in window) Notification.requestPermission();
+
+</script>
 </body>
 </html>
