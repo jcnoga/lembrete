@@ -1,0 +1,273 @@
+const firebaseConfig = {
+  apiKey: "AIzaSyBhtwWew_DQNX2TZROUShZz4mjK57pRgQk",
+  authDomain: "lembrete-d6c15.firebaseapp.com",
+  projectId: "lembrete-d6c15",
+  storageBucket: "lembrete-d6c15.firebasestorage.app",
+  messagingSenderId: "368296869868",
+  appId: "1:368296869868:web:7a2c0a91f57de5d3a90ac9",
+  measurementId: "G-JE0QH81JG6"
+};
+
+apikey: AIzaSyBhtwWew_DQNX2TZROUShZz4mjK57pRgQk
+
+
+
+
+
+===============================================================================
+
+O motivo pelo qual o e-mail não está chegando é que o arquivo index.html que
+ você copiou é apenas o Front-end (a "cara" do aplicativo). Ele salva a tarefa
+ no banco de dados e marca que você quer receber um e-mail.
+Para que o e-mail saia de fato, você precisa configurar o "Robô" (Back-end) 
+no Google Cloud, pois navegadores bloqueiam o envio direto de e-mails 
+automáticos por segurança.
+Aqui está o Checklist de Correção para fazer o envio funcionar:
+1. Você criou a "Cloud Function" no Google Cloud?
+O HTML sozinho não envia o e-mail. Você precisa colar o código do robô no painel do Google.
+Acesse console.cloud.google.com.
+Vá em Cloud Functions > Criar Função.
+Nome: enviarEmailsDiarios.
+Gatilho: HTTPS (Marque "Permitir não autenticado" para testar fácil).
+Clique em Próximo.
+No editor de código, você precisa colar estes dois arquivos:
+Arquivo package.json:
+(Define as ferramentas que o robô vai usar)
+code
+JSON
+{
+  "name": "sample-http",
+  "version": "0.0.1",
+  "dependencies": {
+    "@google-cloud/functions-framework": "^3.0.0",
+    "firebase-admin": "^11.0.0",
+    "nodemailer": "^6.9.0"
+  }
+}
+Arquivo index.js:
+(A lógica que lê o banco e envia o e-mail)
+Atenção: Você precisa gerar uma Senha de App no seu Gmail. Não use sua senha normal. 
+(Vá em Conta Google > Segurança > Verificação em 2 etapas > Senhas de App).
+code
+JavaScript
+const functions = require('@google-cloud/functions-framework');
+const admin = require('firebase-admin');
+const nodemailer = require('nodemailer');
+
+admin.initializeApp();
+const db = admin.firestore();
+
+// --- CONFIGURAÇÃO DO GMAIL ---
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: 'SEU_EMAIL@gmail.com', // <--- COLOQUE SEU EMAIL AQUI
+    pass: 'SUA_SENHA_DE_APP'     // <--- COLOQUE A SENHA DE APP AQUI (16 letras)
+  }
+});
+
+functions.http('enviarEmailsDiarios', async (req, res) => {
+  try {
+    // Calcula a data de AMANHÃ (para avisar na véspera)
+    const hoje = new Date();
+    const amanha = new Date(hoje);
+    amanha.setDate(amanha.getDate() + 1);
+    const dataAlvo = amanha.toISOString().split('T')[0]; 
+
+    console.log(`Verificando tarefas para: ${dataAlvo}`);
+
+    // Busca tarefas no banco
+    // IMPORTANTE: Isso exige um índice no Firestore (veja o erro nos logs se falhar)
+    const snapshot = await db.collectionGroup('tasks')
+      .where('date', '==', dataAlvo)
+      .where('sendEmail', '==', true)
+      .where('completed', '==', false)
+      .get();
+
+    if (snapshot.empty) {
+      return res.send('Nenhuma tarefa para enviar e-mail amanhã.');
+    }
+
+    const envios = [];
+
+    snapshot.forEach(doc => {
+      const task = doc.data();
+      if (task.emailAddr) {
+        const mailOptions = {
+          from: 'Lembrete Fácil <seu_email@gmail.com>',
+          to: task.emailAddr,
+          subject: `🔔 Lembrete: ${task.title}`,
+          html: `
+            <h3>Olá! Você tem um compromisso amanhã.</h3>
+            <p><strong>O quê:</strong> ${task.title}</p>
+            <p><strong>Quando:</strong> ${task.time || 'Dia todo'}</p>
+            <p><strong>Valor:</strong> R$ ${task.value || '0,00'}</p>
+            <hr>
+            <p><i>Enviado automaticamente pelo Compromisso Fácil Cloud.</i></p>
+          `
+        };
+        envios.push(transporter.sendMail(mailOptions));
+      }
+    });
+
+    await Promise.all(envios);
+    res.send(`Sucesso! ${envios.length} e-mails enviados.`);
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).send("Erro: " + error.message);
+  }
+});
+2. Erro de Índice (Muito Comum)
+Depois de criar a função, se você tentar rodar e der erro, vá na aba LOGS da Cloud Function.
+Provavelmente haverá um erro vermelho dizendo: "The query requires an index".
+Haverá um link azul ao lado desse erro nos logs.
+Clique nesse link. Ele vai abrir o Firestore e criar o índice necessário
+ automaticamente. Sem isso, o Google bloqueia a busca por segurança.
+3. Agendador (Cloud Scheduler)
+O código acima só roda quando alguém "chama" ele. Para ser automático:
+Vá em Cloud Scheduler no Google Cloud.
+Crie um Job.
+Frequência: 0 8 * * * (Todo dia às 8h).
+Destino: HTTP.
+URL: Cole a URL da sua Cloud Function (você pega ela na aba "Gatilho" ou "Trigger" da função).
+Resumo
+Se você só usar o arquivo index.html, o checkbox "Enviar e-mail automático" apenas 
+salva essa preferência no banco de dados. O envio real depende desse código Back-end
+ rodando no servidor do Google.
+Se você achou isso muito complicado e prefere uma solução mais simples (mas que 
+exige o navegador aberto), me avise que eu altero o código para usar o EmailJS (Front-end) novamente.
+
+https://console.cloud.google.com/projectselector2/run?supportedpurview=project&authuser=0
+
+lembrete-d6c15
+
+lembrete91@gmail.com,   Senha de app: LembreteApp=   avba hgmo gvxo axvf
+---------------------------------------------------------------------------------
+
+
+
+
+
+passo a passo:
+
+Perfeito. O lugar correto para colocar essas informações é exclusivamente no 
+"Cérebro" (o Robô) que fica dentro do Google Cloud, e não no arquivo HTML do site.
+Aqui está o passo a passo exato de onde colar isso:
+
+Passo 1:
+ Acesse o Painel do Google Cloud
+Entre no site: console.cloud.google.com
+Na barra azul do topo, certifique-se de que o projeto selecionado é o lembrete-d6c15.
+
+Passo 2:
+Vá para as "Cloud Functions"
+Na barra de busca (topo da página), digite: Cloud Functions.
+Clique na opção Cloud Functions.
+Se você já criou a função enviarEmailsDiarios, clique no nome dela.
+Se não criou, clique em "Criar Função", dê o nome enviarEmailsDiarios, 
+escolha Gatilho HTTPS e clique em Próximo.
+Se já existia, clique no botão EDITAR (no topo).
+Clique em PRÓXIMO para chegar na tela do código.
+
+Passo 3:
+ Coloque o E-mail e a Senha
+Agora você verá um editor de texto com dois arquivos: package.json e index.js.
+
+1. No arquivo package.json:
+Certifique-se de que está escrito exatamente assim (copie e cole se precisar):
+code
+JSON
+{
+  "name": "sample-http",
+  "version": "0.0.1",
+  "dependencies": {
+    "@google-cloud/functions-framework": "^3.0.0",
+    "firebase-admin": "^11.0.0",
+    "nodemailer": "^6.9.0"
+  }
+}
+2. No arquivo index.js (AQUI É O LUGAR DO E-MAIL):
+Apague tudo o que estiver lá e cole este código exato abaixo. Eu já coloquei o seu e-mail e a sua senha nele:
+code
+JavaScript
+const functions = require('@google-cloud/functions-framework');
+const admin = require('firebase-admin');
+const nodemailer = require('nodemailer');
+
+admin.initializeApp();
+const db = admin.firestore();
+
+// --- AQUI ESTÁ A CONFIGURAÇÃO DO SEU E-MAIL ---
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: 'lembrete91@gmail.com',  // Seu e-mail
+    pass: 'pyfz mxbq pqrq btgb'    // Sua senha de app
+  }
+});
+
+functions.http('enviarEmailsDiarios', async (req, res) => {
+  try {
+    // Define a data de AMANHÃ
+    const hoje = new Date();
+    const amanha = new Date(hoje);
+    amanha.setDate(amanha.getDate() + 1);
+    // Ajuste para o fuso horário do Brasil (Garante que a data esteja certa)
+    const dataAlvo = amanha.toLocaleDateString('pt-BR').split('/').reverse().join('-'); // YYYY-MM-DD
+
+    console.log(`Verificando tarefas para a data: ${dataAlvo}`);
+
+    // Busca tarefas no banco de dados
+    const snapshot = await db.collectionGroup('tasks')
+      .where('date', '==', dataAlvo)
+      .where('sendEmail', '==', true)
+      .where('completed', '==', false)
+      .get();
+
+    if (snapshot.empty) {
+      return res.send('Nenhuma tarefa encontrada para amanhã.');
+    }
+
+    const envios = [];
+
+    snapshot.forEach(doc => {
+      const task = doc.data();
+      // Só envia se tiver e-mail de destino cadastrado na tarefa
+      if (task.emailAddr) {
+        const mailOptions = {
+          from: 'Compromisso Fácil <lembrete91@gmail.com>',
+          to: task.emailAddr,
+          subject: `🔔 Lembrete: ${task.title}`,
+          html: `
+            <div style="font-family: Arial, sans-serif; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
+              <h2 style="color: #0066cc;">Olá! Lembrete de Compromisso</h2>
+              <p>Você tem uma tarefa agendada para <strong>amanhã</strong>.</p>
+              <hr>
+              <p><strong>📌 Tarefa:</strong> ${task.title}</p>
+              <p><strong>⏰ Horário:</strong> ${task.time || 'Dia todo'}</p>
+              <p><strong>💰 Valor:</strong> R$ ${task.value || '0,00'}</p>
+              <p><strong>📝 Notas:</strong> ${task.notes || 'Sem detalhes'}</p>
+              <hr>
+              <small style="color: #777;">Enviado automaticamente pelo seu App.</small>
+            </div>
+          `
+        };
+        envios.push(transporter.sendMail(mailOptions));
+      }
+    });
+
+    await Promise.all(envios);
+    res.send(`Sucesso! ${envios.length} e-mails enviados.`);
+
+  } catch (error) {
+    console.error('Erro:', error);
+    res.status(500).send('Erro no envio: ' + error.message);
+  }
+});
+Passo 4: Finalizar
+Clique no botão azul IMPLANTAR (ou Deploy) no final da página.
+Aguarde uns 2 minutos até aparecer um "check" verde ✅ ao lado da função.
+Pronto! Agora o robô tem suas credenciais corretas e seguras.
+Se você configurou o Cloud Scheduler (o despertador) para tocar todo dia às 08:00
+ (como falamos antes), ele vai usar esse código aí em cima para disparar os e-mails.
