@@ -2,1364 +2,197 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Compromisso Fácil Cloud Pro</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AgriManager | Gestão Agrícola</title>
     
-    <!-- Bibliotecas PDF -->
+    <!-- Bibliotecas Externas (CDNs) -->
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
-    
-    <!-- FIREBASE SDKs -->
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
-    <!-- MANIFEST PWA -->
-    <link rel="manifest" href="manifest.json">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
 
-    <style>
-        :root {
-            --primary: #0066cc;
-            --primary-dark: #004c99;
-            --secondary: #00cc99;
-            --bg: #f4f7f6;
-            --text: #333;
-            --text-light: #777;
-            --white: #fff;
-            --danger: #e74c3c;
-            --warning: #f39c12;
-            --radius: 12px;
-            --shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
+    <!-- Firebase SDK (Versão Compatibilidade) - Essencial para funcionamento Online -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 
-        * { box-sizing: border-box; outline: none; -webkit-tap-highlight-color: transparent; }
-        body { margin: 0; font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background: var(--bg); color: var(--text); height: 100vh; display: flex; flex-direction: column; }
-
-        /* --- TELA DE LOGIN --- */
-        #auth-screen {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
-            z-index: 5000; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px;
-        }
-        .auth-box { background: white; padding: 30px; border-radius: 15px; width: 100%; max-width: 400px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); text-align: center; }
-        .auth-box h2 { color: var(--primary); margin-bottom: 20px; margin-top: 0; }
-        .auth-input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 15px; font-size: 1rem; }
-        .auth-btn { width: 100%; padding: 12px; background: var(--primary); color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 1rem; transition: background 0.2s; }
-        .auth-btn:active { transform: scale(0.98); }
-        .auth-link { margin-top: 20px; font-size: 0.9rem; color: var(--primary); text-decoration: underline; cursor: pointer; display: block; }
-        .hidden { display: none !important; }
-
-        /* ESTILOS GOOGLE LOGIN */
-        .divider { display: flex; align-items: center; margin: 20px 0; color: #ccc; font-size: 0.8rem; }
-        .divider span { flex: 1; height: 1px; background: #eee; }
-        .divider p { margin: 0 10px; }
-        
-        .btn-google {
-            background: #fff; color: #333; border: 1px solid #ddd;
-            display: flex; align-items: center; justify-content: center; gap: 10px;
-            position: relative;
-        }
-        .btn-google:hover { background: #f9f9f9; }
-        .google-icon { width: 18px; height: 18px; }
-
-        /* --- APP HEADER --- */
-        header { background: var(--white); padding: 15px 20px; box-shadow: 0 1px 5px rgba(0,0,0,0.05); display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; }
-        .app-name { font-size: 1.2rem; color: var(--primary); display: flex; align-items: center; gap: 8px; font-weight: bold; }
-        .user-status { font-size: 0.8rem; color: #777; display:flex; align-items: center; gap: 5px; }
-
-        /* --- MAIN CONTAINER --- */
-        main { flex: 1; overflow-y: auto; padding: 20px; padding-bottom: 80px; }
-
-        /* --- DASHBOARD WIDGETS --- */
-        .dashboard-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 25px; }
-        .card { background: var(--white); padding: 15px; border-radius: var(--radius); box-shadow: var(--shadow); position: relative; }
-        .card-stat h3 { font-size: 2rem; color: var(--primary); margin: 0; }
-        .card-stat p { font-size: 0.9rem; color: var(--text-light); margin: 0; }
-        .welcome-card { background: linear-gradient(135deg, var(--primary), var(--primary-dark)); color: white; grid-column: 1 / -1; }
-        
-        /* --- TASK LIST --- */
-        .section-title { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; margin-top: 10px; }
-        .section-title h3 { margin: 0; }
-        .task-item { background: var(--white); padding: 15px; margin-bottom: 10px; border-radius: var(--radius); display: flex; align-items: center; justify-content: space-between; border-left: 5px solid transparent; box-shadow: 0 2px 5px rgba(0,0,0,0.02); }
-        .task-item.priority-normal { border-left-color: var(--primary); }
-        .task-item.done { opacity: 0.6; text-decoration: line-through; border-left-color: var(--secondary); }
-        
-        .task-info { flex: 1; padding-right: 10px; cursor: pointer; }
-        .task-title { font-weight: 600; font-size: 1rem; margin-bottom: 4px; display: block; }
-        .task-meta { font-size: 0.8rem; color: var(--text-light); display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
-        .tag { background: #eee; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; }
-        
-        .task-actions { display: flex; gap: 8px; align-items: center; }
-        .btn-icon { background: none; border: none; font-size: 1.2rem; cursor: pointer; color: var(--text-light); padding: 4px; }
-        .btn-wa { color: #25D366; }
-
-        /* --- CALENDAR --- */
-        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; margin-top: 10px; text-align: center; }
-        .cal-day-header { font-weight: bold; font-size: 0.8rem; color: var(--text-light); padding-bottom: 10px; }
-        .cal-day { padding: 10px; background: white; border-radius: 8px; font-size: 0.9rem; position: relative; cursor: pointer; }
-        .cal-day.today { background: var(--primary); color: white; }
-        .cal-day.has-task::after { content: ''; position: absolute; bottom: 4px; left: 50%; transform: translateX(-50%); width: 4px; height: 4px; background: var(--danger); border-radius: 50%; }
-
-        /* --- NAVIGATION BAR --- */
-        nav { background: var(--white); border-top: 1px solid #eee; display: flex; justify-content: space-around; padding: 10px 0; position: fixed; bottom: 0; width: 100%; z-index: 100; height: 60px; }
-        .nav-item { display: flex; flex-direction: column; align-items: center; color: var(--text-light); text-decoration: none; font-size: 0.75rem; background: none; border: none; cursor: pointer; width: 25%; }
-        .nav-item svg { width: 24px; height: 24px; margin-bottom: 4px; fill: currentColor; }
-        .nav-item.active { color: var(--primary); font-weight: 600; }
-
-        /* --- FAB BUTTON --- */
-        .fab { position: fixed; bottom: 80px; right: 20px; background: var(--primary); color: white; width: 56px; height: 56px; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 24px; box-shadow: 0 4px 15px rgba(0,102,204,0.4); border: none; cursor: pointer; z-index: 200; transition: transform 0.2s; }
-        .fab:active { transform: scale(0.95); }
-
-        /* --- MODALS --- */
-        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 300; justify-content: center; align-items: flex-end; }
-        .modal.open { display: flex; animation: slideUp 0.3s ease; }
-        .modal-content { background: var(--white); width: 100%; max-width: 600px; padding: 25px; border-radius: 20px 20px 0 0; max-height: 90vh; overflow-y: auto; }
-        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
-
-        .form-group { margin-bottom: 15px; }
-        .form-group label { display: block; margin-bottom: 5px; font-weight: 600; font-size: 0.9rem; }
-        .form-control { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 1rem; }
-        .btn-block { width: 100%; padding: 15px; border: none; border-radius: 8px; font-size: 1rem; font-weight: 600; cursor: pointer; margin-top: 10px; }
-        .btn-primary { background: var(--primary); color: white; }
-        .btn-secondary { background: #eee; color: var(--text); margin-top: 10px; }
-        .btn-success { background: var(--secondary); color: white; }
-        .btn-danger { background: var(--danger); color: white; margin-top: 10px; }
-        .btn-gold { background: #f1c40f; color: #333; margin-top: 10px; }
-        
-        /* Checkbox Cloud */
-        .cloud-option { background: #eef2ff; padding: 12px; border-radius: 8px; border: 1px solid #ccd5ff; display: flex; align-items: center; gap: 10px; margin-bottom: 15px; }
-        .cloud-option input { width: 20px; height: 20px; }
-
-        /* CONFIGURAÇÕES AVANÇADAS NO MODAL */
-        .advanced-settings {
-            background: #f8f9fa;
-            border: 1px solid #e9ecef;
-            border-radius: 8px;
-            padding: 15px;
-            margin-bottom: 15px;
-        }
-        .advanced-settings h4 { margin-top: 0; color: var(--primary); font-size: 0.95rem; margin-bottom: 10px; border-bottom: 1px solid #ddd; padding-bottom: 5px; }
-        .row { display: flex; gap: 10px; margin-bottom: 10px; }
-        .col { flex: 1; }
-        .col label { font-size: 0.8rem; font-weight: normal; color: #666; }
-        .col input { padding: 8px; font-size: 0.9rem; }
-
-
-        /* --- ALARM MODAL --- */
-        .alarm-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 999; justify-content: center; align-items: center; }
-        .alarm-modal.active { display: flex; animation: fadeIn 0.3s; }
-        .alarm-card { background: white; padding: 30px; border-radius: 15px; text-align: center; width: 90%; max-width: 400px; border-top: 10px solid var(--warning); }
-        .alarm-icon { font-size: 3rem; display: block; margin-bottom: 10px; animation: bounce 1s infinite; }
-        .alarm-title { font-size: 1.5rem; font-weight: bold; margin-bottom: 10px; }
-        @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-
-        .filters-box input, .filters-box select { height: 45px; font-size: 0.95rem; }
-        .empty-state { padding: 40px 20px; text-align: center; color: var(--text-light); background: #fff; border-radius: var(--radius); margin-top: 10px; border: 1px dashed #ddd; }
-        
-        /* Switch Toggle */
-        .switch { position: relative; display: inline-block; width: 50px; height: 24px; }
-        .switch input { opacity: 0; width: 0; height: 0; }
-        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 34px; }
-        .slider:before { position: absolute; content: ""; height: 16px; width: 16px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
-        input:checked + .slider { background-color: var(--primary); }
-        input:checked + .slider:before { transform: translateX(26px); }
-
-        /* PIX FOOTER */
-        .pix-footer { text-align: center; margin-top: 40px; padding-bottom: 20px; font-size: 0.8rem; color: #ccc; cursor: pointer; transition: color 0.3s; }
-        .pix-footer:hover { color: var(--primary); text-decoration: underline; }
-
-        /* PIX GRID BUTTONS */
-        .pix-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
-        .btn-pix { padding: 15px; border: 2px solid #f1c40f; background: white; border-radius: 10px; cursor: pointer; font-weight: bold; color: #333; transition: all 0.2s; }
-        .btn-pix:active { background: #f1c40f; }
-        .pix-key-display { background: #f9f9f9; padding: 10px; border-radius: 5px; font-family: monospace; font-size: 0.8rem; color: #555; margin-top: 10px; word-break: break-all; user-select: all; }
-    </style>
+    <!-- Arquivo CSS Separado -->
+    <link rel="stylesheet" href="style.css">
 </head>
-<body onclick="enableAudio()">
+<body>
 
-    <!-- 1. TELA DE AUTENTICAÇÃO -->
+    <!-- TELA DE AUTENTICAÇÃO -->
     <div id="auth-screen">
-        <div class="auth-box" id="login-form">
-            <h2>Compromisso Fácil</h2>
-            <p style="margin-bottom: 20px; color: #666;">Sua agenda na nuvem.</p>
-            
-            <input type="email" id="log-email" class="auth-input" placeholder="Seu e-mail">
-            <input type="password" id="log-pass" class="auth-input" placeholder="Sua senha">
-            
-            <button class="auth-btn" onclick="appLogin()">Entrar</button>
-
-            <!-- LOGIN COM GOOGLE -->
-            <div class="divider">
-                <span></span><p>OU</p><span></span>
+        <div class="auth-container">
+            <div class="auth-header">
+                <i class="fas fa-tractor"></i>
+                <h2>AgriManager</h2>
+                <p>Gestão Agrícola Inteligente</p>
             </div>
-            
-            <button class="auth-btn btn-google" onclick="appLoginGoogle()">
-                <svg class="google-icon" viewBox="0 0 48 48">
-                    <path fill="#4285F4" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"></path>
-                    <path fill="#34A853" d="M46.98 24.46c0-1.66-.15-3.21-.42-4.72H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.48z"></path>
-                    <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"></path>
-                    <path fill="#EA4335" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"></path>
-                </svg>
-                Entrar com Google
-            </button>
-            
-            <div class="auth-link" onclick="toggleAuth('register')">Criar conta nova (E-mail)</div>
-            <div class="auth-link" onclick="toggleAuth('reset')" style="color:#ddd;">Esqueci minha senha</div>
-        </div>
+            <div class="auth-body">
+                <!-- LOGIN VIEW -->
+                <div id="view-login" class="auth-view active">
+                    <form onsubmit="app.auth.login(event)">
+                        <div class="form-group">
+                            <label>E-mail</label>
+                            <input type="email" id="login-email" class="form-control" placeholder="admin@agri.com" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Senha</label>
+                            <input type="password" id="login-password" class="form-control" placeholder="admin123" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary" style="width: 100%">Entrar</button>
+                    </form>
+                    <div class="auth-links">
+                        <a onclick="app.auth.switchView('forgot')">Esqueci minha senha</a><br><br>
+                        Não tem conta? <a onclick="app.auth.switchView('register')">Cadastre-se</a>
+                    </div>
+                    <div class="social-login">
+                        <button class="btn-google" onclick="app.auth.googleLogin()">
+                            <img src="https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg" alt="G">
+                            Continuar com Google
+                        </button>
+                    </div>
+                </div>
 
-        <div class="auth-box hidden" id="register-form">
-            <h2>Criar Conta</h2>
-            <p style="font-size:0.9rem; color:#777;">Preencha para acessar o sistema</p>
-            <input type="email" id="reg-email" class="auth-input" placeholder="E-mail">
-            <input type="password" id="reg-pass" class="auth-input" placeholder="Senha (min 6)">
-            <button class="auth-btn" onclick="appRegister()">Cadastrar</button>
-            <div class="auth-link" onclick="toggleAuth('login')">Voltar para Login</div>
-        </div>
+                <!-- REGISTER VIEW -->
+                <div id="view-register" class="auth-view">
+                    <h3 style="margin-bottom: 1rem; text-align:center;">Criar Conta</h3>
+                    <p style="text-align: center; font-size: 0.9rem; color: var(--success); margin-bottom: 1rem;">
+                        <i class="fas fa-gift"></i> Inclui 30 dias de avaliação grátis!
+                    </p>
+                    <form onsubmit="app.auth.register(event)">
+                        <div class="form-group">
+                            <label>Nome Completo</label>
+                            <input type="text" name="reg-name" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label>E-mail</label>
+                            <input type="email" name="reg-email" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Senha</label>
+                            <input type="password" name="reg-pass" class="form-control" minlength="6" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary" style="width: 100%">Cadastrar</button>
+                    </form>
+                    <div class="auth-links">
+                        Já possui conta? <a onclick="app.auth.switchView('login')">Fazer Login</a>
+                    </div>
+                </div>
 
-        <div class="auth-box hidden" id="reset-form">
-            <h2>Recuperar Senha</h2>
-            <p style="font-size:0.9rem; color:#777; margin-bottom:15px;">Digite seu e-mail para receber o link de redefinição.</p>
-            <input type="email" id="reset-email" class="auth-input" placeholder="E-mail cadastrado">
-            <button class="auth-btn" onclick="appResetPassword()">Enviar Link</button>
-            <div class="auth-link" onclick="toggleAuth('login')">Cancelar</div>
+                <!-- FORGOT PASSWORD VIEW -->
+                <div id="view-forgot" class="auth-view">
+                    <h3 style="margin-bottom: 1rem; text-align:center;">Recuperar Senha</h3>
+                    <form onsubmit="app.auth.forgotPassword(event)">
+                        <div class="form-group">
+                            <label>E-mail</label>
+                            <input type="email" id="forgot-email" class="form-control" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary" style="width: 100%">Enviar Recuperação</button>
+                    </form>
+                    <div class="auth-links">
+                        <a onclick="app.auth.switchView('login')">Voltar ao Login</a>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
-    <!-- 2. APP PRINCIPAL -->
-    <div id="app-screen" class="hidden">
-        <header>
-            <div class="app-name">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg>
-                Compromisso Fácil
+    <!-- TELA DE BLOQUEIO (LICENÇA) -->
+    <div id="lock-screen">
+        <div class="auth-container">
+            <div class="auth-header" style="background-color: var(--danger);">
+                <i class="fas fa-lock"></i>
+                <h2>Acesso Bloqueado</h2>
+                <p>Licença de Uso Expirada</p>
             </div>
-            <div class="user-status">
-                <span id="user-display"></span>
-                <button onclick="appLogout()" style="background:none; border:none; cursor:pointer; font-size:1.2rem; color:var(--danger);" title="Sair">🚪</button>
+            <div class="auth-body">
+                <p style="text-align: center; color: #555; margin-bottom: 1rem;">Seu período de avaliação ou licença terminou.</p>
+                <form onsubmit="app.license.unlock(event)">
+                    <div class="form-group" style="text-align: center;">
+                        <button type="button" class="btn btn-success" style="width: 100%; margin-bottom: 15px;" onclick="app.license.requestDaysLockScreen()">
+                            <i class="fab fa-whatsapp"></i> Solicitar Dias
+                        </button>
+                    </div>
+                    <div class="form-group">
+                        <label>Contra-senha</label>
+                        <input type="number" id="unlock-pass" class="form-control" required>
+                    </div>
+                    <button type="submit" class="btn btn-danger" style="width: 100%">Liberar Acesso</button>
+                </form>
+                <div class="auth-links"><a onclick="app.auth.logout()">Voltar ao Login</a></div>
             </div>
-        </header>
+        </div>
+    </div>
+
+    <!-- APP LAYOUT -->
+    <div id="app-layout">
+        <aside id="sidebar">
+            <div class="brand"><i class="fas fa-leaf"></i> AgriManager</div>
+            <nav>
+                <div class="nav-group-title">Gestão</div>
+                <a onclick="app.router.go('dashboard')" id="nav-dashboard" class="active"><i class="fas fa-home"></i> Dashboard</a>
+                <a onclick="app.router.go('financeiro')" id="nav-financeiro"><i class="fas fa-coins"></i> Financeiro</a>
+                <!-- NOVO ITEM DE MENU -->
+                <a onclick="app.router.go('lembretes')" id="nav-lembretes"><i class="fas fa-bell"></i> Lembretes</a>
+
+                <div class="nav-group-title">Produção</div>
+                <a onclick="app.router.go('fazendas')" id="nav-fazendas"><i class="fas fa-warehouse"></i> Fazendas</a>
+                <a onclick="app.router.go('talhoes')" id="nav-talhoes"><i class="fas fa-vector-square"></i> Talhões</a>
+                <a onclick="app.router.go('safras')" id="nav-safras"><i class="fas fa-seedling"></i> Safras</a>
+                <a onclick="app.router.go('cycles')" id="nav-cycles"><i class="fas fa-tasks"></i> Ciclos e Tarefas</a>
+                <a onclick="app.router.go('producao')" id="nav-producao"><i class="fas fa-box-open"></i> Produção</a>
+
+                <div class="nav-group-title">Estoque & Insumos</div>
+                <a onclick="app.router.go('insumos')" id="nav-insumos"><i class="fas fa-flask"></i> Insumos</a>
+                <a onclick="app.router.go('stock')" id="nav-stock"><i class="fas fa-dolly"></i> Mov. Estoque</a>
+
+                <div class="nav-group-title">Recursos</div>
+                <a onclick="app.router.go('machinery')" id="nav-machinery"><i class="fas fa-tractor"></i> Máquinas</a>
+                <a onclick="app.router.go('maintenances')" id="nav-maintenances"><i class="fas fa-tools"></i> Manutenções</a>
+                
+                <div class="nav-group-title">Análises</div>
+                <a onclick="app.router.go('relatorios')" id="nav-relatorios"><i class="fas fa-file-alt"></i> Relatórios</a>
+
+                <div class="nav-group-title">Sistema</div>
+                <a onclick="app.router.go('settings')" id="nav-settings"><i class="fas fa-cog"></i> Configurações</a>
+                <a onclick="app.auth.logout()"><i class="fas fa-sign-out-alt"></i> Sair</a>
+            </nav>
+            <div class="license-info" id="license-status"><i class="fas fa-calendar-check"></i> Licença: Verificando...</div>
+        </aside>
 
         <main>
-            <!-- VIEW: DASHBOARD -->
-            <div id="view-dashboard" class="view-section">
-                <div class="dashboard-grid">
-                    <div class="card welcome-card">
-                        <h2 id="greeting">Olá!</h2>
-                        <p>Suas tarefas estão sincronizadas na nuvem.</p>
-                    </div>
-                    <div class="card card-stat">
-                        <h3 id="stat-pending">0</h3>
-                        <p>Pendentes</p>
-                    </div>
-                    <!-- Clientes (Receita) -->
-                    <div class="card card-stat">
-                        <h3 id="stat-revenue" style="color: var(--secondary);">R$ 0</h3>
-                        <p>A Receber (Cliente)</p>
-                    </div>
-                    <!-- Fornecedores (Despesa) -->
-                    <div class="card card-stat">
-                        <h3 id="stat-expense" style="color: var(--danger);">R$ 0</h3>
-                        <p>A Pagar (Fornecedor)</p>
-                    </div>
+            <header>
+                <div style="display: flex; align-items: center; gap: 1rem;">
+                    <i class="fas fa-bars mobile-toggle" onclick="app.ui.toggleSidebar()"></i>
+                    <h2 id="page-title">Dashboard</h2>
                 </div>
-                <div class="section-title">
-                    <h3>Para Hoje</h3>
-                    <a href="#" onclick="switchTab('tasks')" style="color:var(--primary); text-decoration:none;">Ver todas</a>
+                <div>
+                    <span id="user-display" style="font-weight: 500; margin-right: 10px;">Usuário</span>
+                    <i class="fas fa-user-circle fa-lg" style="color: var(--primary-color)"></i>
                 </div>
-                <div id="dashboard-list"></div>
-
-                <!-- BOTÃO DE APOIO DISCRETO -->
-                <div style="margin-top: 40px; text-align: center;">
-                    <button onclick="openSupportModal()" style="background: white; color: var(--primary); border: 2px solid #f1c40f; padding: 10px 25px; border-radius: 50px; font-weight: bold; font-size: 0.9rem; cursor: pointer; box-shadow: var(--shadow);">
-                        Apoiar 💛
-                    </button>
-                </div>
-            </div>
-
-            <!-- VIEW: CALENDAR -->
-            <div id="view-calendar" class="view-section hidden">
-                <div class="section-title">
-                    <h3 id="calendar-month-year">Mês</h3>
-                    <div style="display:flex; gap:10px;">
-                        <button class="btn-icon" onclick="changeMonth(-1)">◀</button>
-                        <button class="btn-icon" onclick="changeMonth(1)">▶</button>
-                    </div>
-                </div>
-                <div class="calendar-grid">
-                    <div class="cal-day-header">D</div><div class="cal-day-header">S</div><div class="cal-day-header">T</div><div class="cal-day-header">Q</div><div class="cal-day-header">Q</div><div class="cal-day-header">S</div><div class="cal-day-header">S</div>
-                </div>
-                <div id="calendar-days" class="calendar-grid"></div>
-                <div style="margin-top:20px;">
-                    <h4>Tarefas do dia:</h4>
-                    <div id="calendar-task-list" style="margin-top:10px;">Selecione um dia</div>
-                </div>
-            </div>
-
-            <!-- VIEW: TASKS -->
-            <div id="view-tasks" class="view-section hidden">
-                <div class="section-title">
-                    <h3>Todas as Tarefas</h3>
-                </div>
-                
-                <!-- Nova Área de Filtros -->
-                <div class="filters-box" style="display:flex; gap:10px; margin-bottom:20px;">
-                    <input type="text" id="task-search" class="form-control" placeholder="🔍 Buscar por título..." oninput="renderTasks()" style="flex: 2;">
-                    
-                    <select id="filter-category" class="form-control" style="flex: 1; padding:5px;" onchange="renderTasks()">
-                        <option value="all">Todas</option>
-                        <option value="Trabalho">Trabalho</option>
-                        <option value="Pessoal">Pessoal</option>
-                        <option value="Cliente">Clientes</option>
-                        <option value="Fornecedor">Fornecedor</option>
-                    </select>
-                </div>
-
-                <div id="tasks-list"></div>
-            </div>
-
-            <!-- VIEW: SETTINGS -->
-            <div id="view-settings" class="view-section hidden">
-                <h3>Mais Opções</h3>
-                
-                <!-- CONFIGURAÇÃO DEFAULT DE ALERTAS -->
-                <div class="card" style="margin-top:15px; border:1px solid #cce5ff;">
-                    <p style="margin-top:0; color:var(--primary-dark); font-weight:bold;">🛠️ Configuração Padrão de Alertas</p>
-                    <p style="font-size:0.8rem; color:#666;">Esses valores serão usados automaticamente em novas tarefas.</p>
-                    
-                    <div class="advanced-settings" style="background:white; border:none; padding:0;">
-                        <h4 style="font-size:0.8rem;">⏰ Alarme (Sonoro)</h4>
-                        <div class="row">
-                            <div class="col">
-                                <label>Iniciar (min antes)</label>
-                                <input type="number" id="def-alarm-start" class="form-control" placeholder="15">
-                            </div>
-                            <div class="col">
-                                <label>Repetir (cada min)</label>
-                                <input type="number" id="def-alarm-freq" class="form-control" placeholder="5">
-                            </div>
-                        </div>
-                        <div class="row">
-                            <div class="col">
-                                <label>Se atrasado (cada min)</label>
-                                <input type="number" id="def-alarm-over-freq" class="form-control" placeholder="10">
-                            </div>
-                        </div>
-
-                        <h4 style="font-size:0.8rem; margin-top:10px;">📧 E-mail</h4>
-                        <div class="row">
-                            <div class="col">
-                                <label>Iniciar (dias antes)</label>
-                                <input type="number" id="def-mail-days" class="form-control" placeholder="1">
-                            </div>
-                            <div class="col">
-                                <label>Repetir (cada dias)</label>
-                                <input type="number" id="def-mail-freq" class="form-control" placeholder="1">
-                            </div>
-                        </div>
-                        <div class="row">
-                            <div class="col">
-                                <label>Se atrasado (cada dias)</label>
-                                <input type="number" id="def-mail-over-freq" class="form-control" placeholder="1">
-                            </div>
-                            <div class="col">
-                                <label>Max Envios Atrasados</label>
-                                <input type="number" id="def-mail-over-max" class="form-control" placeholder="3">
-                            </div>
-                        </div>
-                        <button class="btn-block btn-primary" onclick="saveDefaultSettings()">Salvar Padrões</button>
-                    </div>
-                </div>
-
-                <!-- LIMPEZA AUTOMÁTICA (TOGGLE) -->
-                <div class="card" style="margin-top:15px; display:flex; justify-content:space-between; align-items:center;">
-                    <div>
-                        <strong>Limpeza Automática</strong>
-                        <p style="font-size:0.8rem; color:#777; margin:0;">Excluir lembretes vencidos há 30 dias</p>
-                    </div>
-                    <label class="switch">
-                        <input type="checkbox" id="auto-cleanup-check" onchange="toggleCleanup(this)">
-                        <span class="slider"></span>
-                    </label>
-                </div>
-
-                <div class="card" style="margin-top:15px;">
-                    <p><strong>Gerenciar Tarefas</strong></p>
-                    <button class="btn-block btn-danger" onclick="clearAllCompleted()">🧹 Limpar Todas as Concluídas</button>
-                </div>
-
-                <div class="card" style="margin-top:15px;">
-                    <p><strong>Relatórios</strong></p>
-                    <button class="btn-block btn-primary" onclick="exportPDF()">📄 Baixar PDF</button>
-                </div>
-                
-                <div class="card" style="margin-top:15px;">
-                    <p><strong>Backup e Restauração (Local)</strong></p>
-                    <button class="btn-block btn-secondary" onclick="backupData()">📥 Fazer Backup (Baixar Arquivo)</button>
-                    <button class="btn-block btn-secondary" onclick="triggerRestore()">📤 Restaurar Backup (Enviar Arquivo)</button>
-                    <input type="file" id="restore-input" style="display:none" accept=".json" onchange="restoreData(this)">
-                </div>
-
-                <div class="card" style="margin-top:15px;">
-                    <p><strong>Conta</strong></p>
-                    <p style="font-size:0.8rem; color:#777;">Logado como: <span id="settings-email"></span></p>
-                    <button class="btn-block btn-secondary" onclick="appLogout()" style="color:var(--danger)">Sair da Conta</button>
-                </div>
-                
-                <!-- PIX DISCRETO (ABA MAIS) -->
-                <div class="pix-footer" onclick="openSupportModal()">
-                    ☕ Apoie o desenvolvimento (Pix)
-                </div>
-            </div>
+            </header>
+            <div id="content-area"></div>
         </main>
-
-        <!-- FAB -->
-        <button class="fab" onclick="openModal()">+</button>
-
-        <!-- NAVIGATION BAR -->
-        <nav>
-            <button class="nav-item active" onclick="switchTab('dashboard')" id="nav-dashboard">
-                <svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
-                Início
-            </button>
-            <button class="nav-item" onclick="switchTab('calendar')" id="nav-calendar">
-                <svg viewBox="0 0 24 24"><path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.89-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.95-2-2.05-2zM5 20V9h14v11H5z"/></svg>
-                Agenda
-            </button>
-            <button class="nav-item" onclick="switchTab('tasks')" id="nav-tasks">
-                <svg viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>
-                Tarefas
-            </button>
-            <button class="nav-item" onclick="switchTab('settings')" id="nav-settings">
-                <svg viewBox="0 0 24 24"><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>
-                Mais
-            </button>
-        </nav>
     </div>
 
-    <!-- 3. MODAL ADD/EDIT -->
-    <div class="modal" id="taskModal">
-        <div class="modal-content">
-            <h3 id="modal-title" style="margin-top:0;">Novo Compromisso</h3>
-            <input type="hidden" id="t-id">
-            
-            <div class="form-group">
-                <label>Título *</label>
-                <input type="text" id="t-title" class="form-control" placeholder="Ex: Reunião com João">
+    <!-- GENERIC MODAL -->
+    <div class="modal-overlay" id="generic-modal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 id="modal-title">Título</h3>
+                <span class="close-modal" onclick="app.ui.closeModal()">&times;</span>
             </div>
-            
-            <div class="form-group">
-                <label>Descrição</label>
-                <textarea id="t-desc" class="form-control" rows="3" placeholder="Detalhes do lembrete..."></textarea>
-            </div>
-
-            <div style="display:flex; gap:10px;">
-                <div class="form-group" style="flex:1">
-                    <label>Data *</label>
-                    <input type="date" id="t-date" class="form-control">
-                </div>
-                <div class="form-group" style="flex:1">
-                    <label>Hora</label>
-                    <input type="time" id="t-time" class="form-control">
-                </div>
-            </div>
-
-            <!-- Opção E-mail Cloud -->
-            <div class="cloud-option">
-                <input type="checkbox" id="t-send-email" onchange="toggleEmailInput()">
-                <label for="t-send-email">Enviar e-mails de lembrete</label>
-            </div>
-            <div class="form-group hidden" id="div-email-input">
-                <label>E-mail Destino</label>
-                <input type="email" id="t-email-addr" class="form-control" placeholder="cliente@email.com">
-                
-                <!-- CONFIGURAÇÃO AVANÇADA DE EMAIL -->
-                <div class="advanced-settings" style="margin-top:10px;">
-                    <h4>Configuração de E-mail</h4>
-                    <div class="row">
-                        <div class="col">
-                            <label>Antecedência (dias)</label>
-                            <input type="number" id="t-mail-days" class="form-control" placeholder="Default">
-                        </div>
-                        <div class="col">
-                            <label>Repetir (dias)</label>
-                            <input type="number" id="t-mail-int" class="form-control" placeholder="Default">
-                        </div>
-                    </div>
-                    <div class="row">
-                        <div class="col">
-                            <label>Atrasado: Repetir (dias)</label>
-                            <input type="number" id="t-mail-over-int" class="form-control" placeholder="Default">
-                        </div>
-                        <div class="col">
-                            <label>Max Envios (atraso)</label>
-                            <input type="number" id="t-mail-max" class="form-control" placeholder="Default">
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- CONFIGURAÇÃO AVANÇADA DE ALARME -->
-            <div class="advanced-settings">
-                <h4>Configuração de Alarme (App Aberto)</h4>
-                <div class="row">
-                    <div class="col">
-                        <label>Acionar (min antes)</label>
-                        <input type="number" id="t-rem-start" class="form-control" placeholder="Default">
-                    </div>
-                    <div class="col">
-                        <label>Repetir (min)</label>
-                        <input type="number" id="t-rem-int" class="form-control" placeholder="Default">
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="col">
-                        <label>Se atrasado: Repetir (min)</label>
-                        <input type="number" id="t-rem-over-int" class="form-control" placeholder="Default">
-                    </div>
-                </div>
-            </div>
-
-            <div class="form-group">
-                <label>Categoria</label>
-                <input type="text" id="t-category" class="form-control" list="cat-suggestions">
-                <datalist id="cat-suggestions">
-                    <option value="Trabalho">
-                    <option value="Pessoal">
-                    <option value="Cliente">
-                    <option value="Fornecedor">
-                </datalist>
-            </div>
-            <div class="form-group">
-                <label>Valor R$</label>
-                <input type="number" id="t-value" class="form-control" step="0.01">
-            </div>
-
-            <button class="btn-block btn-primary" onclick="saveTask()">Salvar</button>
-            <button class="btn-block btn-secondary" onclick="closeModal()">Cancelar</button>
+            <div id="modal-body"></div>
         </div>
     </div>
 
-    <!-- 4. ALARM MODAL -->
-    <div class="alarm-modal" id="alarmModal">
-        <div class="alarm-card">
-            <input type="hidden" id="alarm-task-id">
-            <span class="alarm-icon">⏰</span>
-            <div id="alarm-context" style="font-weight:bold; color:var(--danger); margin-bottom:5px;"></div>
-            <div class="alarm-title">Lembrete!</div>
-            <div id="alarm-time-display" style="font-size:1.5rem; font-weight:bold; color:var(--primary); margin:10px 0;"></div>
-            <p id="alarm-text-display" style="margin-bottom:20px;"></p>
-            <button class="btn-block btn-success" onclick="completeTaskFromAlarm()">✅ Concluir</button>
-            <button class="btn-block btn-secondary" onclick="stopAlarm()">Soneca (Silenciar)</button>
-        </div>
-    </div>
-
-    <!-- 5. SUPPORT MODAL (NOVO COM COPÍA E COLA) -->
-    <div class="modal" id="supportModal">
-        <div class="modal-content" style="text-align: center;">
-            <h3 style="color:var(--primary); margin-top:0;">Apoie o Projeto ☕</h3>
-            <p style="font-size: 0.95rem; line-height: 1.4; color: #555; margin-bottom: 20px;">
-                Este app é gratuito. Selecione um valor para gerar o código <b>Pix Copia e Cola</b>:
-            </p>
-            
-            <div class="pix-grid">
-                <button class="btn-pix" onclick="generatePixCopyPaste(5)">R$ 5,00</button>
-                <button class="btn-pix" onclick="generatePixCopyPaste(9)">R$ 9,00</button>
-                <button class="btn-pix" onclick="generatePixCopyPaste(12)">R$ 12,00</button>
-                <button class="btn-pix" onclick="copyPixSimpleKey()">Outro Valor</button>
-            </div>
-            
-            <div id="pix-feedback" style="display:none; color:green; font-weight:bold; margin-bottom:10px;">
-                ✅ Código copiado!
-            </div>
-            
-            <div class="pix-key-display" id="pix-display-area" style="display:none;"></div>
-
-            <button class="btn-block btn-secondary" onclick="closeSupportModal()">Fechar</button>
-        </div>
-    </div>
-
-    <!-- Som do Alarme (Loop) -->
-    <audio id="audioAlert" loop src="data:audio/mp3;base64,//uQxAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAAUAAACzAAKCg4PEhIWFxsbHiAgIyMoKCsrLzAwMjI2Njg4Ojw8P0BAQkJERkdHSkpMTk5QUFJTU1dXV1lbW11dYGBiYmRmZmdnaGhqam5ucHBydHR3d3l5e3t9fX6AgIGBgoKFhYiIiouLkJCSkpWWlpiYmZmbm52dnp6goKGhoqKkpKWlpqeoqKmqq6ytrq6wsLGxsrK0tLe3uLi6ur29v8DAwsLGxsnJysrMzM7O0NDS0tTX19jY2dvb3Nzd3d7e4ODi4uPj5eXn5+jo6evr7Ozt7u7w8PHx8vL09PX19vf3+Pj6+vv7/Pz9/f7+/v///wAAAqpLdXJ6AAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//uQxAAACkQBOAAAAAEAAAD5AAAAABj3/vT23uAgBPgAPAAAAAAAZAAAAAAAAAAAAAAB//uQxAAACkQBOAAAAAEAAAD5AAAAABj3/vT23uAgBPgAPAAAAAAAZAAAAAAAAAAAAAAB//uQxAAACkQBOAAAAAEAAAD5AAAAABj3/vT23uAgBPgAPAAAAAAAZAAAAAAAAAAAAAAB//uQxAAACkQBOAAAAAEAAAD5AAAAABj3/vT23uAgBPgAPAAAAAAAZAAAAAAAAAAAAAAB//uQxAAACkQBOAAAAAEAAAD5AAAAABj3/vT23uAgBPgAPAAAAAAAZAAAAAAAAAAAAAAB//uQxAAACkQBOAAAAAEAAAD5AAAAABj3/vT23uAgBPgAPAAAAAAAZAAAAAAAAAAAAAAB"></audio>
-
-    <!-- Som de Conclusão (Ding curto) -->
-    <audio id="audioDone" src="data:audio/mp3;base64,//uQxAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAAGAAABuAAKCg4PEhIWFxsbHiAgIyMoKCsrLzAwMjI2Njg4Ojw8P0BAQkJERkdHSkpMTk5QUFJTU1dXV1lbW11dYGBiYmRmZmdnaGhqam5ucHBydHR3d3l5e3t9fX6AgIGBgoKFhYiIiouLkJCSkpWWlpiYmZmbm52dnp6goKGhoqKkpKWlpqeoqKmqq6ytrq6wsLGxsrK0tLe3uLi6ur29v8DAwsLGxsnJysrMzM7O0NDS0tTX19jY2dvb3Nzd3d7e4ODi4uPj5eXn5+jo6evr7Ozt7u7w8PHx8vL09PX19vf3+Pj6+vv7/Pz9/f7+/v///wAAAD5LdXJ6AAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//uQxAAACkQBOAAAAAEAAAD5AAAAABj3/vT23uAgBPgAPAAAAAAAZAAAAAAAAAAAAAAB//uQxAAACkQBOAAAAAEAAAD5AAAAABj3/vT23uAgBPgAPAAAAAAAZAAAAAAAAAAAAAAB"></audio>
-
-<script>
-    // ==========================================
-    // 1. CONFIGURAÇÃO DO FIREBASE
-    // ==========================================
-    const firebaseConfig = {
-      apiKey: "AIzaSyBhtwWew_DQNX2TZROUShZz4mjK57pRgQk",
-      authDomain: "lembrete-d6c15.firebaseapp.com",
-      projectId: "lembrete-d6c15",
-      storageBucket: "lembrete-d6c15.firebasestorage.app",
-      messagingSenderId: "368296869868",
-      appId: "1:368296869868:web:7a2c0a91f57de5d3a90ac9",
-      measurementId: "G-JE0QH81JG6"
-    };
-
-    firebase.initializeApp(firebaseConfig);
-
-    let auth, db;
-    try {
-        auth = firebase.auth();
-        db = firebase.firestore();
-    } catch(e) { console.error("Erro Firebase", e); }
-
-    let currentUser = null;
-    let appData = { tasks: [] };
-    let audioUnlocked = false;
-
-    // Configuração Padrão de Alertas (Default)
-    let defaultConfig = {
-        alarmStartMin: 15,
-        alarmFreqMin: 5,
-        alarmOverdueFreq: 10,
-        emailDaysBefore: 1,
-        emailFreqDays: 1,
-        emailOverdueFreq: 1,
-        emailOverdueMax: 3
-    };
-
-    // Desbloqueia áudio no primeiro clique do usuário
-    function enableAudio() {
-        if (!audioUnlocked) {
-            document.getElementById('audioAlert').load();
-            document.getElementById('audioDone').load();
-            audioUnlocked = true;
-        }
-    }
-
-    // ==========================================
-    // 2. SISTEMA DE LOGIN & DEFAULTS
-    // ==========================================
-    if(auth) {
-        auth.onAuthStateChanged((user) => {
-            if (user) {
-                currentUser = user;
-                document.getElementById('auth-screen').classList.add('hidden');
-                document.getElementById('app-screen').classList.remove('hidden');
-                document.getElementById('user-display').textContent = user.email ? user.email.split('@')[0] : "Usuário Google";
-                document.getElementById('settings-email').textContent = user.email;
-                
-                // Carrega configuração de limpeza automática
-                const cleanupPref = localStorage.getItem('autoCleanup') === 'true';
-                document.getElementById('auto-cleanup-check').checked = cleanupPref;
-
-                // Carrega configuração default de alertas
-                loadDefaultSettings();
-                
-                syncTasks(); 
-            } else {
-                currentUser = null;
-                appData.tasks = [];
-                document.getElementById('auth-screen').classList.remove('hidden');
-                document.getElementById('app-screen').classList.add('hidden');
-            }
-        });
-    }
-
-    function loadDefaultSettings() {
-        const stored = localStorage.getItem('alertConfig');
-        if(stored) {
-            defaultConfig = JSON.parse(stored);
-        }
-        // Preenche inputs da tela de settings
-        document.getElementById('def-alarm-start').value = defaultConfig.alarmStartMin;
-        document.getElementById('def-alarm-freq').value = defaultConfig.alarmFreqMin;
-        document.getElementById('def-alarm-over-freq').value = defaultConfig.alarmOverdueFreq;
-        document.getElementById('def-mail-days').value = defaultConfig.emailDaysBefore;
-        document.getElementById('def-mail-freq').value = defaultConfig.emailFreqDays;
-        document.getElementById('def-mail-over-freq').value = defaultConfig.emailOverdueFreq;
-        document.getElementById('def-mail-over-max').value = defaultConfig.emailOverdueMax;
-    }
-
-    function saveDefaultSettings() {
-        defaultConfig = {
-            alarmStartMin: parseInt(document.getElementById('def-alarm-start').value) || 15,
-            alarmFreqMin: parseInt(document.getElementById('def-alarm-freq').value) || 5,
-            alarmOverdueFreq: parseInt(document.getElementById('def-alarm-over-freq').value) || 10,
-            emailDaysBefore: parseInt(document.getElementById('def-mail-days').value) || 1,
-            emailFreqDays: parseInt(document.getElementById('def-mail-freq').value) || 1,
-            emailOverdueFreq: parseInt(document.getElementById('def-mail-over-freq').value) || 1,
-            emailOverdueMax: parseInt(document.getElementById('def-mail-over-max').value) || 3
-        };
-        localStorage.setItem('alertConfig', JSON.stringify(defaultConfig));
-        alert("Configurações padrão salvas!");
-    }
-
-    function appLogin() {
-        const email = document.getElementById('log-email').value;
-        const pass = document.getElementById('log-pass').value;
-        if(!email || !pass) return alert("Preencha os dados");
-        auth.signInWithEmailAndPassword(email, pass).catch(err => alert(err.message));
-    }
-
-    // LOGIN COM GOOGLE
-    function appLoginGoogle() {
-        const provider = new firebase.auth.GoogleAuthProvider();
-        auth.signInWithPopup(provider)
-        .then((result) => {
-            console.log("Logado com Google", result.user);
-            // onAuthStateChanged cuidará do resto
-        }).catch((error) => {
-            alert("Erro ao logar com Google: " + error.message);
-        });
-    }
-
-    function appRegister() {
-        const email = document.getElementById('reg-email').value;
-        const pass = document.getElementById('reg-pass').value;
-        if(!email || !pass) return alert("Preencha os dados");
-        auth.createUserWithEmailAndPassword(email, pass).then(()=>alert("Criado!")).catch(err => alert(err.message));
-    }
-    function appResetPassword() {
-        const email = document.getElementById('reset-email').value;
-        if(!email) return alert("Digite o e-mail");
-        auth.sendPasswordResetEmail(email)
-            .then(() => {
-                alert("E-mail de recuperação enviado! Verifique sua caixa de entrada.");
-                toggleAuth('login');
-            })
-            .catch(err => alert("Erro: " + err.message));
-    }
-    function appLogout() { auth.signOut(); }
-    function toggleAuth(v) {
-        document.querySelectorAll('.auth-box').forEach(e=>e.classList.add('hidden'));
-        document.getElementById(v === 'login' ? 'login-form' : v === 'register' ? 'register-form' : 'reset-form').classList.remove('hidden');
-    }
-
-    // ==========================================
-    // 3. SINCRONIA DE DADOS (CLOUD -> APP)
-    // ==========================================
-    function syncTasks() {
-        if(!currentUser) return;
-        
-        db.collection('users').doc(currentUser.uid).collection('tasks')
-            .orderBy('date')
-            .onSnapshot(snapshot => {
-                appData.tasks = [];
-                snapshot.forEach(doc => {
-                    let task = doc.data();
-                    task.id = doc.id;
-                    appData.tasks.push(task);
-                });
-                refreshViews();
-                runAutoCleanup();
-            });
-    }
-
-    function getLocalDateStr() {
-        const d = new Date();
-        const offset = d.getTimezoneOffset() * 60000;
-        const localDate = new Date(d.getTime() - offset);
-        return localDate.toISOString().split('T')[0];
-    }
-
-    function saveTask() {
-        const title = document.getElementById('t-title').value;
-        const desc = document.getElementById('t-desc').value;
-        const date = document.getElementById('t-date').value;
-        const time = document.getElementById('t-time').value;
-        const cat = document.getElementById('t-category').value;
-        const val = document.getElementById('t-value').value;
-        const sendEmail = document.getElementById('t-send-email').checked;
-        const emailAddr = document.getElementById('t-email-addr').value;
-
-        // Configurações de Lembrete
-        const remStart = parseInt(document.getElementById('t-rem-start').value);
-        const remInt = parseInt(document.getElementById('t-rem-int').value);
-        const remOverInt = parseInt(document.getElementById('t-rem-over-int').value);
-        
-        // Configurações de Email
-        const mailDays = parseInt(document.getElementById('t-mail-days').value);
-        const mailInt = parseInt(document.getElementById('t-mail-int').value);
-        const mailOverInt = parseInt(document.getElementById('t-mail-over-int').value);
-        const mailMax = parseInt(document.getElementById('t-mail-max').value);
-
-        if(!title || !date) return alert("Preencha título e data");
-
-        const data = {
-            title, 
-            description: desc,
-            date, time, category: cat, value: val,
-            sendEmail, emailAddr,
-            userId: currentUser.uid, 
-            completed: false,
-            
-            // Novos campos de configuração
-            remStart: isNaN(remStart) ? defaultConfig.alarmStartMin : remStart,
-            remInt: isNaN(remInt) ? defaultConfig.alarmFreqMin : remInt,
-            remOverInt: isNaN(remOverInt) ? defaultConfig.alarmOverdueFreq : remOverInt,
-            
-            mailDays: isNaN(mailDays) ? defaultConfig.emailDaysBefore : mailDays,
-            mailInt: isNaN(mailInt) ? defaultConfig.emailFreqDays : mailInt,
-            mailOverInt: isNaN(mailOverInt) ? defaultConfig.emailOverdueFreq : mailOverInt,
-            mailMax: isNaN(mailMax) ? defaultConfig.emailOverdueMax : mailMax,
-            
-            // Estado
-            overdueEmailCount: 0,
-            lastAlarmSent: null,
-            lastEmailSent: null,
-            
-            createdAt: firebase.firestore.FieldValue.serverTimestamp()
-        };
-
-        const id = document.getElementById('t-id').value;
-        
-        let dbOperation;
-        if(id) {
-            const existing = appData.tasks.find(t => t.id === id);
-            if(existing) {
-                data.overdueEmailCount = existing.overdueEmailCount || 0;
-                data.lastAlarmSent = existing.lastAlarmSent || null;
-                data.lastEmailSent = existing.lastEmailSent || null;
-                data.completed = existing.completed; 
-            }
-            dbOperation = db.collection('users').doc(currentUser.uid).collection('tasks').doc(id).update(data);
-        } else {
-            dbOperation = db.collection('users').doc(currentUser.uid).collection('tasks').add(data);
-        }
-
-        dbOperation.then(async () => {
-            if(!id) alert("Tarefa salva!"); 
-            closeModal();
-        }).catch(err => {
-            alert("Erro ao salvar: " + err.message);
-        });
-    }
-
-    function deleteTask(id, confirmAction = true) {
-        if(!confirmAction || confirm("Excluir esta tarefa?")) {
-            db.collection('users').doc(currentUser.uid).collection('tasks').doc(id).delete();
-        }
-    }
-    
-    function clearAllCompleted() {
-        const completedTasks = appData.tasks.filter(t => t.completed);
-        if(completedTasks.length === 0) return alert("Nenhuma tarefa concluída para limpar.");
-        
-        if(confirm(`Tem certeza? Isso apagará ${completedTasks.length} tarefas concluídas permanentemente.`)) {
-            let count = 0;
-            completedTasks.forEach(t => {
-                db.collection('users').doc(currentUser.uid).collection('tasks').doc(t.id).delete();
-                count++;
-            });
-            alert(`${count} tarefas foram removidas.`);
-        }
-    }
-
-    function toggleTask(id, status) {
-        if(!status) { 
-            const audio = document.getElementById('audioDone');
-            audio.currentTime = 0;
-            audio.play().catch(e => console.log("Audio play blocked", e));
-        }
-        db.collection('users').doc(currentUser.uid).collection('tasks').doc(id).update({ completed: !status });
-    }
-
-    // ==========================================
-    // 4. LÓGICA DE UI (NAVEGAÇÃO E VIEWS)
-    // ==========================================
-    let currentView = 'dashboard';
-    
-    function switchTab(tab) {
-        document.querySelectorAll('.nav-item').forEach(e => e.classList.remove('active'));
-        document.getElementById('nav-'+tab).classList.add('active');
-        document.querySelectorAll('.view-section').forEach(e => e.classList.add('hidden'));
-        document.getElementById('view-'+tab).classList.remove('hidden');
-        currentView = tab;
-        refreshViews();
-    }
-
-    function refreshViews() {
-        if(currentView === 'dashboard') renderDashboard();
-        if(currentView === 'tasks') renderTasks();
-        if(currentView === 'calendar') renderCalendar();
-    }
-
-    function renderDashboard() {
-        const listEl = document.getElementById('dashboard-list');
-        const todayStr = getLocalDateStr();
-        const pendingTasks = appData.tasks.filter(t => !t.completed);
-        
-        document.getElementById('stat-pending').textContent = pendingTasks.length;
-
-        const toReceive = pendingTasks
-            .filter(t => t.category === 'Cliente' && t.value)
-            .reduce((sum, t) => sum + parseFloat(t.value), 0);
-        document.getElementById('stat-revenue').textContent = `R$ ${toReceive.toFixed(2)}`;
-
-        const toPay = pendingTasks
-            .filter(t => t.category === 'Fornecedor' && t.value)
-            .reduce((sum, t) => sum + parseFloat(t.value), 0);
-        const elExpense = document.getElementById('stat-expense');
-        if(elExpense) elExpense.textContent = `R$ ${toPay.toFixed(2)}`;
-
-        const todaysTasks = appData.tasks.filter(t => t.date === todayStr && !t.completed);
-        listEl.innerHTML = '';
-        if(todaysTasks.length === 0) {
-            listEl.innerHTML = '<div class="empty-state">Nada pendente para hoje!</div>';
-            return;
-        }
-        todaysTasks.forEach(t => listEl.appendChild(createTaskElement(t)));
-    }
-
-    function renderTasks() {
-        const listEl = document.getElementById('tasks-list');
-        const filterCat = document.getElementById('filter-category').value;
-        const searchTerm = document.getElementById('task-search').value.toLowerCase().trim();
-        
-        listEl.innerHTML = '';
-        let tasks = [...appData.tasks];
-        
-        if(filterCat !== 'all') tasks = tasks.filter(t => (t.category || "") === filterCat);
-        if(searchTerm !== '') tasks = tasks.filter(t => (t.title && t.title.toLowerCase().includes(searchTerm)));
-
-        tasks.sort((a, b) => {
-            if (a.completed === b.completed) return new Date(a.date) - new Date(b.date);
-            return a.completed ? 1 : -1;
-        });
-        
-        if(tasks.length === 0) {
-            listEl.innerHTML = '<div class="empty-state">Nenhuma tarefa encontrada.</div>';
-            return;
-        }
-        tasks.forEach(t => listEl.appendChild(createTaskElement(t)));
-    }
-
-    function createTaskElement(t) {
-        const div = document.createElement('div');
-        div.className = `task-item ${t.completed ? 'done' : ''} priority-normal`;
-        
-        const waMsg = encodeURIComponent(`${t.title} - ${t.date} ${t.time}`);
-        const waBtn = `<button class="btn-icon btn-wa" onclick="window.open('https://wa.me/?text=${waMsg}')">💬</button>`;
-        
-        div.innerHTML = `
-            <div class="task-info" onclick="openEditModal('${t.id}')">
-                <span class="task-title">${t.sendEmail?'📧':''} ${t.title}</span>
-                <div class="task-meta">
-                    <span>📅 ${formatDateBR(t.date)} ${t.time||''}</span>
-                    ${t.category ? `<span class="tag">${t.category}</span>` : ''}
-                    ${t.value ? `<span class="tag" style="color:green">R$ ${t.value}</span>` : ''}
-                </div>
-            </div>
-            <div class="task-actions">
-                ${waBtn}
-                <button class="btn-icon" onclick="toggleTask('${t.id}', ${t.completed})">${t.completed?'↩️':'✅'}</button>
-                <button class="btn-icon" onclick="deleteTask('${t.id}')" style="color:var(--danger)">🗑️</button>
-            </div>
-        `;
-        return div;
-    }
-
-    let displayMonth = new Date().getMonth();
-    let displayYear = new Date().getFullYear();
-
-    function renderCalendar() {
-        const monthNames = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
-        document.getElementById('calendar-month-year').textContent = `${monthNames[displayMonth]} ${displayYear}`;
-        const daysContainer = document.getElementById('calendar-days');
-        daysContainer.innerHTML = '';
-
-        const firstDay = new Date(displayYear, displayMonth, 1);
-        const lastDay = new Date(displayYear, displayMonth + 1, 0);
-
-        for(let i=0; i<firstDay.getDay(); i++) daysContainer.appendChild(document.createElement('div'));
-
-        for(let i=1; i<=lastDay.getDate(); i++) {
-            const dStr = `${displayYear}-${String(displayMonth+1).padStart(2,'0')}-${String(i).padStart(2,'0')}`;
-            const el = document.createElement('div');
-            el.className = 'cal-day';
-            el.textContent = i;
-            if(appData.tasks.some(t => t.date === dStr && !t.completed)) el.classList.add('has-task');
-            if(dStr === getLocalDateStr()) el.classList.add('today');
-            el.onclick = () => {
-                const list = document.getElementById('calendar-task-list');
-                list.innerHTML = '';
-                const tasks = appData.tasks.filter(t => t.date === dStr);
-                if(tasks.length === 0) list.innerHTML = 'Nada neste dia.';
-                else tasks.forEach(t => list.appendChild(createTaskElement(t)));
-            };
-            daysContainer.appendChild(el);
-        }
-    }
-    function changeMonth(o) {
-        displayMonth += o;
-        if(displayMonth>11) { displayMonth=0; displayYear++; }
-        if(displayMonth<0) { displayMonth=11; displayYear--; }
-        renderCalendar();
-    }
-
-    // ==========================================
-    // 5. ALARMES E EMAILS AUTOMÁTICOS
-    // ==========================================
-    setInterval(checkAlarms, 10000);
-
-    function checkAlarms() {
-        if(!currentUser) return;
-        const now = new Date();
-        const todayStr = getLocalDateStr();
-
-        appData.tasks.forEach(task => {
-            if(task.completed) return; 
-
-            // ALARME SONORO
-            if(task.time) {
-                const taskDateTime = new Date(`${task.date}T${task.time}:00`);
-                const diffMs = taskDateTime - now;
-                const diffMin = diffMs / 60000; 
-
-                const startMin = task.remStart || defaultConfig.alarmStartMin;
-                const freqMin = task.remInt || defaultConfig.alarmFreqMin;
-                const overFreqMin = task.remOverInt || defaultConfig.alarmOverdueFreq;
-                
-                let shouldTrigger = false;
-                let triggerType = "";
-
-                if (diffMin > 0 && diffMin <= startMin) {
-                    if (isIntervalPassed(task.lastAlarmSent, freqMin * 60000)) {
-                        shouldTrigger = true;
-                        triggerType = `Faltam ${Math.ceil(diffMin)} min`;
-                    }
-                }
-                
-                if (diffMin < -1) { 
-                    if (isIntervalPassed(task.lastAlarmSent, overFreqMin * 60000)) {
-                        shouldTrigger = true;
-                        triggerType = "ATRASADO!";
-                    }
-                }
-
-                if (Math.abs(diffMin) <= 0.5 && (!task.lastAlarmSent || (now - new Date(task.lastAlarmSent).getTime() > 60000))) {
-                     shouldTrigger = true;
-                     triggerType = "É AGORA!";
-                }
-
-                if (shouldTrigger) {
-                    triggerAlarm(task, triggerType);
-                    db.collection('users').doc(currentUser.uid).collection('tasks').doc(task.id).update({
-                        lastAlarmSent: now.toISOString()
-                    });
-                }
-            }
-
-            // EMAIL
-            if (task.sendEmail && task.emailAddr) {
-                const taskDate = new Date(`${task.date}T00:00:00`); 
-                const todayDate = new Date(`${todayStr}T00:00:00`); 
-                
-                const diffTime = taskDate.getTime() - todayDate.getTime();
-                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
-
-                const mailStartDays = task.mailDays || defaultConfig.emailDaysBefore;
-                const mailFreqDays = task.mailInt || defaultConfig.emailFreqDays;
-                const mailOverFreq = task.mailOverInt || defaultConfig.emailOverdueFreq;
-                const mailMax = task.mailMax || defaultConfig.emailOverdueMax;
-                const overdueCount = task.overdueEmailCount || 0;
-
-                let shouldSend = false;
-                let subjectPrefix = "";
-
-                if (diffDays >= 0 && diffDays <= mailStartDays) {
-                    if (isIntervalPassed(task.lastEmailSent, mailFreqDays * 86400000)) {
-                        shouldSend = true;
-                        subjectPrefix = diffDays === 0 ? "HOJE:" : "Lembrete:";
-                    }
-                }
-
-                if (diffDays < 0) {
-                    if (overdueCount < mailMax) {
-                        if (isIntervalPassed(task.lastEmailSent, mailOverFreq * 86400000)) {
-                            shouldSend = true;
-                            subjectPrefix = "ATRASADO:";
-                        }
-                    }
-                }
-
-                if (shouldSend) {
-                    sendEmail(task, subjectPrefix, diffDays < 0);
-                }
-            }
-        });
-    }
-
-    function isIntervalPassed(lastStr, intervalMs) {
-        if (!lastStr) return true;
-        const last = new Date(lastStr).getTime();
-        const now = new Date().getTime();
-        return (now - last) >= intervalMs;
-    }
-
-    function sendEmail(task, subjectPrefix, isOverdue) {
-        const nowIso = new Date().toISOString();
-        let updateData = { lastEmailSent: nowIso };
-        if (isOverdue) {
-            updateData.overdueEmailCount = (task.overdueEmailCount || 0) + 1;
-        }
-
-        db.collection('users').doc(currentUser.uid).collection('tasks').doc(task.id).update(updateData);
-
-        let htmlContent = `
-            <div style="font-family: Arial, sans-serif; color: #333;">
-                <h2 style="color: ${isOverdue ? '#e74c3c' : '#0066cc'};">${subjectPrefix} ${task.title}</h2>
-                <p>Olá! Detalhes do seu compromisso:</p>
-                <hr>
-                <p><strong>Descrição:</strong> ${task.description || 'Sem detalhes.'}</p>
-                <p><strong>Data:</strong> ${formatDateBR(task.date)} ${task.time || ''}</p>
-        `;
-        if (task.value) { htmlContent += `<p><strong>Valor:</strong> R$ ${task.value}</p>`; }
-        htmlContent += `
-                <hr>
-                <small>Compromisso Fácil Cloud Pro.</small>
-            </div>
-        `;
-
-        fetch('https://enviaremailsdiarios-368296869868.southamerica-east1.run.app/send-email', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                to: task.emailAddr,
-                subject: `${subjectPrefix} ${task.title}`,
-                html: htmlContent
-            })
-        }).then(() => console.log("Email enviado para " + task.title))
-          .catch(err => console.error("Erro envio email", err));
-    }
-
-    function triggerAlarm(task, typeText) {
-        const audio = document.getElementById('audioAlert');
-        audio.currentTime = 0;
-        audio.play().catch(()=>{});
-
-        document.getElementById('alarm-context').textContent = typeText;
-        document.getElementById('alarm-task-id').value = task.id;
-        document.getElementById('alarm-time-display').textContent = task.time;
-        document.getElementById('alarm-text-display').textContent = task.title;
-        document.getElementById('alarmModal').classList.add('active');
-        
-        if(Notification.permission==="granted") new Notification(`${typeText}: ${task.title}`);
-    }
-
-    function stopAlarm() {
-        document.getElementById('alarmModal').classList.remove('active');
-        document.getElementById('audioAlert').pause();
-    }
-
-    function completeTaskFromAlarm() {
-        const id = document.getElementById('alarm-task-id').value;
-        const audio = document.getElementById('audioDone');
-        audio.currentTime = 0;
-        audio.play().catch(()=>{});
-        db.collection('users').doc(currentUser.uid).collection('tasks').doc(id).update({ completed: true });
-        stopAlarm();
-    }
-
-    // ==========================================
-    // 6. BACKUP, RESTAURAÇÃO E LIMPEZA
-    // ==========================================
-    function backupData() {
-        if(appData.tasks.length === 0) return alert("Nada para salvar.");
-        const dataStr = JSON.stringify(appData.tasks, null, 2);
-        const blob = new Blob([dataStr], { type: "application/json" });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        const date = new Date().toISOString().split('T')[0];
-        a.download = `backup_compromissos_${date}.json`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-    }
-
-    function triggerRestore() {
-        document.getElementById('restore-input').click();
-    }
-
-    function restoreData(input) {
-        const file = input.files[0];
-        if(!file) return;
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            try {
-                const tasks = JSON.parse(e.target.result);
-                if(!Array.isArray(tasks)) return alert("Arquivo inválido!");
-                if(confirm(`Tem certeza? Isso irá adicionar ${tasks.length} tarefas à sua conta.`)) {
-                    tasks.forEach(t => {
-                        delete t.id; 
-                        db.collection('users').doc(currentUser.uid).collection('tasks').add(t);
-                    });
-                    alert("Restauração iniciada!");
-                }
-            } catch(err) { alert("Erro ao ler arquivo: " + err); }
-        };
-        reader.readAsText(file);
-        input.value = ''; 
-    }
-
-    function toggleCleanup(chk) {
-        localStorage.setItem('autoCleanup', chk.checked);
-        if(chk.checked) runAutoCleanup();
-    }
-
-    function runAutoCleanup() {
-        const isEnabled = localStorage.getItem('autoCleanup') === 'true';
-        if(!isEnabled || !appData.tasks) return;
-
-        const cutoff = new Date();
-        cutoff.setDate(cutoff.getDate() - 30); 
-        const cutoffStr = cutoff.toISOString().split('T')[0];
-        const oldTasks = appData.tasks.filter(t => t.completed && t.date < cutoffStr);
-
-        if (oldTasks.length > 0) {
-            if(confirm(`Limpeza Automática: Existem ${oldTasks.length} tarefas concluídas há mais de 30 dias. Deseja apagá-las para liberar espaço?`)) {
-                let count = 0;
-                oldTasks.forEach(t => {
-                    db.collection('users').doc(currentUser.uid).collection('tasks').doc(t.id).delete();
-                    count++;
-                });
-                console.log(`Limpeza automática: ${count} removidas.`);
-            }
-        }
-    }
-    
-    // ==========================================
-    // 7. GERAÇÃO DE PIX COPIA E COLA
-    // ==========================================
-    const PIX_KEY_GLOBAL = "b4648948-d0a8-4402-81f4-8a4047fcf4e5";
-    
-    function crc16(str) {
-        let crc = 0xFFFF;
-        for (let i = 0; i < str.length; i++) {
-            crc ^= str.charCodeAt(i) << 8;
-            for (let j = 0; j < 8; j++) {
-                if ((crc & 0x8000) !== 0) crc = (crc << 1) ^ 0x1021;
-                else crc = crc << 1;
-            }
-        }
-        return (crc & 0xFFFF).toString(16).toUpperCase().padStart(4, '0');
-    }
-
-    function createPixPayload(amount) {
-        const format = (id, val) => id + val.length.toString().padStart(2, '0') + val;
-        const merchantInfo = format('00', 'BR.GOV.BCB.PIX') + format('01', PIX_KEY_GLOBAL);
-        let payload = 
-            format('00', '01') + 
-            format('26', merchantInfo) + 
-            format('52', '0000') + 
-            format('53', '986');
-        if (amount > 0) payload += format('54', amount.toFixed(2));
-        payload += format('58', 'BR') + format('59', 'App Compromisso') + format('60', 'Cidade') + format('62', format('05', '***'));
-        payload += '6304';
-        payload += crc16(payload);
-        return payload;
-    }
-
-    function generatePixCopyPaste(amount) {
-        const code = createPixPayload(amount);
-        copyToClipboard(code, "Pix Copia e Cola (R$ "+amount+",00) copiado!");
-        const disp = document.getElementById('pix-display-area');
-        disp.style.display = 'block';
-        disp.textContent = code;
-    }
-
-    function copyPixSimpleKey() {
-        copyToClipboard(PIX_KEY_GLOBAL, "Chave Pix copiada!");
-        const disp = document.getElementById('pix-display-area');
-        disp.style.display = 'block';
-        disp.textContent = PIX_KEY_GLOBAL;
-    }
-
-    function copyToClipboard(text, msg) {
-        navigator.clipboard.writeText(text).then(() => {
-            const feed = document.getElementById('pix-feedback');
-            feed.textContent = "✅ " + msg;
-            feed.style.display = 'block';
-            setTimeout(() => feed.style.display = 'none', 4000);
-        }).catch(err => alert("Erro ao copiar: " + text));
-    }
-
-    function openSupportModal() {
-        document.getElementById('pix-display-area').style.display = 'none';
-        document.getElementById('pix-feedback').style.display = 'none';
-        document.getElementById('supportModal').classList.add('open');
-    }
-    function closeSupportModal() {
-        document.getElementById('supportModal').classList.remove('open');
-    }
-
-    // --- UI HELPERS ---
-    function openModal() {
-        document.getElementById('taskModal').classList.add('open');
-        document.getElementById('t-id').value = '';
-        
-        // Limpa campos
-        document.getElementById('t-title').value = '';
-        document.getElementById('t-desc').value = ''; 
-        document.getElementById('t-date').value = ''; 
-        document.getElementById('t-time').value = '';
-        document.getElementById('t-category').value = '';
-        document.getElementById('t-value').value = '';
-        document.getElementById('t-email-addr').value = '';
-        document.getElementById('t-send-email').checked = false;
-        
-        // CARREGA DEFAULTS
-        document.getElementById('t-rem-start').value = defaultConfig.alarmStartMin;
-        document.getElementById('t-rem-int').value = defaultConfig.alarmFreqMin;
-        document.getElementById('t-rem-over-int').value = defaultConfig.alarmOverdueFreq;
-        document.getElementById('t-mail-days').value = defaultConfig.emailDaysBefore;
-        document.getElementById('t-mail-int').value = defaultConfig.emailFreqDays;
-        document.getElementById('t-mail-over-int').value = defaultConfig.emailOverdueFreq;
-        document.getElementById('t-mail-max').value = defaultConfig.emailOverdueMax;
-        
-        toggleEmailInput();
-    }
-
-    function openEditModal(id) {
-        const t = appData.tasks.find(x => x.id === id);
-        if(!t) return;
-        document.getElementById('t-id').value = t.id;
-        document.getElementById('t-title').value = t.title;
-        document.getElementById('t-desc').value = t.description || ''; 
-        document.getElementById('t-date').value = t.date;
-        document.getElementById('t-time').value = t.time;
-        document.getElementById('t-category').value = t.category||'';
-        document.getElementById('t-value').value = t.value||'';
-        document.getElementById('t-send-email').checked = t.sendEmail;
-        document.getElementById('t-email-addr').value = t.emailAddr||'';
-        
-        // Configs
-        document.getElementById('t-rem-start').value = t.remStart || defaultConfig.alarmStartMin;
-        document.getElementById('t-rem-int').value = t.remInt || defaultConfig.alarmFreqMin;
-        document.getElementById('t-rem-over-int').value = t.remOverInt || defaultConfig.alarmOverdueFreq;
-        document.getElementById('t-mail-days').value = t.mailDays || defaultConfig.emailDaysBefore;
-        document.getElementById('t-mail-int').value = t.mailInt || defaultConfig.emailFreqDays;
-        document.getElementById('t-mail-over-int').value = t.mailOverInt || defaultConfig.emailOverdueFreq;
-        document.getElementById('t-mail-max').value = t.mailMax || defaultConfig.emailOverdueMax;
-
-        toggleEmailInput();
-        document.getElementById('taskModal').classList.add('open');
-    }
-    
-    function closeModal() { document.getElementById('taskModal').classList.remove('open'); }
-    function toggleEmailInput() { 
-        const chk = document.getElementById('t-send-email').checked; 
-        document.getElementById('div-email-input').classList.toggle('hidden', !chk);
-    }
-    function formatDateBR(d) { return d.split('-').reverse().join('/'); }
-    function exportPDF() {
-        if(!window.jspdf) return alert("Carregando libs...");
-        const doc = new window.jspdf.jsPDF();
-        doc.text("Relatório Tarefas", 10, 10);
-        const rows = appData.tasks.map(t=>[formatDateBR(t.date), t.title, t.completed?'OK':'Pending']);
-        doc.autoTable({ head:[['Data','Tarefa','Status']], body:rows });
-        doc.save('relatorio.pdf');
-    }
-
-    const hr = new Date().getHours();
-    document.getElementById('greeting').textContent = hr<12?"Bom dia!":hr<18?"Boa tarde!":"Boa noite!";
-    if("Notification" in window) Notification.requestPermission();
-
-</script>
+    <!-- ALERT CONTAINER -->
+    <div id="alert-container"></div>
+
+    <input type="file" id="restore-input" accept=".json" style="display: none;" onchange="app.ui.restoreData(this)">
+    <script src="app.js"></script>
 </body>
 </html>
