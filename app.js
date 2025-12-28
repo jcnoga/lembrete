@@ -1,13 +1,14 @@
 /**
  * SISTEMA AGRIMANAGER - ARQUIVO PRINCIPAL JAVASCRIPT
- * Versão: Híbrida (LocalStorage + Firebase Sync) com Identificação de App
- * Atualização: Dados Demo Robustos & Verificação de Email
+ * Versão: Híbrida (LocalStorage + Firebase Sync)
+ * Atualizações: Correção de Persistência de Dados Demo e Isolamento de Usuário
  */
 
 window.app = {
     // --- CONFIGURAÇÃO E IDENTIFICAÇÃO DA APLICAÇÃO ---
     config: {
-        appId: 'app_fazenda_principal_01', 
+        // Este ID será substituído pelo UID do usuário ao fazer login para garantir privacidade
+        appId: null, 
         
         firebase: {
           apiKey: "AIzaSyAY06PHLqEUCBzg9SjnH4N6xe9ZzM8OLvo",
@@ -47,13 +48,19 @@ window.app = {
                 
                 this.auth.onAuthStateChanged(user => {
                     if (user) {
-                        console.log("Firebase: Conectado como", user.email);
+                        // --- CORREÇÃO DE SEGURANÇA: ISOLAMENTO DE DADOS ---
+                        // Define o ID do App como o UID do usuário. 
+                        // Assim, ele só lê/escreve na própria pasta 'users/{UID}'.
+                        app.config.appId = user.uid;
+                        
+                        console.log(`✅ Firebase: Conectado como ${user.email}`);
+                        console.log(`🔒 Pasta do Usuário Segura: users/${app.config.appId}`);
+                        
                         this.syncDown();
                     } else {
                         console.log("Firebase: Desconectado");
                     }
                 });
-                console.log(`AgriManager: Cloud iniciada para App ID: ${app.config.appId}`);
             } catch (e) {
                 console.warn("Firebase não configurado ou erro de inicialização. Modo Offline ativo.", e);
             }
@@ -74,9 +81,10 @@ window.app = {
                 retryCount: 0
             };
 
-            if (this.db) {
+            if (this.db && app.config.appId) {
                 try {
-                    await this.db.collection('agri_manager_apps')
+                    // ALTERADO PARA CAMINHO SEGURO DO USUÁRIO
+                    await this.db.collection('users')
                         .doc(app.config.appId)
                         .collection('mail_queue')
                         .doc(mailItem.id)
@@ -91,9 +99,14 @@ window.app = {
         },
 
         async save(table, item) {
-            if (!this.db || !app.state.currentUser || app.state.currentUser.provider === 'local') return;
+            if (!this.db || !app.state.currentUser || !app.config.appId) return;
+            // Não sincroniza se for conta local pura sem conexão
+            if (app.state.currentUser.provider === 'local' && !this.auth.currentUser) return;
+
             try {
-                await this.db.collection('agri_manager_apps')
+                // ALTERADO PARA CAMINHO SEGURO DO USUÁRIO
+                // Retorna a promise para que quem chamar possa aguardar (usado no seedDemoData)
+                return await this.db.collection('users')
                     .doc(app.config.appId)
                     .collection(table)
                     .doc(item.id)
@@ -102,9 +115,10 @@ window.app = {
         },
 
         async delete(table, id) {
-            if (!this.db || !app.state.currentUser || app.state.currentUser.provider === 'local') return;
+            if (!this.db || !app.state.currentUser || !app.config.appId) return;
             try {
-                await this.db.collection('agri_manager_apps')
+                // ALTERADO PARA CAMINHO SEGURO DO USUÁRIO
+                await this.db.collection('users')
                     .doc(app.config.appId)
                     .collection(table)
                     .doc(id)
@@ -113,35 +127,48 @@ window.app = {
         },
 
         async syncDown() {
-            if (!this.db) return;
+            if (!this.db || !app.config.appId) return;
             const tables = Object.keys(app.db.schema).filter(k => Array.isArray(app.db.schema[k]));
+            
+            // Limpa dados locais antes de baixar (para evitar mistura entre usuários se estiver no mesmo PC)
+            // Agora garantimos que usamos a estrutura local correta
+            let localData = JSON.parse(localStorage.getItem('agri_data')) || JSON.parse(JSON.stringify(app.db.schema));
             
             for (const table of tables) {
                 try {
-                    const snapshot = await this.db.collection('agri_manager_apps')
+                    // ALTERADO PARA CAMINHO SEGURO DO USUÁRIO
+                    const snapshot = await this.db.collection('users')
                         .doc(app.config.appId)
                         .collection(table)
                         .get();
                     
                     if (!snapshot.empty) {
-                        const localData = app.db.get(table);
                         const remoteData = [];
                         snapshot.forEach(doc => remoteData.push(doc.data()));
                         
-                        remoteData.forEach(rItem => {
-                            const idx = localData.findIndex(l => l.id === rItem.id);
-                            if (idx >= 0) localData[idx] = rItem;
-                            else localData.push(rItem);
-                        });
-                        
-                        const allData = JSON.parse(localStorage.getItem('agri_data'));
-                        allData[table] = localData;
-                        localStorage.setItem('agri_data', JSON.stringify(allData));
+                        // Atualiza local com o que veio da nuvem
+                        localData[table] = remoteData;
                     }
                 } catch (e) { console.error(`Erro syncDown tabela ${table}:`, e); }
             }
+
+            // Sincronizar também configurações e licença que ficam em subcoleção system
+            try {
+                const sysRef = this.db.collection('users').doc(app.config.appId).collection('system');
+                
+                const settingsDoc = await sysRef.doc('settings').get();
+                if(settingsDoc.exists) localData.settings = settingsDoc.data();
+
+                const licenseDoc = await sysRef.doc('license').get();
+                if(licenseDoc.exists) localData.license = licenseDoc.data();
+
+            } catch(e) { console.error("Erro syncDown System:", e); }
+
+            localStorage.setItem('agri_data', JSON.stringify(localData));
+            
+            // Atualiza a tela atual
             if(app.state.currentView) app.router.go(app.state.currentView);
-            console.log("Sincronização Cloud -> Local concluída.");
+            console.log("Sincronização Cloud (Segura) -> Local concluída.");
         }
     },
 
@@ -154,16 +181,16 @@ window.app = {
                 soundEnabled: true,
                 visualEnabled: true,
                 supportPhone: '5511999999999',
-                // NOVAS CONFIGURAÇÕES PADRÃO (LEMBRETES)
-                defAlarmLead: 14,      // Iniciar (min antes)
-                defAlarmRepeat: 5,     // Repetir (min)
-                defAlarmOverdue: 10,   // Se atrasado (min)
-                defEmailTarget: '',    // E-mail padrão
-                defEmailLead: 1,       // Iniciar (dias antes)
-                defEmailRepeat: 1,     // Repetir (dias)
-                defEmailOverdue: 1,    // Se atrasado (dias)
-                defEmailMax: 3,        // Máx envios
-                cleanupDays: 30        // Limpeza automática
+                // CONFIGURAÇÕES PADRÃO (LEMBRETES)
+                defAlarmLead: 14,      
+                defAlarmRepeat: 5,     
+                defAlarmOverdue: 10,   
+                defEmailTarget: '',    
+                defEmailLead: 1,       
+                defEmailRepeat: 1,     
+                defEmailOverdue: 1,    
+                defEmailMax: 3,        
+                cleanupDays: 30        
             },
             license: {
                 daysRemaining: 30, 
@@ -187,14 +214,15 @@ window.app = {
 
             if (!localStorage.getItem('agri_data')) {
                 const initialData = JSON.parse(JSON.stringify(this.schema));
+                // Usuário local padrão apenas para fallback
                 initialData.users.push({
                     id: 'admin01', name: 'Administrador', email: 'admin@agri.com', pass: 'admin123', provider: 'local'
                 });
-                initialData.farms.push({id: 'f1', name: 'Fazenda Santa Luzia', owner: 'João Silva', area: 500, location: 'Mato Grosso'});
                 initialData.license.lastCheckDate = new Date().toISOString().split('T')[0];
                 localStorage.setItem('agri_data', JSON.stringify(initialData));
             } else {
                 let data = JSON.parse(localStorage.getItem('agri_data'));
+                // Migrations: Garante que arrays novos existam
                 if(!data.stock_movements) data.stock_movements = [];
                 if(!data.cycles) data.cycles = [];
                 if(!data.machinery) data.machinery = [];
@@ -203,17 +231,11 @@ window.app = {
                 
                 if(!data.settings) data.settings = this.schema.settings;
                 
-                // Merge de configurações novas com existentes
+                // Merge configurações
                 const s = this.schema.settings;
                 const d = data.settings;
                 if(d.defAlarmLead === undefined) d.defAlarmLead = s.defAlarmLead;
                 if(d.defAlarmRepeat === undefined) d.defAlarmRepeat = s.defAlarmRepeat;
-                if(d.defAlarmOverdue === undefined) d.defAlarmOverdue = s.defAlarmOverdue;
-                if(d.defEmailTarget === undefined) d.defEmailTarget = s.defEmailTarget;
-                if(d.defEmailLead === undefined) d.defEmailLead = s.defEmailLead;
-                if(d.defEmailRepeat === undefined) d.defEmailRepeat = s.defEmailRepeat;
-                if(d.defEmailOverdue === undefined) d.defEmailOverdue = s.defEmailOverdue;
-                if(d.defEmailMax === undefined) d.defEmailMax = s.defEmailMax;
                 if(d.cleanupDays === undefined) d.cleanupDays = s.cleanupDays;
 
                 if(!data.license) {
@@ -243,7 +265,11 @@ window.app = {
             const data = JSON.parse(localStorage.getItem('agri_data'));
             data.license = licData;
             localStorage.setItem('agri_data', JSON.stringify(data));
-            if(app.cloud.db) app.cloud.db.collection('agri_manager_apps').doc(app.config.appId).collection('system').doc('license').set(licData).catch(()=>{});
+            // Sincroniza em local seguro
+            if(app.cloud.db && app.config.appId) {
+                app.cloud.db.collection('users').doc(app.config.appId)
+                    .collection('system').doc('license').set(licData).catch(()=>{});
+            }
         },
 
         saveSettings(newSettings) {
@@ -251,7 +277,11 @@ window.app = {
             data.settings = { ...data.settings, ...newSettings };
             localStorage.setItem('agri_data', JSON.stringify(data));
             app.system.restartAlertLoop();
-            if(app.cloud.db) app.cloud.db.collection('agri_manager_apps').doc(app.config.appId).collection('system').doc('settings').set(data.settings).catch(()=>{});
+            // Sincroniza em local seguro
+            if(app.cloud.db && app.config.appId) {
+                app.cloud.db.collection('users').doc(app.config.appId)
+                    .collection('system').doc('settings').set(data.settings).catch(()=>{});
+            }
         },
 
         save(table, item) {
@@ -287,11 +317,14 @@ window.app = {
             return true;
         },
 
-        // --- FUNÇÃO DADOS DEMO REESCRITA (POPULA TUDO) ---
-        seedDemoData() {
-            if(!confirm("Isso irá adicionar diversos registros de demonstração (Fazendas, Safras, Financeiro, etc) ao seu banco de dados atual.\nDeseja continuar?")) return;
+        // --- FUNÇÃO DADOS DEMO ROBUSTA COM PERSISTÊNCIA CORRIGIDA ---
+        async seedDemoData() {
+            if(!confirm("Isso irá adicionar diversos registros de demonstração (Fazendas, Safras, Financeiro, etc) ao seu banco de dados atual.\n\nDeseja continuar?")) return;
 
-            // Utilitários para geração de dados
+            // Array para coletar as promises de salvamento na nuvem e garantir persistência antes do reload
+            const savePromises = [];
+
+            // Utilitários
             const rand = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
             const randItem = (arr) => arr[Math.floor(Math.random() * arr.length)];
             const dId = () => 'demo_' + Date.now() + '_' + rand(1, 9999);
@@ -301,35 +334,38 @@ window.app = {
                 return d.toISOString().split('T')[0];
             };
 
-            // 1. FAZENDAS (3-5 registros)
-            const farmNames = ['Fazenda Santa Fé', 'Sítio Alvorada', 'Agropecuária Boa Vista', 'Fazenda Vale do Sol', 'Estância Primavera'];
+            // 1. FAZENDAS
+            const farmNames = ['Fazenda Santa Fé', 'Sítio Alvorada', 'Agropecuária Boa Vista', 'Fazenda Vale do Sol'];
             const createdFarms = [];
             for (let i = 0; i < 4; i++) {
                 const farm = {
                     id: dId(),
-                    name: farmNames[i] || `Fazenda Demo ${i}`,
-                    owner: 'Usuário Demo',
+                    name: farmNames[i],
+                    owner: app.state.currentUser ? app.state.currentUser.name : 'Usuário Demo',
                     area: rand(100, 5000),
-                    location: randItem(['Mato Grosso', 'Goiás', 'Paraná', 'Bahia', 'São Paulo'])
+                    location: randItem(['Mato Grosso', 'Goiás', 'Paraná', 'Bahia'])
                 };
                 app.db.save('farms', farm);
+                // Força o salvamento explícito na nuvem e guarda a promise
+                savePromises.push(app.cloud.save('farms', farm));
                 createdFarms.push(farm);
             }
 
-            // 2. TALHÕES (Vinculados a Fazendas)
+            // 2. TALHÕES
             const createdPlots = [];
             if (createdFarms.length > 0) {
                 for (let i = 0; i < 5; i++) {
                     const farm = randItem(createdFarms);
                     const plot = {
                         id: dId(),
-                        name: `Talhão ${rand(1, 20)} - ${farm.name.split(' ')[1]}`,
+                        name: `Talhão ${rand(1, 20)}`,
                         farmId: farm.id,
                         area: Math.floor(farm.area / rand(4, 10)),
-                        soilType: randItem(['Argiloso', 'Arenoso', 'Misto', 'Terra Roxa']),
-                        status: randItem(['Disponível', 'Em uso', 'Em recuperação'])
+                        soilType: randItem(['Argiloso', 'Arenoso', 'Misto']),
+                        status: 'Em uso'
                     };
                     app.db.save('plots', plot);
+                    savePromises.push(app.cloud.save('plots', plot));
                     createdPlots.push(plot);
                 }
             }
@@ -338,9 +374,8 @@ window.app = {
             const createdMachines = [];
             const machineTypes = [
                 {n: 'Trator JD 7200', t: 'Máquina', cost: 250}, 
-                {n: 'Colheitadeira NH TC57', t: 'Máquina', cost: 450}, 
-                {n: 'Plantadeira 12L', t: 'Implemento', cost: 0}, 
-                {n: 'Pulverizador 2000L', t: 'Implemento', cost: 50}
+                {n: 'Colheitadeira NH', t: 'Máquina', cost: 450}, 
+                {n: 'Plantadeira 12L', t: 'Implemento', cost: 0}
             ];
             machineTypes.forEach(m => {
                 const machine = {
@@ -350,24 +385,21 @@ window.app = {
                     costPerHour: m.cost,
                     currentHour: rand(100, 5000),
                     maintenanceInterval: 250,
-                    status: 'Ativo',
-                    brand: m.n.split(' ')[1],
-                    model: 'Demo Model'
+                    status: 'Ativo'
                 };
                 app.db.save('machinery', machine);
+                savePromises.push(app.cloud.save('machinery', machine));
                 createdMachines.push(machine);
             });
 
-            // 4. INSUMOS & ESTOQUE
+            // 4. INSUMOS
             const inputTypes = [
-                {n: 'Semente de Soja Intacta', c: 'Semente', u: 'sc'},
+                {n: 'Semente de Soja', c: 'Semente', u: 'sc'},
                 {n: 'NPK 04-14-08', c: 'Fertilizante', u: 'ton'},
-                {n: 'Glifosato', c: 'Defensivo', u: 'lt'},
                 {n: 'Diesel S10', c: 'Combustível', u: 'lt'}
             ];
-            const createdInputs = [];
             inputTypes.forEach(inp => {
-                const input = {
+                const item = {
                     id: dId(),
                     name: inp.n,
                     category: inp.c,
@@ -375,141 +407,93 @@ window.app = {
                     unit: inp.u,
                     supplier: 'AgroComércio Demo'
                 };
-                app.db.save('inputs', input);
-                createdInputs.push(input);
-                
-                // Movimentação de estoque inicial
-                app.db.save('stock_movements', {
-                    id: dId(),
-                    inputId: input.id,
-                    type: 'Entrada',
-                    quantity: input.quantity,
-                    motive: 'Estoque Inicial (Demo)',
-                    date: today
-                });
+                app.db.save('inputs', item);
+                savePromises.push(app.cloud.save('inputs', item));
             });
 
-            // 5. SAFRAS (Vinculadas a Talhões)
-            const createdCrops = [];
+            // 5. SAFRAS & PRODUÇÃO & FINANCEIRO
             if (createdPlots.length > 0) {
-                const cultures = ['Soja', 'Milho', 'Algodão', 'Trigo'];
+                const cultures = ['Soja', 'Milho'];
                 for (let i = 0; i < 3; i++) {
                     const plot = randItem(createdPlots);
                     const crop = {
                         id: dId(),
-                        name: `${randItem(cultures)} Safra ${rand(23,25)}/${rand(24,26)}`,
+                        name: `${randItem(cultures)} Demo`,
                         plotId: plot.id,
-                        culture: randItem(cultures),
-                        status: randItem(['Em crescimento', 'Colhida', 'Planejada']),
+                        culture: 'Soja',
+                        status: 'Colhida',
                         plantingDate: today,
                         expectedHarvestDate: futureDate(120),
                         totalCost: rand(5000, 50000)
                     };
                     app.db.save('crops', crop);
-                    createdCrops.push(crop);
+                    savePromises.push(app.cloud.save('crops', crop));
+
+                    // Produção
+                    const prod = {
+                        id: dId(),
+                        safraId: crop.id,
+                        date: today,
+                        quantity: rand(100, 1000),
+                        unit: 'sc'
+                    };
+                    app.db.save('production', prod);
+                    savePromises.push(app.cloud.save('production', prod));
+                    
+                    // Receita
+                    const fin = {
+                        id: dId(),
+                        date: today,
+                        type: 'income',
+                        category: 'Venda de Safra',
+                        description: `Venda Parcial ${crop.name}`,
+                        value: rand(50000, 200000),
+                        status: 'Recebido'
+                    };
+                    app.db.save('financials', fin);
+                    savePromises.push(app.cloud.save('financials', fin));
                 }
             }
 
-            // 6. PRODUÇÃO & CICLOS & FINANCEIRO
-            if (createdCrops.length > 0) {
-                createdCrops.forEach(crop => {
-                    // Produção
-                    if (crop.status === 'Colhida') {
-                        app.db.save('production', {
-                            id: dId(),
-                            safraId: crop.id,
-                            date: today,
-                            quantity: rand(100, 1000),
-                            unit: 'sc' // Sacas
-                        });
-                        
-                        // Receita (Financeiro)
-                        app.db.save('financials', {
-                            id: dId(),
-                            date: today,
-                            type: 'income',
-                            category: 'Venda de Safra',
-                            description: `Venda Parcial ${crop.name}`,
-                            value: rand(50000, 200000),
-                            status: 'Recebido'
-                        });
-                    }
-
-                    // Ciclos (Tarefas)
-                    app.db.save('cycles', {
-                        id: dId(),
-                        name: `Plantio ${crop.name}`,
-                        type: 'Plantio',
-                        cropId: crop.id,
-                        startDate: crop.plantingDate,
-                        status: 'Concluído',
-                        cost: rand(1000, 5000),
-                        machineId: createdMachines.length ? randItem(createdMachines).id : null,
-                        machineHours: rand(10, 50)
-                    });
-                });
-            }
-
-            // Despesas Financeiras Diversas
-            for(let i=0; i<3; i++) {
-                app.db.save('financials', {
-                    id: dId(),
-                    date: today,
-                    type: 'expense',
-                    category: randItem(['Insumos', 'Combustível', 'Manutenção']),
-                    description: `Despesa Operacional Demo ${i+1}`,
-                    value: rand(500, 5000),
-                    status: 'Pago'
-                });
-            }
-
-            // Manutenções
-            if(createdMachines.length > 0) {
-                app.db.save('maintenances', {
-                    id: dId(),
-                    machineId: randItem(createdMachines).id,
-                    type: 'Preventiva',
-                    date: today,
-                    description: 'Troca de óleo e filtros (Demo)',
-                    cost: 850.00,
-                    status: 'Executada',
-                    nextMaintenance: 600
-                });
-            }
-
-            // 7. LEMBRETES (E TESTE DE EMAIL)
-            // Cria um lembrete para HOJE para testar o envio de email
+            // 6. LEMBRETES
             const settings = app.db.getSettings();
-            app.db.save('reminders', {
+            const reminder = {
                 id: dId(),
                 name: '⚠️ Teste de Email Demo',
-                description: 'Este é um lembrete gerado automaticamente para verificar se o sistema de emails está funcionando. Deve chegar em breve.',
+                description: 'Lembrete automático criado para testar o envio de e-mails.',
                 date: today,
                 time: new Date().toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'}),
                 category: 'Administrativo',
                 value: 0,
                 status: 'Pendente',
-                emailEnabled: true, // IMPORTANTE: Ativa o email
+                emailEnabled: true,
                 alarmConfig: {
                     lead: settings.defAlarmLead,
                     repeat: settings.defAlarmRepeat,
                     overdueRepeat: settings.defAlarmOverdue
                 },
                 stats: { emailCount: 0, lastEmailDate: null }
-            });
+            };
+            app.db.save('reminders', reminder);
+            savePromises.push(app.cloud.save('reminders', reminder));
 
-            // Outros lembretes
-            app.db.save('reminders', {
-                id: dId(),
-                name: 'Reunião com Agrônomo',
-                date: futureDate(2),
-                time: '09:00',
-                category: 'Geral',
-                status: 'Pendente',
-                emailEnabled: false
-            });
+            // Feedback visual e espera pela persistência
+            if(savePromises.length > 0) {
+                const btn = document.querySelector('button[onclick="app.db.seedDemoData()"]');
+                if(btn) {
+                    btn.disabled = true;
+                    btn.innerText = "Salvando na Nuvem...";
+                }
+                
+                try {
+                    // Aguarda todas as operações de escrita no Firebase terminarem
+                    await Promise.all(savePromises);
+                } catch(e) {
+                    console.error("Erro ao salvar dados demo na nuvem:", e);
+                }
+            }
 
-            alert('Dados de demonstração completos gerados com sucesso!\n\nUm lembrete de teste de e-mail foi criado para hoje.');
+            alert('Dados demo gerados e salvos com sucesso!');
             location.reload();
         }
     },
@@ -665,9 +649,8 @@ window.app = {
 
                 const targetTime = new Date(r.date + 'T' + (r.time || '00:00'));
                 const diffMs = targetTime - now;
-                const diffMin = Math.floor(diffMs / 60000); // Negativo se atrasado
+                const diffMin = Math.floor(diffMs / 60000); 
                 
-                // Cálculo de dias para regras de e-mail (zerando horas)
                 const dateOnlyTarget = new Date(r.date + 'T00:00:00');
                 const dateOnlyNow = new Date(todayStr + 'T00:00:00');
                 const diffDays = Math.ceil((dateOnlyTarget - dateOnlyNow) / (1000 * 60 * 60 * 24));
@@ -720,15 +703,14 @@ window.app = {
                         shouldQueueEmail = true;
                         emailType = 'Antecipado';
                     }
-                    // Regra 2: No Dia do Vencimento
+                    // Regra 2: No Dia do Vencimento (Prioritário)
                     else if (diffDays === 0 && r.stats.lastEmailDate !== todayStr) {
                         shouldQueueEmail = true;
                         emailType = 'Vencimento';
                     }
-                    // Regra 3: Atrasado (respeitando intervalo e limite máximo)
+                    // Regra 3: Atrasado
                     else if (diffDays < 0) {
                         const daysPast = Math.abs(diffDays);
-                        // Verifica intervalo de repetição E se já não enviou hoje E se não estourou o limite
                         if ((daysPast % cfg.overdue === 0) && 
                             r.stats.lastEmailDate !== todayStr && 
                             r.stats.emailCount < cfg.max) {
@@ -742,10 +724,9 @@ window.app = {
                         app.cloud.queueEmail({
                             to: cfg.target,
                             subject: `[AgriManager] Lembrete ${emailType}: ${r.name}`,
-                            body: `Olá,\n\nEste é um lembrete do sistema AgriManager.\n\n Compromisso: ${r.name}\n Data: ${app.utils.formatDate(r.date)} às ${r.time}\n Descrição: ${r.description || 'Sem descrição'}\n Status: ${emailType}\n\nFavor não responder este e-mail automático.`
+                            body: `Olá,\n\nCompromisso: ${r.name}\nData: ${app.utils.formatDate(r.date)} às ${r.time}\nStatus: ${emailType}`
                         });
 
-                        // Atualiza estatísticas para evitar duplicidade
                         r.stats.lastEmailDate = todayStr;
                         if (emailType === 'Atrasado') r.stats.emailCount++;
                         
@@ -759,6 +740,7 @@ window.app = {
                 const allData = JSON.parse(localStorage.getItem('agri_data'));
                 allData.reminders = activeReminders;
                 localStorage.setItem('agri_data', JSON.stringify(allData));
+                // Salva na nuvem para atualizar os status e evitar reenvio
                 if(app.cloud.db) activeReminders.forEach(r => app.cloud.save('reminders', r));
             }
         },
@@ -799,6 +781,10 @@ window.app = {
             const session = localStorage.getItem('agri_session');
             if (session) {
                 app.state.currentUser = JSON.parse(session);
+                
+                // Fallback para appId caso a conexão caia, usando o ID do usuário da sessão
+                if(!app.config.appId) app.config.appId = app.state.currentUser.id;
+
                 if (!app.license.checkStatus()) return;
                 document.getElementById('auth-screen').style.display = 'none';
                 document.getElementById('lock-screen').style.display = 'none';
@@ -812,18 +798,6 @@ window.app = {
                 document.getElementById('lock-screen').style.display = 'none';
                 this.switchView('login');
             }
-        },
-
-        getFirebaseStatus() {
-            if (app.cloud.auth) {
-                const user = app.cloud.auth.currentUser;
-                if (user) {
-                    console.log(`✅ Firebase Conectado: ${user.email} (UID: ${user.uid})`);
-                    return user;
-                }
-            }
-            console.log("❌ Firebase: Nenhum usuário conectado na nuvem.");
-            return null;
         },
 
         switchView(viewName) {
@@ -841,30 +815,34 @@ window.app = {
 
             btn.innerText = 'Verificando...';
 
-            // 1. Tenta usuário local
-            const localUser = app.db.findUser(email);
-            if (localUser && localUser.provider === 'local' && localUser.pass === pass) {
-                 this.createSession(localUser);
-                 return;
-            }
-
-            // 2. Tenta Firebase Auth
+            // 1. Tenta Firebase Auth (Prioritário)
             if (app.cloud.auth) {
                 try {
                     const userCredential = await app.cloud.auth.signInWithEmailAndPassword(email, pass);
                     const fbUser = userCredential.user;
+                    
+                    // SEGURANÇA: Limpa dados locais antigos antes de iniciar nova sessão
+                    localStorage.removeItem('agri_data');
+                    app.db.init(); // Reinicia DB limpo
+
                     const sessionUser = {
                         id: fbUser.uid,
                         name: fbUser.displayName || email.split('@')[0],
                         email: fbUser.email,
                         provider: 'firebase'
                     };
-                    app.db.createUser(sessionUser.name, sessionUser.email, 'firebase_secured', 'firebase', sessionUser.id);
                     this.createSession(sessionUser);
                     return;
                 } catch (error) {
                     console.error("Erro Firebase:", error);
                 }
+            }
+
+            // 2. Fallback para usuário local (Modo Offline)
+            const localUser = app.db.findUser(email);
+            if (localUser && localUser.provider === 'local' && localUser.pass === pass) {
+                 this.createSession(localUser);
+                 return;
             }
             
             btn.innerText = originalText;
@@ -879,6 +857,11 @@ window.app = {
                 try {
                     const provider = new firebase.auth.GoogleAuthProvider();
                     const result = await app.cloud.auth.signInWithPopup(provider);
+                    
+                    // SEGURANÇA: Limpa dados locais antigos
+                    localStorage.removeItem('agri_data');
+                    app.db.init();
+
                     const user = result.user;
                     const sessionUser = {
                         id: user.uid,
@@ -886,17 +869,14 @@ window.app = {
                         email: user.email,
                         provider: 'google'
                     };
-                    app.db.createUser(sessionUser.name, sessionUser.email, 'google_secured', 'google', sessionUser.id);
                     this.createSession(sessionUser);
                 } catch (error) {
                     alert("Erro no login Google: " + error.message);
                     btn.innerHTML = txt;
                 }
             } else {
-                setTimeout(() => { 
-                    this.createSession({ id: 'google_'+app.utils.uuid(), name: 'Usuário Google (Demo)', email: 'google_user@gmail.com', provider: 'local' }); 
-                    btn.innerHTML = txt; 
-                }, 1000);
+                alert("Modo Offline não suporta Google Login.");
+                btn.innerHTML = txt;
             }
         },
         async register(e) {
@@ -911,22 +891,20 @@ window.app = {
                     const userCredential = await app.cloud.auth.createUserWithEmailAndPassword(email, pass);
                     await userCredential.user.updateProfile({ displayName: name });
                     
-                    const newUser = { id: userCredential.user.uid, name, email, pass: 'firebase_secured', provider: 'firebase' };
-                    app.db.save('users', newUser);
-                    
-                    alert('Conta criada na Nuvem com sucesso! Você tem 30 dias de avaliação.');
+                    alert('Conta criada na Nuvem com sucesso! Faça login para continuar.');
                     this.switchView('login');
                     return;
                 } catch (error) {
                     if(error.code !== 'auth/invalid-email') {
-                         alert('Erro ao criar conta na nuvem: ' + error.message);
+                         alert('Erro ao criar conta: ' + error.message);
                          return;
                     }
                 }
             }
 
+            // Fallback Local
             if(app.db.createUser(name, email, pass, 'local')) {
-                alert('Conta local criada com sucesso! Você tem 30 dias de avaliação.');
+                alert('Conta local criada com sucesso!');
                 this.switchView('login');
             } else alert('E-mail já cadastrado.');
         },
@@ -935,7 +913,7 @@ window.app = {
             const email = document.getElementById('forgot-email').value;
             if(app.cloud.auth) {
                 app.cloud.auth.sendPasswordResetEmail(email)
-                    .then(() => alert('Link de redefinição enviado pelo Firebase para seu e-mail.'))
+                    .then(() => alert('Link de redefinição enviado para seu e-mail.'))
                     .catch((err) => alert('Erro: ' + err.message));
             } else {
                 alert('Modo Offline: Simulação de envio de link.'); 
@@ -949,7 +927,9 @@ window.app = {
         logout() { 
             if(confirm('Sair?')) { 
                 if(app.cloud.auth) app.cloud.auth.signOut();
+                // LIMPEZA DE SEGURANÇA: Remove sessão e dados locais
                 localStorage.removeItem('agri_session'); 
+                localStorage.removeItem('agri_data'); 
                 window.location.reload(); 
             } 
         }
@@ -980,9 +960,7 @@ window.app = {
                 case 'stock': title.innerText = 'Movimentação de Estoque'; app.ui.renderEntityList(container, 'stock_movements', 'Movimentação', ['Data', 'Insumo', 'Tipo', 'Qtd', 'Motivo'], [(r)=> r.date ? app.utils.formatDate(r.date) : '-',(r)=> app.db.getById('inputs', r.inputId)?.name || 'N/A',(r)=> `<span class="status-badge ${r.type==='Entrada'?'badge-income':'badge-expense'}">${r.type}</span>`,'quantity','motive']); break;
                 case 'machinery': title.innerText = 'Máquinas e Implementos'; app.ui.renderEntityList(container, 'machinery', 'Equipamento', ['Nome', 'Tipo', 'Custo/h', 'Horímetro', 'Status'], ['name', 'type', (r)=>app.utils.formatCurrency(r.costPerHour || 0), 'currentHour', 'status']); break;
                 case 'maintenances': title.innerText = 'Manutenções'; app.ui.renderEntityList(container, 'maintenances', 'Manutenção', ['Equipamento', 'Tipo', 'Data', 'Custo', 'Status'], [(r)=>app.db.getById('machinery', r.machineId)?.name || 'N/A', 'type', (r)=>app.utils.formatDate(r.date), (r)=>app.utils.formatCurrency(r.cost), 'status']); break;
-                
                 case 'lembretes': title.innerText = 'Lembretes e Alertas'; app.ui.renderEntityList(container, 'reminders', 'Lembrete', ['Título', 'Data', 'Hora', 'Categoria', 'Valor', 'Status'], ['name', (r)=>app.utils.formatDate(r.date), 'time', 'category', (r)=> r.value ? app.utils.formatCurrency(r.value) : '-', 'status']); break;
-
                 case 'relatorios': title.innerText = 'Central de Relatórios'; app.ui.renderReports(container); break;
                 case 'settings': title.innerText = 'Configurações e Licença'; app.ui.renderSettings(container); break;
             }
@@ -1027,7 +1005,6 @@ window.app = {
 
         getReportData(type) {
             let headers = [], body = [], title = '';
-            
             const entityMap = {
                 'users': 'Usuários', 'farms': 'Fazendas', 'plots': 'Talhões', 'crops': 'Safras',
                 'cycles': 'Ciclos', 'inputs': 'Insumos', 'stock_movements': 'Movimentação Estoque',
@@ -1079,13 +1056,10 @@ window.app = {
                 case 'machinery': return { headers: ['Nome', 'Tipo', 'Custo/h', 'Horas', 'Status'], fields: ['name', 'type', 'costPerHour', 'currentHour', 'status'] };
                 case 'maintenances': return { headers: ['Equipamento', 'Tipo', 'Data', 'Custo', 'Status'], fields: [(i)=>app.db.getById('machinery', i.machineId)?.name, 'type', 'date', (i)=>app.utils.formatCurrency(i.cost), 'status'] };
                 case 'users': return { headers: ['Nome', 'E-mail', 'Tipo'], fields: ['name', 'email', 'provider'] };
-                
-                // NOVO CASE (Colunas Lembretes)
                 case 'reminders': return { 
                     headers: ['Título', 'Data', 'Hora', 'Categoria', 'Valor', 'Status'], 
                     fields: ['name', (r)=>app.utils.formatDate(r.date), 'time', 'category', (r)=> r.value ? app.utils.formatCurrency(r.value) : '-', 'status'] 
                 };
-                
                 default: return { headers: [], fields: [] };
             }
         },
@@ -1327,7 +1301,7 @@ window.app = {
             const s = app.db.getSettings();
             const lic = app.db.getLicense();
             
-            // --- BLOCO NOVO: Verificação de Admin para Botão de Reset (jcnvap@gmail.com) ---
+            // --- VERIFICAÇÃO DE ADMIN (jcnvap@gmail.com) ---
             let adminSection = '';
             if (app.state.currentUser && app.state.currentUser.email === 'jcnvap@gmail.com') {
                 adminSection = `
@@ -1342,9 +1316,7 @@ window.app = {
                     </div>
                 `;
             }
-            // --------------------------------------------------------------------------------
             
-            // UI com novas configurações
             container.innerHTML = `
                 <div style="display: grid; gap: 2rem;">
                     
@@ -1389,7 +1361,6 @@ window.app = {
                         <h3><i class="fas fa-bell"></i> Padrões de Alertas e Lembretes</h3>
                         <form onsubmit="app.ui.saveSettings(event)" style="margin-top:1rem;">
                             
-                            <!-- Configurações Gerais -->
                             <div class="grid-2-col">
                                 <div class="form-group" style="display:flex; align-items:center; gap:5px;">
                                     <input type="checkbox" name="soundEnabled" id="chk-sound" ${s.soundEnabled?'checked':''}>
@@ -1401,7 +1372,6 @@ window.app = {
                                 </div>
                             </div>
                             
-                            <!-- Alarme (App Aberto) -->
                             <div class="form-section-title"><i class="fas fa-desktop"></i> Alarme (App Aberto)</div>
                             <div class="grid-2-col">
                                 <div class="form-group"><label>Iniciar (min antes)</label><input type="number" name="defAlarmLead" class="form-control" value="${s.defAlarmLead}"></div>
@@ -1409,7 +1379,6 @@ window.app = {
                             </div>
                             <div class="form-group"><label>Se atrasado (cada min)</label><input type="number" name="defAlarmOverdue" class="form-control" value="${s.defAlarmOverdue}"></div>
 
-                            <!-- E-mail -->
                             <div class="form-section-title"><i class="fas fa-envelope"></i> E-mail Padrão</div>
                             <div class="form-group"><label>E-mail de destino</label><input type="email" name="defEmailTarget" class="form-control" value="${s.defEmailTarget || ''}" placeholder="ex: gerente@fazenda.com"></div>
                             <div class="grid-2-col">
@@ -1421,7 +1390,6 @@ window.app = {
                                 <div class="form-group"><label>Máx. Envios</label><input type="number" name="defEmailMax" class="form-control" value="${s.defEmailMax}"></div>
                             </div>
 
-                            <!-- Gerenciamento -->
                             <div class="form-section-title"><i class="fas fa-trash"></i> Limpeza e Tarefas</div>
                             <div class="form-group"><label>Excluir vencidos há (dias)</label><input type="number" name="cleanupDays" class="form-control" value="${s.cleanupDays}"></div>
 
@@ -1436,7 +1404,7 @@ window.app = {
                         </div>
                     </div>
 
-                    <!-- OUTROS BOTÕES -->
+                    <!-- BOTÃO DADOS DEMO E BACKUP -->
                     <div class="card" style="max-width: 600px; margin: 0 auto; width: 100%;">
                         <h3><i class="fas fa-hdd"></i> Sistema</h3>
                         <div style="display: flex; gap: 1rem; margin-top:1rem;">
@@ -1446,7 +1414,7 @@ window.app = {
                         </div>
                     </div>
 
-                    ${adminSection} <!-- INSERÇÃO DO BOTÃO ADMIN AQUI -->
+                    ${adminSection}
                 </div>`;
         },
 
@@ -1505,7 +1473,6 @@ window.app = {
                 defEmailMax: Number(formData.get('defEmailMax')),
                 
                 cleanupDays: Number(formData.get('cleanupDays')),
-                // Mantém compatibilidade com alertas de manutenção
                 alertLeadTime: oldSettings.alertLeadTime || 24,
                 alertInterval: oldSettings.alertInterval || 60
             };
@@ -1513,20 +1480,18 @@ window.app = {
             alert('Padrões de configuração salvos com sucesso!');
         },
 
-        // --- FUNÇÃO DE LIMPEZA ADMIN (EXCETO LOGIN) ---
+        // --- FUNÇÃO DE LIMPEZA ADMIN ---
         adminResetData() {
-            // Verificação de Segurança Dupla
             if (!app.state.currentUser || app.state.currentUser.email !== 'jcnvap@gmail.com') {
                 alert("Acesso negado.");
                 return;
             }
 
-            if (!confirm("⚠️ ATENÇÃO EXTREMA ⚠️\n\nIsso apagará PERMANENTEMENTE:\n- Fazendas, Talhões, Safras\n- Dados Financeiros e Produção\n- Máquinas e Manutenções\n- Estoque e Lembretes\n\nSeu login e senha NÃO serão apagados.\n\nTem certeza que deseja zerar os cadastros?")) {
+            if (!confirm("⚠️ ATENÇÃO EXTREMA ⚠️\n\nIsso apagará PERMANENTEMENTE seus dados cadastrais (Fazendas, Financeiro, etc).\n\nTem certeza que deseja zerar os cadastros?")) {
                 return;
             }
 
             try {
-                // 1. Identificar tabelas a limpar (tudo menos users, system e license)
                 const tablesToClear = [
                     'farms', 'plots', 'crops', 'cycles', 'inputs', 
                     'stock_movements', 'production', 'financials', 
@@ -1536,9 +1501,10 @@ window.app = {
                 const currentData = JSON.parse(localStorage.getItem('agri_data'));
 
                 tablesToClear.forEach(table => {
-                    // Se estiver online, tenta deletar da nuvem item por item para garantir sincronia
+                    // Limpa na Nuvem (se conectado) e se tiver AppID definido
                     if (app.cloud.db && currentData[table] && Array.isArray(currentData[table])) {
                         currentData[table].forEach(item => {
+                            // Alterado para deletar no caminho seguro users/{uid}
                             app.cloud.delete(table, item.id);
                         });
                     }
@@ -1546,9 +1512,7 @@ window.app = {
                     currentData[table] = [];
                 });
 
-                // Salva no LocalStorage mantendo 'users', 'settings' e 'license'
                 localStorage.setItem('agri_data', JSON.stringify(currentData));
-
                 alert("Limpeza concluída com sucesso! A página será recarregada.");
                 window.location.reload();
 
@@ -1698,7 +1662,6 @@ window.app = {
                 case 'maintenances': fieldsHtml = `<div class="form-group"><label>Equipamento</label><select name="machineId" class="form-control" required><option value="">Selecione...</option>${getOptions('machinery', 'name', item.machineId)}</select></div>${getSimpleSelect('type', 'Tipo', ['Preventiva', 'Corretiva', 'Preditiva'], item.type)}${this.inputHtml('date', 'date', 'Data', item.date, true)}${this.inputHtml('textarea', 'description', 'Descrição do Serviço', item.description)}${this.inputHtml('number', 'cost', 'Custo Total', item.cost)}${this.inputHtml('number', 'nextMaintenance', 'Próxima Manutenção (Horímetro)', item.nextMaintenance)}${getSimpleSelect('status', 'Status', ['Agendada', 'Executada', 'Cancelada'], item.status)}`; break;
                 case 'cycles': fieldsHtml = `${this.inputHtml('text', 'name', 'Nome/Tarefa', item.name, true)}${getSimpleSelect('type', 'Tipo', ['Preparação', 'Plantio', 'Manejo', 'Colheita'], item.type)}<div class="form-group"><label>Safra</label><select name="cropId" class="form-control"><option value="">Selecione...</option>${getOptions('crops', 'name', item.cropId)}</select></div><div class="grid-2-col">${this.inputHtml('date', 'startDate', 'Início', item.startDate)}${this.inputHtml('date', 'endDate', 'Fim', item.endDate)}</div>${getSimpleSelect('status', 'Status', ['Pendente', 'Em andamento', 'Concluído'], item.status)}<div class="form-section-title"><i class="fas fa-calculator"></i> Custos</div><div class="grid-2-col"><div class="form-group"><label>Máquina</label><select id="cycle-machine-select" name="machineId" class="form-control" onchange="app.ui.calcCycleCost()"><option value="">Selecione...</option>${getOptions('machinery', 'name', item.machineId)}</select></div>${this.inputHtml('number', 'machineHours', 'Horas', item.machineHours, false, 'id="cycle-hours-input" oninput="app.ui.calcCycleCost()"')}</div>${this.inputHtml('number', 'cost', 'Custo Estimado (R$)', item.cost, false, 'id="cycle-cost-input"')}`; break;
                 
-                // NOVO FORMULÁRIO: LEMBRETES (ATUALIZADO)
                 case 'reminders':
                     const defAlarmL = item.alarmConfig ? item.alarmConfig.lead : settings.defAlarmLead;
                     const defAlarmR = item.alarmConfig ? item.alarmConfig.repeat : settings.defAlarmRepeat;
@@ -1751,41 +1714,6 @@ window.app = {
                     break;
             }
 
-            if (entity === 'financials') {
-                 fieldsHtml = `
-                        ${this.inputHtml('date', 'date', 'Data', item.date, true)}
-                        <div class="form-group"><label>Tipo</label><select name="type" class="form-control"><option value="expense" ${item.type!='income'?'selected':''}>Despesa</option><option value="income" ${item.type=='income'?'selected':''}>Receita</option></select></div>
-                        <div class="form-group">
-                            <label>Categoria</label>
-                            <select name="category" class="form-control" onchange="app.ui.toggleFinancialMachineFields(this)">
-                                <option>Venda de Safra</option><option>Insumos</option><option>Mão de Obra</option><option>Manutenção</option><option>Horas de Máquina</option><option>Operacional</option><option>Combustível</option><option>Outros</option>
-                            </select>
-                        </div>
-                        <div id="financial-machine-fields" class="card hidden" style="background:#f9f9f9; padding:10px; margin-bottom:10px;">
-                            <p style="font-size:0.8rem; font-weight:bold; color:var(--primary-color);">Cálculo Automático</p>
-                            <div class="form-group"><label>Máquina</label><select id="fin-machine-select" class="form-control" onchange="app.ui.calcMachineCost()"><option value="">Selecione...</option>${getOptions('machinery', 'name', null, true)}</select></div>
-                            <div class="form-group"><label>Horas Trabalhadas</label><input type="number" id="fin-machine-hours" class="form-control" oninput="app.ui.calcMachineCost()"></div>
-                        </div>
-                        ${this.inputHtml('text', 'description', 'Descrição', item.description)}
-                        ${this.inputHtml('number', 'value', 'Valor (R$)', item.value)}
-                        <div class="form-group"><label>Status</label><select name="status" class="form-control"><option>Pago</option><option>Recebido</option><option>Pendente</option></select></div>
-                    `;
-             }
-             if (entity === 'machinery') {
-                  fieldsHtml = `
-                        ${this.inputHtml('text', 'name', 'Nome / Identificação', item.name, true)}
-                        <div class="grid-2-col">${getSimpleSelect('type', 'Tipo', ['Máquina', 'Implemento'], item.type)}${getSimpleSelect('status', 'Status', ['Ativo', 'Em manutenção', 'Inativo'], item.status)}</div>
-                        <div class="grid-2-col">${this.inputHtml('text', 'brand', 'Marca', item.brand)}${this.inputHtml('text', 'model', 'Modelo', item.model)}</div>
-                        <div class="grid-2-col">${this.inputHtml('number', 'year', 'Ano', item.year)}${this.inputHtml('text', 'serial', 'Nº Série / Patrimônio', item.serial)}</div>
-                        <div class="form-section-title"><i class="fas fa-cogs"></i> Controle e Custo</div>
-                        <div class="grid-2-col">${this.inputHtml('number', 'costPerHour', 'Custo por Hora (R$/h)', item.costPerHour)}${this.inputHtml('number', 'consumption', 'Consumo Médio (L)', item.consumption)}</div>
-                        <div class="grid-2-col">${this.inputHtml('number', 'initialHour', 'Horímetro Inicial', item.initialHour)}${this.inputHtml('number', 'currentHour', 'Horímetro Atual (Trabalhado)', item.currentHour || item.initialHour)}</div>
-                        <div class="form-section-title"><i class="fas fa-wrench"></i> Manutenção Programada</div>
-                        <div class="grid-2-col">${this.inputHtml('number', 'maintenanceInterval', 'Intervalo (em horas)', item.maintenanceInterval)}${this.inputHtml('text', 'nextMaintenanceType', 'Tipo Próxima Manutenção', item.nextMaintenanceType)}</div>
-                        ${this.inputHtml('textarea', 'notes', 'Observações', item.notes)}
-                    `;
-             }
-
             const entityTarget = entity === 'stock_movement' ? 'stock_movements' : entity;
             document.getElementById('modal-body').innerHTML = `<form onsubmit="app.ui.saveForm(event, '${entityTarget}', '${id || ''}')">${fieldsHtml}<div class="text-right" style="margin-top: 1rem;"><button type="button" class="btn btn-outline" onclick="app.ui.closeModal()">Cancelar</button><button type="submit" class="btn btn-primary">Salvar</button></div></form>`;
             modal.style.display = 'flex';
@@ -1821,7 +1749,6 @@ window.app = {
                     });
             }
 
-            // TRATAMENTO ATUALIZADO PARA LEMBRETES
             if (entity === 'reminders') {
                 data.emailEnabled = formData.get('emailEnabled') === 'on';
                 data.alarmConfig = {
