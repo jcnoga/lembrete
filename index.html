@@ -562,13 +562,22 @@
                 </div>
             </div>
 
-            <div class="advanced-settings">
-                <h4>Alarme (App)</h4>
-                <div class="row">
-                    <div class="col"><label>Antes (min)</label><input type="number" id="t-rem-start" class="form-control"></div>
-                    <div class="col"><label>Repetir (min)</label><input type="number" id="t-rem-int" class="form-control"></div>
-                </div>
-            </div>
+<div class="form-group hidden" id="div-email-input">
+    <label>E-mail Destino</label>
+    <input type="email" id="t-email-addr" class="form-control" placeholder="cliente@email.com">
+    <div class="advanced-settings" style="margin-top:10px;">
+        <h4>Config E-mail</h4>
+        <div class="row">
+            <div class="col"><label>Dias Antes</label><input type="number" id="t-mail-days" class="form-control"></div>
+            <div class="col"><label>Repetir (dias)</label><input type="number" id="t-mail-int" class="form-control"></div>
+        </div>
+        <div class="row">
+             <!-- Campos que estavam faltando e travavam o JS -->
+            <div class="col"><label>Atrasado (dias)</label><input type="number" id="t-mail-over-int" class="form-control" placeholder="1"></div>
+            <div class="col"><label>Máx Envios</label><input type="number" id="t-mail-max" class="form-control" placeholder="3"></div>
+        </div>
+    </div>
+</div>
 
             <div class="form-group">
                 <label>Categoria</label>
@@ -869,36 +878,54 @@
     // ==========================================
     // 4. CRUD TASKS
     // ==========================================
-    function saveTask() {
-        const title = document.getElementById('t-title').value;
-        const date = document.getElementById('t-date').value;
-        if(!title || !date) return alert("Preencha título e data");
+// --- CORREÇÃO DA FUNÇÃO SALVAR ---
+function saveTask() {
+    const title = document.getElementById('t-title').value;
+    const date = document.getElementById('t-date').value;
+    
+    if(!title || !date) return alert("Preencha título e data");
 
-        const data = {
-            title, description: document.getElementById('t-desc').value,
-            date, time: document.getElementById('t-time').value,
-            category: document.getElementById('t-category').value,
-            value: document.getElementById('t-value').value,
-            sendEmail: document.getElementById('t-send-email').checked,
-            emailAddr: document.getElementById('t-email-addr').value,
-            userId: currentUser.uid, completed: false,
-            
-            remStart: parseInt(document.getElementById('t-rem-start').value) || defaultConfig.alarmStartMin,
-            remInt: parseInt(document.getElementById('t-rem-int').value) || defaultConfig.alarmFreqMin,
-            remOverInt: parseInt(document.getElementById('t-rem-over-int').value) || defaultConfig.alarmOverdueFreq,
-            
-            mailDays: parseInt(document.getElementById('t-mail-days').value) || defaultConfig.emailDaysBefore,
-            mailInt: parseInt(document.getElementById('t-mail-int').value) || defaultConfig.emailFreqDays,
-            mailOverInt: parseInt(document.getElementById('t-mail-over-int').value) || defaultConfig.emailOverdueFreq,
-            mailMax: parseInt(document.getElementById('t-mail-max').value) || defaultConfig.emailOverdueMax,
-            
-            createdAt: firebase.firestore.FieldValue.serverTimestamp()
-        };
+    // Coleta de dados com proteção contra campos inexistentes no HTML
+    const data = {
+        title: title,
+        description: document.getElementById('t-desc').value || '',
+        date: date,
+        time: document.getElementById('t-time').value || '',
+        category: document.getElementById('t-category').value || '',
+        value: document.getElementById('t-value').value || '0.00',
+        sendEmail: document.getElementById('t-send-email').checked,
+        emailAddr: document.getElementById('t-email-addr').value || '',
+        userId: currentUser.uid,
+        completed: false,
+        
+        // Alarme App (usa valor do campo ou padrão se o campo não existir)
+        remStart: parseInt(document.getElementById('t-rem-start').value) || defaultConfig.alarmStartMin,
+        remInt: parseInt(document.getElementById('t-rem-int').value) || defaultConfig.alarmFreqMin,
+        remOverInt: document.getElementById('t-rem-over-int') ? (parseInt(document.getElementById('t-rem-over-int').value) || defaultConfig.alarmOverdueFreq) : defaultConfig.alarmOverdueFreq,
+        
+        // E-mail (usa valor do campo ou padrão se o campo não existir)
+        mailDays: document.getElementById('t-mail-days') ? (parseInt(document.getElementById('t-mail-days').value) || defaultConfig.emailDaysBefore) : defaultConfig.emailDaysBefore,
+        mailInt: document.getElementById('t-mail-int') ? (parseInt(document.getElementById('t-mail-int').value) || defaultConfig.emailFreqDays) : defaultConfig.emailFreqDays,
+        mailOverInt: document.getElementById('t-mail-over-int') ? (parseInt(document.getElementById('t-mail-over-int').value) || defaultConfig.emailOverdueFreq) : defaultConfig.emailOverdueFreq,
+        mailMax: document.getElementById('t-mail-max') ? (parseInt(document.getElementById('t-mail-max').value) || defaultConfig.emailOverdueMax) : defaultConfig.emailOverdueMax,
+        
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    };
 
-        const id = document.getElementById('t-id').value;
-        const ref = db.collection('users').doc(currentUser.uid).collection('tasks');
-        (id ? ref.doc(id).update(data) : ref.add(data)).then(() => closeModal('taskModal'));
-    }
+    const id = document.getElementById('t-id').value;
+    const ref = db.collection('users').doc(currentUser.uid).collection('tasks');
+
+    const action = id ? ref.doc(id).update(data) : ref.add({ ...data, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
+
+    action.then(() => {
+        closeModal('taskModal');
+        // Opcional: feedback visual
+        console.log("Tarefa salva com sucesso!");
+    }).catch(err => {
+        console.error("Erro ao salvar no Firebase:", err);
+        alert("Erro ao salvar: " + err.message);
+    });
+}
 
     function deleteTask(id) { if(confirm("Excluir?")) db.collection('users').doc(currentUser.uid).collection('tasks').doc(id).delete(); }
     
@@ -1204,26 +1231,30 @@
     function toggleEmailInput() { document.getElementById('div-email-input').classList.toggle('hidden', !document.getElementById('t-send-email').checked); }
     function formatDateBR(d) { return d.split('-').reverse().join('/'); }
 
-    function openEditTask(id) {
-        const t = appData.tasks.find(x => x.id === id); if(!t) return;
-        document.getElementById('t-id').value = t.id;
-        document.getElementById('t-title').value = t.title;
-        document.getElementById('t-desc').value = t.description || '';
-        document.getElementById('t-date').value = t.date;
-        document.getElementById('t-time').value = t.time;
-        document.getElementById('t-category').value = t.category || '';
-        document.getElementById('t-value').value = t.value || '';
-        document.getElementById('t-send-email').checked = t.sendEmail;
-        document.getElementById('t-email-addr').value = t.emailAddr || '';
-        // Load Settings
-        document.getElementById('t-rem-start').value = t.remStart || defaultConfig.alarmStartMin;
-        document.getElementById('t-rem-int').value = t.remInt || defaultConfig.alarmFreqMin;
-        document.getElementById('t-rem-over-int').value = t.remOverInt || defaultConfig.alarmOverdueFreq;
-        document.getElementById('t-mail-days').value = t.mailDays || defaultConfig.emailDaysBefore;
-        
-        toggleEmailInput();
-        openModal('taskModal');
-    }
+// --- CORREÇÃO DA FUNÇÃO EDITAR ---
+function openEditTask(id) {
+    const t = appData.tasks.find(x => x.id === id); 
+    if(!t) return;
+
+    document.getElementById('t-id').value = t.id;
+    document.getElementById('t-title').value = t.title || '';
+    document.getElementById('t-desc').value = t.description || '';
+    document.getElementById('t-date').value = t.date || '';
+    document.getElementById('t-time').value = t.time || '';
+    document.getElementById('t-category').value = t.category || '';
+    document.getElementById('t-value').value = t.value || '';
+    document.getElementById('t-send-email').checked = !!t.sendEmail;
+    document.getElementById('t-email-addr').value = t.emailAddr || '';
+
+    // Popula campos avançados apenas se existirem no HTML
+    if(document.getElementById('t-rem-start')) document.getElementById('t-rem-start').value = t.remStart || defaultConfig.alarmStartMin;
+    if(document.getElementById('t-rem-int')) document.getElementById('t-rem-int').value = t.remInt || defaultConfig.alarmFreqMin;
+    if(document.getElementById('t-mail-days')) document.getElementById('t-mail-days').value = t.mailDays || defaultConfig.emailDaysBefore;
+    if(document.getElementById('t-mail-int')) document.getElementById('t-mail-int').value = t.mailInt || defaultConfig.emailFreqDays;
+    
+    toggleEmailInput();
+    openModal('taskModal');
+}
 
     function openFinancialModal() {
         document.getElementById('f-id').value=''; document.getElementById('f-type').value='out';
