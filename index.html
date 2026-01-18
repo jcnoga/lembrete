@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Compromisso Fácil Cloud Pro</title>
+    <title>Compromisso Fácil Cloud Pro + ERP Completo</title>
     
     <!-- Bibliotecas PDF -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -20,12 +20,12 @@
         :root {
             --primary: #0066cc;
             --primary-dark: #004c99;
-            --secondary: #00cc99;
+            --secondary: #00cc99; /* Receitas */
             --bg: #f4f7f6;
             --text: #333;
             --text-light: #777;
             --white: #fff;
-            --danger: #e74c3c;
+            --danger: #e74c3c; /* Despesas */
             --warning: #f39c12;
             --radius: 12px;
             --shadow: 0 2px 10px rgba(0,0,0,0.1);
@@ -52,7 +52,6 @@
         .divider { display: flex; align-items: center; margin: 20px 0; color: #ccc; font-size: 0.8rem; }
         .divider span { flex: 1; height: 1px; background: #eee; }
         .divider p { margin: 0 10px; }
-        
         .btn-google {
             background: #fff; color: #333; border: 1px solid #ddd;
             display: flex; align-items: center; justify-content: center; gap: 10px;
@@ -76,21 +75,50 @@
         .card-stat p { font-size: 0.9rem; color: var(--text-light); margin: 0; }
         .welcome-card { background: linear-gradient(135deg, var(--primary), var(--primary-dark)); color: white; grid-column: 1 / -1; }
         
-        /* --- TASK LIST --- */
+        /* --- LISTAS E ITENS --- */
         .section-title { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; margin-top: 10px; }
         .section-title h3 { margin: 0; }
-        .task-item { background: var(--white); padding: 15px; margin-bottom: 10px; border-radius: var(--radius); display: flex; align-items: center; justify-content: space-between; border-left: 5px solid transparent; box-shadow: 0 2px 5px rgba(0,0,0,0.02); }
+        
+        /* Estilos Unificados de Itens (Tarefas, Transações, Contatos, Itens) */
+        .task-item, .transaction-item, .contact-item, .item-item { 
+            background: var(--white); padding: 15px; margin-bottom: 10px; border-radius: var(--radius); 
+            display: flex; align-items: center; justify-content: space-between; 
+            border-left: 5px solid transparent; box-shadow: 0 2px 5px rgba(0,0,0,0.02); 
+        }
+        
+        /* Cores de Borda */
         .task-item.priority-normal { border-left-color: var(--primary); }
         .task-item.done { opacity: 0.6; text-decoration: line-through; border-left-color: var(--secondary); }
+        .transaction-item.type-in { border-left-color: var(--secondary); }
+        .transaction-item.type-out { border-left-color: var(--danger); }
+        .transaction-item.paid { opacity: 0.6; }
+        .transaction-item.paid .fin-amount { text-decoration: line-through; }
         
-        .task-info { flex: 1; padding-right: 10px; cursor: pointer; }
-        .task-title { font-weight: 600; font-size: 1rem; margin-bottom: 4px; display: block; }
-        .task-meta { font-size: 0.8rem; color: var(--text-light); display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+        .info-col { flex: 1; padding-right: 10px; cursor: pointer; }
+        .main-text { font-weight: 600; font-size: 1rem; margin-bottom: 4px; display: block; }
+        .sub-text { font-size: 0.8rem; color: var(--text-light); display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
         .tag { background: #eee; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; }
         
-        .task-actions { display: flex; gap: 8px; align-items: center; }
+        .item-actions { display: flex; gap: 8px; align-items: center; }
         .btn-icon { background: none; border: none; font-size: 1.2rem; cursor: pointer; color: var(--text-light); padding: 4px; }
         .btn-wa { color: #25D366; }
+
+        /* --- CADASTROS STYLES (NOVO) --- */
+        .registers-nav { display: flex; gap: 10px; margin-bottom: 20px; }
+        .reg-tab { flex: 1; padding: 10px; text-align: center; background: #e0e0e0; border-radius: 8px; cursor: pointer; font-size: 0.9rem; font-weight: 600; color: #555; transition: 0.2s; }
+        .reg-tab.active { background: var(--primary); color: white; }
+        .contact-type-badge { font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; color: white; margin-left: 5px; }
+        .badge-client { background: var(--secondary); }
+        .badge-supplier { background: var(--danger); }
+
+        /* --- FINANCEIRO --- */
+        .fin-summary { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+        .fin-card { background: white; padding: 15px; border-radius: var(--radius); text-align: center; box-shadow: var(--shadow); }
+        .fin-card h4 { margin: 0; font-size: 0.8rem; color: #777; }
+        .fin-card span { font-size: 1.1rem; font-weight: bold; display: block; margin-top: 5px; }
+        .text-green { color: var(--secondary); }
+        .text-red { color: var(--danger); }
+        .fin-amount { font-weight: bold; }
 
         /* --- CALENDAR --- */
         .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; margin-top: 10px; text-align: center; }
@@ -101,8 +129,8 @@
 
         /* --- NAVIGATION BAR --- */
         nav { background: var(--white); border-top: 1px solid #eee; display: flex; justify-content: space-around; padding: 10px 0; position: fixed; bottom: 0; width: 100%; z-index: 100; height: 60px; }
-        .nav-item { display: flex; flex-direction: column; align-items: center; color: var(--text-light); text-decoration: none; font-size: 0.75rem; background: none; border: none; cursor: pointer; width: 25%; }
-        .nav-item svg { width: 24px; height: 24px; margin-bottom: 4px; fill: currentColor; }
+        .nav-item { display: flex; flex-direction: column; align-items: center; color: var(--text-light); text-decoration: none; font-size: 0.65rem; background: none; border: none; cursor: pointer; flex: 1; }
+        .nav-item svg { width: 22px; height: 22px; margin-bottom: 4px; fill: currentColor; }
         .nav-item.active { color: var(--primary); font-weight: 600; }
 
         /* --- FAB BUTTON --- */
@@ -117,7 +145,7 @@
 
         .form-group { margin-bottom: 15px; }
         .form-group label { display: block; margin-bottom: 5px; font-weight: 600; font-size: 0.9rem; }
-        .form-control { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 1rem; }
+        .form-control { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 1rem; background: #fff; }
         .btn-block { width: 100%; padding: 15px; border: none; border-radius: 8px; font-size: 1rem; font-weight: 600; cursor: pointer; margin-top: 10px; }
         .btn-primary { background: var(--primary); color: white; }
         .btn-secondary { background: #eee; color: var(--text); margin-top: 10px; }
@@ -248,17 +276,17 @@
                     </div>
                     <div class="card card-stat">
                         <h3 id="stat-pending">0</h3>
-                        <p>Pendentes</p>
+                        <p>Tarefas Pendentes</p>
                     </div>
                     <!-- Clientes (Receita) -->
                     <div class="card card-stat">
                         <h3 id="stat-revenue" style="color: var(--secondary);">R$ 0</h3>
-                        <p>A Receber (Cliente)</p>
+                        <p>A Receber (Total)</p>
                     </div>
                     <!-- Fornecedores (Despesa) -->
                     <div class="card card-stat">
                         <h3 id="stat-expense" style="color: var(--danger);">R$ 0</h3>
-                        <p>A Pagar (Fornecedor)</p>
+                        <p>A Pagar (Total)</p>
                     </div>
                 </div>
                 <div class="section-title">
@@ -300,7 +328,7 @@
                     <h3>Todas as Tarefas</h3>
                 </div>
                 
-                <!-- Nova Área de Filtros -->
+                <!-- Filtros -->
                 <div class="filters-box" style="display:flex; gap:10px; margin-bottom:20px;">
                     <input type="text" id="task-search" class="form-control" placeholder="🔍 Buscar por título..." oninput="renderTasks()" style="flex: 2;">
                     
@@ -316,6 +344,68 @@
                 <div id="tasks-list"></div>
             </div>
 
+            <!-- VIEW: FINANCE (NOVO MÓDULO) -->
+            <div id="view-finance" class="view-section hidden">
+                <div class="section-title">
+                    <h3>Financeiro</h3>
+                    <button onclick="openFinancialModal()" class="btn-icon" style="color:var(--primary); font-size:1.5rem;">➕</button>
+                </div>
+
+                <!-- Resumo Financeiro -->
+                <div class="fin-summary">
+                    <div class="fin-card">
+                        <h4>Saldo Geral</h4>
+                        <span id="fin-balance" style="color: var(--primary);">R$ 0,00</span>
+                    </div>
+                    <div class="fin-card">
+                        <h4>A Receber</h4>
+                        <span id="fin-total-in" class="text-green">R$ 0,00</span>
+                    </div>
+                    <div class="fin-card">
+                        <h4>A Pagar</h4>
+                        <span id="fin-total-out" class="text-red">R$ 0,00</span>
+                    </div>
+                </div>
+
+                <!-- Filtros Financeiros -->
+                <div class="filters-box" style="display:flex; gap:10px; margin-bottom:20px;">
+                    <select id="fin-filter-type" class="form-control" onchange="renderFinance()" style="flex:1">
+                        <option value="all">Tudo</option>
+                        <option value="in">Entradas</option>
+                        <option value="out">Saídas</option>
+                    </select>
+                    <select id="fin-filter-status" class="form-control" onchange="renderFinance()" style="flex:1">
+                        <option value="all">Todos Status</option>
+                        <option value="pending">Pendentes</option>
+                        <option value="paid">Pagos/Recebidos</option>
+                    </select>
+                </div>
+
+                <div id="finance-list"></div>
+            </div>
+
+            <!-- VIEW: REGISTERS (CADASTROS - NOVO) -->
+            <div id="view-registers" class="view-section hidden">
+                <div class="section-title"><h3>Cadastros</h3></div>
+                
+                <div class="registers-nav">
+                    <div class="reg-tab active" id="tab-contacts" onclick="toggleRegisterTab('contacts')">Pessoas (Clientes/Forn.)</div>
+                    <div class="reg-tab" id="tab-items" onclick="toggleRegisterTab('items')">Itens (Prod./Serv.)</div>
+                </div>
+
+                <!-- Lista de Contatos -->
+                <div id="reg-contacts-view">
+                    <button class="btn-block btn-primary" onclick="openContactModal()" style="margin-bottom:15px;">+ Nova Pessoa</button>
+                    <div id="contacts-list"></div>
+                </div>
+                
+                <!-- Lista de Itens -->
+                <div id="reg-items-view" class="hidden">
+                    <button class="btn-block btn-primary" onclick="openItemModal()" style="margin-bottom:15px;">+ Novo Item</button>
+                    <div id="items-list"></div>
+                </div>
+            </div>
+
             <!-- VIEW: SETTINGS -->
             <div id="view-settings" class="view-section hidden">
                 <h3>Mais Opções</h3>
@@ -323,7 +413,7 @@
                 <!-- CONFIGURAÇÃO DEFAULT DE ALERTAS -->
                 <div class="card" style="margin-top:15px; border:1px solid #cce5ff;">
                     <p style="margin-top:0; color:var(--primary-dark); font-weight:bold;">🛠️ Configuração Padrão de Alertas</p>
-                    <p style="font-size:0.8rem; color:#666;">Esses valores serão usados automaticamente em novas tarefas.</p>
+                    <p style="font-size:0.8rem; color:#666;">Esses valores serão usados automaticamente em novos registros.</p>
                     
                     <div class="advanced-settings" style="background:white; border:none; padding:0;">
                         <h4 style="font-size:0.8rem;">⏰ Alarme (Sonoro)</h4>
@@ -382,19 +472,19 @@
                 </div>
 
                 <div class="card" style="margin-top:15px;">
-                    <p><strong>Gerenciar Tarefas</strong></p>
-                    <button class="btn-block btn-danger" onclick="clearAllCompleted()">🧹 Limpar Todas as Concluídas</button>
+                    <p><strong>Gerenciar Dados</strong></p>
+                    <button class="btn-block btn-danger" onclick="clearAllCompleted()">🧹 Limpar Tarefas Concluídas</button>
                 </div>
 
                 <div class="card" style="margin-top:15px;">
                     <p><strong>Relatórios</strong></p>
-                    <button class="btn-block btn-primary" onclick="exportPDF()">📄 Baixar PDF</button>
+                    <button class="btn-block btn-primary" onclick="exportPDF()">📄 Baixar Relatório PDF</button>
                 </div>
                 
                 <div class="card" style="margin-top:15px;">
-                    <p><strong>Backup e Restauração (Local)</strong></p>
-                    <button class="btn-block btn-secondary" onclick="backupData()">📥 Fazer Backup (Baixar Arquivo)</button>
-                    <button class="btn-block btn-secondary" onclick="triggerRestore()">📤 Restaurar Backup (Enviar Arquivo)</button>
+                    <p><strong>Backup e Restauração</strong></p>
+                    <button class="btn-block btn-secondary" onclick="backupData()">📥 Fazer Backup (Baixar)</button>
+                    <button class="btn-block btn-secondary" onclick="triggerRestore()">📤 Restaurar Backup (Enviar)</button>
                     <input type="file" id="restore-input" style="display:none" accept=".json" onchange="restoreData(this)">
                 </div>
 
@@ -404,38 +494,40 @@
                     <button class="btn-block btn-secondary" onclick="appLogout()" style="color:var(--danger)">Sair da Conta</button>
                 </div>
                 
-                <!-- PIX DISCRETO (ABA MAIS) -->
                 <div class="pix-footer" onclick="openSupportModal()">
                     ☕ Apoie o desenvolvimento (Pix)
                 </div>
             </div>
         </main>
 
-        <!-- FAB -->
-        <button class="fab" onclick="openModal()">+</button>
+        <!-- FAB (Floating Action Button) -->
+        <button class="fab" onclick="handleFabClick()">+</button>
 
-        <!-- NAVIGATION BAR -->
+        <!-- NAVIGATION BAR (6 Ícones) -->
         <nav>
             <button class="nav-item active" onclick="switchTab('dashboard')" id="nav-dashboard">
-                <svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
-                Início
+                <svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>Início
             </button>
             <button class="nav-item" onclick="switchTab('calendar')" id="nav-calendar">
-                <svg viewBox="0 0 24 24"><path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.89-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.95-2-2.05-2zM5 20V9h14v11H5z"/></svg>
-                Agenda
+                <svg viewBox="0 0 24 24"><path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.89-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.95-2-2.05-2zM5 20V9h14v11H5z"/></svg>Agenda
             </button>
             <button class="nav-item" onclick="switchTab('tasks')" id="nav-tasks">
-                <svg viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>
-                Tarefas
+                <svg viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>Tarefas
+            </button>
+            <button class="nav-item" onclick="switchTab('finance')" id="nav-finance">
+                <svg viewBox="0 0 24 24"><path d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z"/></svg>Finanças
+            </button>
+             <button class="nav-item" onclick="switchTab('registers')" id="nav-registers">
+                <svg viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>Cadastros
             </button>
             <button class="nav-item" onclick="switchTab('settings')" id="nav-settings">
-                <svg viewBox="0 0 24 24"><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>
-                Mais
+                <svg viewBox="0 0 24 24"><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>Mais
             </button>
         </nav>
     </div>
 
-    <!-- 3. MODAL ADD/EDIT -->
+    <!-- 3. MODAIS -->
+    <!-- Task Modal -->
     <div class="modal" id="taskModal">
         <div class="modal-content">
             <h3 id="modal-title" style="margin-top:0;">Novo Compromisso</h3>
@@ -445,142 +537,172 @@
                 <label>Título *</label>
                 <input type="text" id="t-title" class="form-control" placeholder="Ex: Reunião com João">
             </div>
-            
             <div class="form-group">
                 <label>Descrição</label>
                 <textarea id="t-desc" class="form-control" rows="3" placeholder="Detalhes do lembrete..."></textarea>
             </div>
-
             <div style="display:flex; gap:10px;">
-                <div class="form-group" style="flex:1">
-                    <label>Data *</label>
-                    <input type="date" id="t-date" class="form-control">
-                </div>
-                <div class="form-group" style="flex:1">
-                    <label>Hora</label>
-                    <input type="time" id="t-time" class="form-control">
-                </div>
+                <div class="form-group" style="flex:1"><label>Data *</label><input type="date" id="t-date" class="form-control"></div>
+                <div class="form-group" style="flex:1"><label>Hora</label><input type="time" id="t-time" class="form-control"></div>
             </div>
-
-            <!-- Opção E-mail Cloud -->
+            
             <div class="cloud-option">
                 <input type="checkbox" id="t-send-email" onchange="toggleEmailInput()">
-                <label for="t-send-email">Enviar e-mails de lembrete</label>
+                <label for="t-send-email">Enviar e-mail de lembrete</label>
             </div>
             <div class="form-group hidden" id="div-email-input">
                 <label>E-mail Destino</label>
                 <input type="email" id="t-email-addr" class="form-control" placeholder="cliente@email.com">
-                
-                <!-- CONFIGURAÇÃO AVANÇADA DE EMAIL -->
                 <div class="advanced-settings" style="margin-top:10px;">
-                    <h4>Configuração de E-mail</h4>
+                    <h4>Config E-mail</h4>
                     <div class="row">
-                        <div class="col">
-                            <label>Antecedência (dias)</label>
-                            <input type="number" id="t-mail-days" class="form-control" placeholder="Default">
-                        </div>
-                        <div class="col">
-                            <label>Repetir (dias)</label>
-                            <input type="number" id="t-mail-int" class="form-control" placeholder="Default">
-                        </div>
-                    </div>
-                    <div class="row">
-                        <div class="col">
-                            <label>Atrasado: Repetir (dias)</label>
-                            <input type="number" id="t-mail-over-int" class="form-control" placeholder="Default">
-                        </div>
-                        <div class="col">
-                            <label>Max Envios (atraso)</label>
-                            <input type="number" id="t-mail-max" class="form-control" placeholder="Default">
-                        </div>
+                        <div class="col"><label>Dias Antes</label><input type="number" id="t-mail-days" class="form-control"></div>
+                        <div class="col"><label>Repetir (dias)</label><input type="number" id="t-mail-int" class="form-control"></div>
                     </div>
                 </div>
             </div>
 
-            <!-- CONFIGURAÇÃO AVANÇADA DE ALARME -->
             <div class="advanced-settings">
-                <h4>Configuração de Alarme (App Aberto)</h4>
+                <h4>Alarme (App)</h4>
                 <div class="row">
-                    <div class="col">
-                        <label>Acionar (min antes)</label>
-                        <input type="number" id="t-rem-start" class="form-control" placeholder="Default">
-                    </div>
-                    <div class="col">
-                        <label>Repetir (min)</label>
-                        <input type="number" id="t-rem-int" class="form-control" placeholder="Default">
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="col">
-                        <label>Se atrasado: Repetir (min)</label>
-                        <input type="number" id="t-rem-over-int" class="form-control" placeholder="Default">
-                    </div>
+                    <div class="col"><label>Antes (min)</label><input type="number" id="t-rem-start" class="form-control"></div>
+                    <div class="col"><label>Repetir (min)</label><input type="number" id="t-rem-int" class="form-control"></div>
                 </div>
             </div>
 
             <div class="form-group">
                 <label>Categoria</label>
                 <input type="text" id="t-category" class="form-control" list="cat-suggestions">
-                <datalist id="cat-suggestions">
-                    <option value="Trabalho">
-                    <option value="Pessoal">
-                    <option value="Cliente">
-                    <option value="Fornecedor">
-                </datalist>
+                <datalist id="cat-suggestions"><option value="Trabalho"><option value="Pessoal"><option value="Cliente"><option value="Fornecedor"></datalist>
             </div>
-            <div class="form-group">
-                <label>Valor R$</label>
-                <input type="number" id="t-value" class="form-control" step="0.01">
-            </div>
+            <div class="form-group"><label>Valor R$</label><input type="number" id="t-value" class="form-control" step="0.01"></div>
 
             <button class="btn-block btn-primary" onclick="saveTask()">Salvar</button>
-            <button class="btn-block btn-secondary" onclick="closeModal()">Cancelar</button>
+            <button class="btn-block btn-secondary" onclick="closeModal('taskModal')">Cancelar</button>
+        </div>
+    </div>
+
+    <!-- Finance Modal (Atualizado com Vínculos) -->
+    <div class="modal" id="financialModal">
+        <div class="modal-content">
+            <h3 style="margin-top:0;">Lançamento Financeiro</h3>
+            <input type="hidden" id="f-id">
+            
+            <div class="form-group">
+                <label>Tipo *</label>
+                <select id="f-type" class="form-control" onchange="updateFinanceFormContext()">
+                    <option value="in">Entrada (A Receber)</option>
+                    <option value="out">Saída (A Pagar)</option>
+                </select>
+            </div>
+
+            <div class="form-group"><label>Descrição/Título *</label><input type="text" id="f-title" class="form-control"></div>
+            
+            <div style="display:flex; gap:10px;">
+                <div class="form-group" style="flex:1"><label>Valor (R$) *</label><input type="number" id="f-amount" class="form-control" step="0.01"></div>
+                <div class="form-group" style="flex:1"><label>Vencimento *</label><input type="date" id="f-date" class="form-control"></div>
+            </div>
+
+            <!-- VÍNCULO COM PESSOA -->
+            <div class="form-group">
+                <label id="lbl-contact">Pessoa (Opcional)</label>
+                <select id="f-contact" class="form-control"><option value="">-- Selecione --</option></select>
+            </div>
+            
+             <!-- VÍNCULO COM ITEM -->
+             <div class="form-group hidden" id="div-item-select">
+                <label>Produto/Serviço (Opcional)</label>
+                <select id="f-item" class="form-control"><option value="">-- Selecione --</option></select>
+            </div>
+
+            <div class="advanced-settings">
+                <div class="row">
+                    <div class="col" style="display:flex; align-items:center;">
+                         <input type="checkbox" id="f-alert-enable" checked style="width:20px; height:20px; margin-right:10px;">
+                         <label for="f-alert-enable" style="margin:0;">Ativar Alertas de Vencimento</label>
+                    </div>
+                </div>
+            </div>
+
+            <button class="btn-block btn-primary" onclick="saveFinancial()">Salvar</button>
+            <button class="btn-block btn-secondary" onclick="closeModal('financialModal')">Cancelar</button>
+        </div>
+    </div>
+
+    <!-- Contact Modal (NOVO) -->
+    <div class="modal" id="contactModal">
+        <div class="modal-content">
+            <h3 style="margin-top:0;">Cadastro de Pessoa</h3>
+            <input type="hidden" id="c-id">
+            <div class="form-group"><label>Nome *</label><input type="text" id="c-name" class="form-control"></div>
+            <div class="form-group">
+                <label>Tipo</label>
+                <select id="c-type" class="form-control">
+                    <option value="client">Cliente</option>
+                    <option value="supplier">Fornecedor</option>
+                    <option value="both">Ambos</option>
+                </select>
+            </div>
+            <div class="form-group"><label>Telefone/Celular</label><input type="tel" id="c-phone" class="form-control"></div>
+            <div class="form-group"><label>E-mail</label><input type="email" id="c-email" class="form-control"></div>
+            <button class="btn-block btn-primary" onclick="saveContact()">Salvar Pessoa</button>
+            <button class="btn-block btn-secondary" onclick="closeModal('contactModal')">Cancelar</button>
+        </div>
+    </div>
+
+    <!-- Item Modal (NOVO) -->
+    <div class="modal" id="itemModal">
+        <div class="modal-content">
+            <h3 style="margin-top:0;">Cadastro de Item</h3>
+            <input type="hidden" id="i-id">
+            <div class="form-group"><label>Nome do Item *</label><input type="text" id="i-name" class="form-control"></div>
+            <div class="form-group">
+                <label>Tipo</label>
+                <select id="i-type" class="form-control">
+                    <option value="service">Serviço</option>
+                    <option value="product">Produto</option>
+                </select>
+            </div>
+            <div class="form-group"><label>Preço Padrão (R$)</label><input type="number" id="i-price" class="form-control" step="0.01"></div>
+            <button class="btn-block btn-primary" onclick="saveItem()">Salvar Item</button>
+            <button class="btn-block btn-secondary" onclick="closeModal('itemModal')">Cancelar</button>
         </div>
     </div>
 
     <!-- 4. ALARM MODAL -->
     <div class="alarm-modal" id="alarmModal">
         <div class="alarm-card">
-            <input type="hidden" id="alarm-task-id">
+            <input type="hidden" id="alarm-item-id">
+            <input type="hidden" id="alarm-item-type"> <!-- task or financial -->
             <span class="alarm-icon">⏰</span>
             <div id="alarm-context" style="font-weight:bold; color:var(--danger); margin-bottom:5px;"></div>
-            <div class="alarm-title">Lembrete!</div>
+            <div class="alarm-title">Atenção!</div>
             <div id="alarm-time-display" style="font-size:1.5rem; font-weight:bold; color:var(--primary); margin:10px 0;"></div>
             <p id="alarm-text-display" style="margin-bottom:20px;"></p>
-            <button class="btn-block btn-success" onclick="completeTaskFromAlarm()">✅ Concluir</button>
+            <button class="btn-block btn-success" onclick="completeFromAlarm()">✅ Concluir / Pagar</button>
             <button class="btn-block btn-secondary" onclick="stopAlarm()">Soneca (Silenciar)</button>
         </div>
     </div>
 
-    <!-- 5. SUPPORT MODAL (NOVO COM COPÍA E COLA) -->
+    <!-- 5. SUPPORT MODAL -->
     <div class="modal" id="supportModal">
         <div class="modal-content" style="text-align: center;">
             <h3 style="color:var(--primary); margin-top:0;">Apoie o Projeto ☕</h3>
-            <p style="font-size: 0.95rem; line-height: 1.4; color: #555; margin-bottom: 20px;">
-                Este app é gratuito. Selecione um valor para gerar o código <b>Pix Copia e Cola</b>:
-            </p>
-            
+            <p>Este app é gratuito. Selecione um valor:</p>
             <div class="pix-grid">
                 <button class="btn-pix" onclick="generatePixCopyPaste(5)">R$ 5,00</button>
-                <button class="btn-pix" onclick="generatePixCopyPaste(9)">R$ 9,00</button>
-                <button class="btn-pix" onclick="generatePixCopyPaste(12)">R$ 12,00</button>
+                <button class="btn-pix" onclick="generatePixCopyPaste(10)">R$ 10,00</button>
+                <button class="btn-pix" onclick="generatePixCopyPaste(15)">R$ 15,00</button>
                 <button class="btn-pix" onclick="copyPixSimpleKey()">Outro Valor</button>
             </div>
-            
-            <div id="pix-feedback" style="display:none; color:green; font-weight:bold; margin-bottom:10px;">
-                ✅ Código copiado!
-            </div>
-            
+            <div id="pix-feedback" style="display:none; color:green; font-weight:bold; margin-bottom:10px;">✅ Código copiado!</div>
             <div class="pix-key-display" id="pix-display-area" style="display:none;"></div>
-
-            <button class="btn-block btn-secondary" onclick="closeSupportModal()">Fechar</button>
+            <button class="btn-block btn-secondary" onclick="closeModal('supportModal')">Fechar</button>
         </div>
     </div>
 
-    <!-- Som do Alarme (Loop) -->
+    <!-- AUDIO FILES -->
     <audio id="audioAlert" loop src="data:audio/mp3;base64,//uQxAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAAUAAACzAAKCg4PEhIWFxsbHiAgIyMoKCsrLzAwMjI2Njg4Ojw8P0BAQkJERkdHSkpMTk5QUFJTU1dXV1lbW11dYGBiYmRmZmdnaGhqam5ucHBydHR3d3l5e3t9fX6AgIGBgoKFhYiIiouLkJCSkpWWlpiYmZmbm52dnp6goKGhoqKkpKWlpqeoqKmqq6ytrq6wsLGxsrK0tLe3uLi6ur29v8DAwsLGxsnJysrMzM7O0NDS0tTX19jY2dvb3Nzd3d7e4ODi4uPj5eXn5+jo6evr7Ozt7u7w8PHx8vL09PX19vf3+Pj6+vv7/Pz9/f7+/v///wAAAqpLdXJ6AAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//uQxAAACkQBOAAAAAEAAAD5AAAAABj3/vT23uAgBPgAPAAAAAAAZAAAAAAAAAAAAAAB//uQxAAACkQBOAAAAAEAAAD5AAAAABj3/vT23uAgBPgAPAAAAAAAZAAAAAAAAAAAAAAB//uQxAAACkQBOAAAAAEAAAD5AAAAABj3/vT23uAgBPgAPAAAAAAAZAAAAAAAAAAAAAAB//uQxAAACkQBOAAAAAEAAAD5AAAAABj3/vT23uAgBPgAPAAAAAAAZAAAAAAAAAAAAAAB//uQxAAACkQBOAAAAAEAAAD5AAAAABj3/vT23uAgBPgAPAAAAAAAZAAAAAAAAAAAAAAB//uQxAAACkQBOAAAAAEAAAD5AAAAABj3/vT23uAgBPgAPAAAAAAAZAAAAAAAAAAAAAAB"></audio>
-
-    <!-- Som de Conclusão (Ding curto) -->
     <audio id="audioDone" src="data:audio/mp3;base64,//uQxAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAAGAAABuAAKCg4PEhIWFxsbHiAgIyMoKCsrLzAwMjI2Njg4Ojw8P0BAQkJERkdHSkpMTk5QUFJTU1dXV1lbW11dYGBiYmRmZmdnaGhqam5ucHBydHR3d3l5e3t9fX6AgIGBgoKFhYiIiouLkJCSkpWWlpiYmZmbm52dnp6goKGhoqKkpKWlpqeoqKmqq6ytrq6wsLGxsrK0tLe3uLi6ur29v8DAwsLGxsnJysrMzM7O0NDS0tTX19jY2dvb3Nzd3d7e4ODi4uPj5eXn5+jo6evr7Ozt7u7w8PHx8vL09PX19vf3+Pj6+vv7/Pz9/f7+/v///wAAAD5LdXJ6AAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//uQxAAACkQBOAAAAAEAAAD5AAAAABj3/vT23uAgBPgAPAAAAAAAZAAAAAAAAAAAAAAB//uQxAAACkQBOAAAAAEAAAD5AAAAABj3/vT23uAgBPgAPAAAAAAAZAAAAAAAAAAAAAAB"></audio>
 
 <script>
@@ -606,21 +728,15 @@
     } catch(e) { console.error("Erro Firebase", e); }
 
     let currentUser = null;
-    let appData = { tasks: [] };
+    let appData = { tasks: [], financials: [], contacts: [], items: [] };
     let audioUnlocked = false;
 
     // Configuração Padrão de Alertas (Default)
     let defaultConfig = {
-        alarmStartMin: 15,
-        alarmFreqMin: 5,
-        alarmOverdueFreq: 10,
-        emailDaysBefore: 1,
-        emailFreqDays: 1,
-        emailOverdueFreq: 1,
-        emailOverdueMax: 3
+        alarmStartMin: 15, alarmFreqMin: 5, alarmOverdueFreq: 10,
+        emailDaysBefore: 1, emailFreqDays: 1, emailOverdueFreq: 1, emailOverdueMax: 3
     };
 
-    // Desbloqueia áudio no primeiro clique do usuário
     function enableAudio() {
         if (!audioUnlocked) {
             document.getElementById('audioAlert').load();
@@ -641,17 +757,19 @@
                 document.getElementById('user-display').textContent = user.email ? user.email.split('@')[0] : "Usuário Google";
                 document.getElementById('settings-email').textContent = user.email;
                 
-                // Carrega configuração de limpeza automática
                 const cleanupPref = localStorage.getItem('autoCleanup') === 'true';
                 document.getElementById('auto-cleanup-check').checked = cleanupPref;
 
-                // Carrega configuração default de alertas
                 loadDefaultSettings();
                 
+                // SINCRONIZAR TODAS AS COLEÇÕES
                 syncTasks(); 
+                syncFinancials();
+                syncContacts();
+                syncItems();
             } else {
                 currentUser = null;
-                appData.tasks = [];
+                appData = { tasks: [], financials: [], contacts: [], items: [] };
                 document.getElementById('auth-screen').classList.remove('hidden');
                 document.getElementById('app-screen').classList.add('hidden');
             }
@@ -660,10 +778,7 @@
 
     function loadDefaultSettings() {
         const stored = localStorage.getItem('alertConfig');
-        if(stored) {
-            defaultConfig = JSON.parse(stored);
-        }
-        // Preenche inputs da tela de settings
+        if(stored) defaultConfig = JSON.parse(stored);
         document.getElementById('def-alarm-start').value = defaultConfig.alarmStartMin;
         document.getElementById('def-alarm-freq').value = defaultConfig.alarmFreqMin;
         document.getElementById('def-alarm-over-freq').value = defaultConfig.alarmOverdueFreq;
@@ -693,34 +808,18 @@
         if(!email || !pass) return alert("Preencha os dados");
         auth.signInWithEmailAndPassword(email, pass).catch(err => alert(err.message));
     }
-
-    // LOGIN COM GOOGLE
     function appLoginGoogle() {
         const provider = new firebase.auth.GoogleAuthProvider();
-        auth.signInWithPopup(provider)
-        .then((result) => {
-            console.log("Logado com Google", result.user);
-            // onAuthStateChanged cuidará do resto
-        }).catch((error) => {
-            alert("Erro ao logar com Google: " + error.message);
-        });
+        auth.signInWithPopup(provider).catch((error) => alert(error.message));
     }
-
     function appRegister() {
         const email = document.getElementById('reg-email').value;
         const pass = document.getElementById('reg-pass').value;
-        if(!email || !pass) return alert("Preencha os dados");
         auth.createUserWithEmailAndPassword(email, pass).then(()=>alert("Criado!")).catch(err => alert(err.message));
     }
     function appResetPassword() {
         const email = document.getElementById('reset-email').value;
-        if(!email) return alert("Digite o e-mail");
-        auth.sendPasswordResetEmail(email)
-            .then(() => {
-                alert("E-mail de recuperação enviado! Verifique sua caixa de entrada.");
-                toggleAuth('login');
-            })
-            .catch(err => alert("Erro: " + err.message));
+        auth.sendPasswordResetEmail(email).then(() => { alert("Verifique seu e-mail."); toggleAuth('login'); }).catch(err => alert(err.message));
     }
     function appLogout() { auth.signOut(); }
     function toggleAuth(v) {
@@ -732,136 +831,203 @@
     // 3. SINCRONIA DE DADOS (CLOUD -> APP)
     // ==========================================
     function syncTasks() {
-        if(!currentUser) return;
-        
-        db.collection('users').doc(currentUser.uid).collection('tasks')
-            .orderBy('date')
-            .onSnapshot(snapshot => {
-                appData.tasks = [];
-                snapshot.forEach(doc => {
-                    let task = doc.data();
-                    task.id = doc.id;
-                    appData.tasks.push(task);
-                });
-                refreshViews();
-                runAutoCleanup();
-            });
+        db.collection('users').doc(currentUser.uid).collection('tasks').orderBy('date').onSnapshot(snapshot => {
+            appData.tasks = [];
+            snapshot.forEach(doc => { let t = doc.data(); t.id = doc.id; appData.tasks.push(t); });
+            refreshViews(); runAutoCleanup();
+        });
+    }
+    function syncFinancials() {
+        db.collection('users').doc(currentUser.uid).collection('financials').orderBy('dueDate').onSnapshot(snapshot => {
+            appData.financials = [];
+            snapshot.forEach(doc => { let i = doc.data(); i.id = doc.id; appData.financials.push(i); });
+            if(currentView === 'finance') renderFinance();
+            if(currentView === 'dashboard') renderDashboard();
+        });
+    }
+    function syncContacts() {
+        db.collection('users').doc(currentUser.uid).collection('contacts').orderBy('name').onSnapshot(snapshot => {
+            appData.contacts = [];
+            snapshot.forEach(doc => { let c = doc.data(); c.id = doc.id; appData.contacts.push(c); });
+            if(currentView==='registers') renderRegisters();
+        });
+    }
+    function syncItems() {
+        db.collection('users').doc(currentUser.uid).collection('items').orderBy('name').onSnapshot(snapshot => {
+            appData.items = [];
+            snapshot.forEach(doc => { let i = doc.data(); i.id = doc.id; appData.items.push(i); });
+            if(currentView==='registers') renderRegisters();
+        });
     }
 
     function getLocalDateStr() {
         const d = new Date();
         const offset = d.getTimezoneOffset() * 60000;
-        const localDate = new Date(d.getTime() - offset);
-        return localDate.toISOString().split('T')[0];
+        return new Date(d.getTime() - offset).toISOString().split('T')[0];
     }
 
+    // ==========================================
+    // 4. CRUD TASKS
+    // ==========================================
     function saveTask() {
         const title = document.getElementById('t-title').value;
-        const desc = document.getElementById('t-desc').value;
         const date = document.getElementById('t-date').value;
-        const time = document.getElementById('t-time').value;
-        const cat = document.getElementById('t-category').value;
-        const val = document.getElementById('t-value').value;
-        const sendEmail = document.getElementById('t-send-email').checked;
-        const emailAddr = document.getElementById('t-email-addr').value;
-
-        // Configurações de Lembrete
-        const remStart = parseInt(document.getElementById('t-rem-start').value);
-        const remInt = parseInt(document.getElementById('t-rem-int').value);
-        const remOverInt = parseInt(document.getElementById('t-rem-over-int').value);
-        
-        // Configurações de Email
-        const mailDays = parseInt(document.getElementById('t-mail-days').value);
-        const mailInt = parseInt(document.getElementById('t-mail-int').value);
-        const mailOverInt = parseInt(document.getElementById('t-mail-over-int').value);
-        const mailMax = parseInt(document.getElementById('t-mail-max').value);
-
         if(!title || !date) return alert("Preencha título e data");
 
         const data = {
-            title, 
-            description: desc,
-            date, time, category: cat, value: val,
-            sendEmail, emailAddr,
-            userId: currentUser.uid, 
-            completed: false,
+            title, description: document.getElementById('t-desc').value,
+            date, time: document.getElementById('t-time').value,
+            category: document.getElementById('t-category').value,
+            value: document.getElementById('t-value').value,
+            sendEmail: document.getElementById('t-send-email').checked,
+            emailAddr: document.getElementById('t-email-addr').value,
+            userId: currentUser.uid, completed: false,
             
-            // Novos campos de configuração
-            remStart: isNaN(remStart) ? defaultConfig.alarmStartMin : remStart,
-            remInt: isNaN(remInt) ? defaultConfig.alarmFreqMin : remInt,
-            remOverInt: isNaN(remOverInt) ? defaultConfig.alarmOverdueFreq : remOverInt,
+            remStart: parseInt(document.getElementById('t-rem-start').value) || defaultConfig.alarmStartMin,
+            remInt: parseInt(document.getElementById('t-rem-int').value) || defaultConfig.alarmFreqMin,
+            remOverInt: parseInt(document.getElementById('t-rem-over-int').value) || defaultConfig.alarmOverdueFreq,
             
-            mailDays: isNaN(mailDays) ? defaultConfig.emailDaysBefore : mailDays,
-            mailInt: isNaN(mailInt) ? defaultConfig.emailFreqDays : mailInt,
-            mailOverInt: isNaN(mailOverInt) ? defaultConfig.emailOverdueFreq : mailOverInt,
-            mailMax: isNaN(mailMax) ? defaultConfig.emailOverdueMax : mailMax,
-            
-            // Estado
-            overdueEmailCount: 0,
-            lastAlarmSent: null,
-            lastEmailSent: null,
+            mailDays: parseInt(document.getElementById('t-mail-days').value) || defaultConfig.emailDaysBefore,
+            mailInt: parseInt(document.getElementById('t-mail-int').value) || defaultConfig.emailFreqDays,
+            mailOverInt: parseInt(document.getElementById('t-mail-over-int').value) || defaultConfig.emailOverdueFreq,
+            mailMax: parseInt(document.getElementById('t-mail-max').value) || defaultConfig.emailOverdueMax,
             
             createdAt: firebase.firestore.FieldValue.serverTimestamp()
         };
 
         const id = document.getElementById('t-id').value;
-        
-        let dbOperation;
-        if(id) {
-            const existing = appData.tasks.find(t => t.id === id);
-            if(existing) {
-                data.overdueEmailCount = existing.overdueEmailCount || 0;
-                data.lastAlarmSent = existing.lastAlarmSent || null;
-                data.lastEmailSent = existing.lastEmailSent || null;
-                data.completed = existing.completed; 
-            }
-            dbOperation = db.collection('users').doc(currentUser.uid).collection('tasks').doc(id).update(data);
-        } else {
-            dbOperation = db.collection('users').doc(currentUser.uid).collection('tasks').add(data);
-        }
-
-        dbOperation.then(async () => {
-            if(!id) alert("Tarefa salva!"); 
-            closeModal();
-        }).catch(err => {
-            alert("Erro ao salvar: " + err.message);
-        });
+        const ref = db.collection('users').doc(currentUser.uid).collection('tasks');
+        (id ? ref.doc(id).update(data) : ref.add(data)).then(() => closeModal('taskModal'));
     }
 
-    function deleteTask(id, confirmAction = true) {
-        if(!confirmAction || confirm("Excluir esta tarefa?")) {
-            db.collection('users').doc(currentUser.uid).collection('tasks').doc(id).delete();
-        }
-    }
+    function deleteTask(id) { if(confirm("Excluir?")) db.collection('users').doc(currentUser.uid).collection('tasks').doc(id).delete(); }
     
-    function clearAllCompleted() {
-        const completedTasks = appData.tasks.filter(t => t.completed);
-        if(completedTasks.length === 0) return alert("Nenhuma tarefa concluída para limpar.");
-        
-        if(confirm(`Tem certeza? Isso apagará ${completedTasks.length} tarefas concluídas permanentemente.`)) {
-            let count = 0;
-            completedTasks.forEach(t => {
-                db.collection('users').doc(currentUser.uid).collection('tasks').doc(t.id).delete();
-                count++;
-            });
-            alert(`${count} tarefas foram removidas.`);
-        }
-    }
-
     function toggleTask(id, status) {
-        if(!status) { 
-            const audio = document.getElementById('audioDone');
-            audio.currentTime = 0;
-            audio.play().catch(e => console.log("Audio play blocked", e));
-        }
+        if(!status) document.getElementById('audioDone').play().catch(()=>{});
         db.collection('users').doc(currentUser.uid).collection('tasks').doc(id).update({ completed: !status });
     }
 
+    function clearAllCompleted() {
+        if(confirm("Limpar tarefas concluídas?")) {
+            appData.tasks.filter(t=>t.completed).forEach(t => db.collection('users').doc(currentUser.uid).collection('tasks').doc(t.id).delete());
+        }
+    }
+
     // ==========================================
-    // 4. LÓGICA DE UI (NAVEGAÇÃO E VIEWS)
+    // 5. CRUD FINANCEIRO
+    // ==========================================
+    function saveFinancial() {
+        const type = document.getElementById('f-type').value;
+        const title = document.getElementById('f-title').value;
+        const amount = document.getElementById('f-amount').value;
+        const date = document.getElementById('f-date').value;
+        if(!title || !amount || !date) return alert("Preencha dados obrigatórios");
+
+        const data = {
+            type, title, amount: parseFloat(amount), dueDate: date,
+            contactId: document.getElementById('f-contact').value || null,
+            itemId: document.getElementById('f-item').value || null,
+            alertEnabled: document.getElementById('f-alert-enable').checked,
+            status: 'pending', userId: currentUser.uid, 
+            createdAt: firebase.firestore.FieldValue.serverTimestamp(), lastAlarmSent: null
+        };
+
+        const id = document.getElementById('f-id').value;
+        const ref = db.collection('users').doc(currentUser.uid).collection('financials');
+        (id ? ref.doc(id).update(data) : ref.add(data)).then(() => closeModal('financialModal'));
+    }
+
+    function deleteFinancial(id) { if(confirm("Excluir?")) db.collection('users').doc(currentUser.uid).collection('financials').doc(id).delete(); }
+    
+    function toggleFinancialStatus(id, status) {
+        const ns = status === 'paid' ? 'pending' : 'paid';
+        if(ns === 'paid') document.getElementById('audioDone').play().catch(()=>{});
+        db.collection('users').doc(currentUser.uid).collection('financials').doc(id).update({ status: ns });
+    }
+
+    function updateFinanceFormContext() {
+        const type = document.getElementById('f-type').value;
+        const contactSel = document.getElementById('f-contact');
+        const itemDiv = document.getElementById('div-item-select');
+        const itemSel = document.getElementById('f-item');
+        
+        document.getElementById('lbl-contact').innerText = type === 'in' ? "Cliente (Opcional)" : "Fornecedor (Opcional)";
+        contactSel.innerHTML = '<option value="">-- Selecione --</option>';
+        
+        appData.contacts.forEach(c => {
+            let show = (c.type === 'both') || (type === 'in' && c.type === 'client') || (type === 'out' && c.type === 'supplier');
+            if(show) {
+                let opt = document.createElement('option');
+                opt.value = c.id; opt.text = c.name;
+                contactSel.appendChild(opt);
+            }
+        });
+
+        if(type === 'in') {
+            itemDiv.classList.remove('hidden');
+            itemSel.innerHTML = '<option value="">-- Selecione --</option>';
+            appData.items.forEach(i => {
+                let opt = document.createElement('option');
+                opt.value = i.id; opt.text = `${i.name} (R$ ${i.price})`;
+                itemSel.appendChild(opt);
+            });
+        } else {
+            itemDiv.classList.add('hidden');
+            itemSel.value = "";
+        }
+    }
+    
+    document.getElementById('f-item').addEventListener('change', function() {
+        const item = appData.items.find(i => i.id === this.value);
+        if(item && item.price) document.getElementById('f-amount').value = item.price;
+    });
+
+    // ==========================================
+    // 6. CRUD CADASTROS (CRM)
+    // ==========================================
+    function saveContact() {
+        const name = document.getElementById('c-name').value;
+        if(!name) return alert("Nome obrigatório");
+        const data = {
+            name, type: document.getElementById('c-type').value,
+            phone: document.getElementById('c-phone').value, email: document.getElementById('c-email').value,
+            userId: currentUser.uid
+        };
+        const id = document.getElementById('c-id').value;
+        const ref = db.collection('users').doc(currentUser.uid).collection('contacts');
+        (id ? ref.doc(id).update(data) : ref.add(data)).then(() => closeModal('contactModal'));
+    }
+    function deleteContact(id) { if(confirm("Excluir?")) db.collection('users').doc(currentUser.uid).collection('contacts').doc(id).delete(); }
+
+    function saveItem() {
+        const name = document.getElementById('i-name').value;
+        if(!name) return alert("Nome obrigatório");
+        const data = {
+            name, type: document.getElementById('i-type').value,
+            price: parseFloat(document.getElementById('i-price').value) || 0,
+            userId: currentUser.uid
+        };
+        const id = document.getElementById('i-id').value;
+        const ref = db.collection('users').doc(currentUser.uid).collection('items');
+        (id ? ref.doc(id).update(data) : ref.add(data)).then(() => closeModal('itemModal'));
+    }
+    function deleteItem(id) { if(confirm("Excluir item?")) db.collection('users').doc(currentUser.uid).collection('items').doc(id).delete(); }
+
+    // ==========================================
+    // 7. GESTÃO DE UI / VIEWS
     // ==========================================
     let currentView = 'dashboard';
     
+    function handleFabClick() {
+        if (currentView === 'finance') openFinancialModal();
+        else if (currentView === 'registers') {
+            if(document.getElementById('tab-contacts').classList.contains('active')) openContactModal();
+            else openItemModal();
+        } else {
+            openModal('taskModal');
+        }
+    }
+
     function switchTab(tab) {
         document.querySelectorAll('.nav-item').forEach(e => e.classList.remove('active'));
         document.getElementById('nav-'+tab).classList.add('active');
@@ -875,75 +1041,60 @@
         if(currentView === 'dashboard') renderDashboard();
         if(currentView === 'tasks') renderTasks();
         if(currentView === 'calendar') renderCalendar();
+        if(currentView === 'finance') renderFinance();
+        if(currentView === 'registers') renderRegisters();
     }
 
+    // --- RENDERIZADORES ---
     function renderDashboard() {
-        const listEl = document.getElementById('dashboard-list');
+        const list = document.getElementById('dashboard-list');
         const todayStr = getLocalDateStr();
-        const pendingTasks = appData.tasks.filter(t => !t.completed);
-        
-        document.getElementById('stat-pending').textContent = pendingTasks.length;
+        const pending = appData.tasks.filter(t => !t.completed);
+        document.getElementById('stat-pending').textContent = pending.length;
 
-        const toReceive = pendingTasks
-            .filter(t => t.category === 'Cliente' && t.value)
-            .reduce((sum, t) => sum + parseFloat(t.value), 0);
-        document.getElementById('stat-revenue').textContent = `R$ ${toReceive.toFixed(2)}`;
+        // Calculo Total Receita/Despesa (Tarefas + Financeiro)
+        let totalIn = 0, totalOut = 0;
+        appData.tasks.filter(t=>!t.completed).forEach(t => {
+            if(t.category === 'Cliente') totalIn += parseFloat(t.value||0);
+            if(t.category === 'Fornecedor') totalOut += parseFloat(t.value||0);
+        });
+        appData.financials.filter(f=>f.status==='pending').forEach(f => {
+            if(f.type === 'in') totalIn += f.amount;
+            else totalOut += f.amount;
+        });
 
-        const toPay = pendingTasks
-            .filter(t => t.category === 'Fornecedor' && t.value)
-            .reduce((sum, t) => sum + parseFloat(t.value), 0);
-        const elExpense = document.getElementById('stat-expense');
-        if(elExpense) elExpense.textContent = `R$ ${toPay.toFixed(2)}`;
+        document.getElementById('stat-revenue').textContent = `R$ ${totalIn.toFixed(2)}`;
+        document.getElementById('stat-expense').textContent = `R$ ${totalOut.toFixed(2)}`;
 
         const todaysTasks = appData.tasks.filter(t => t.date === todayStr && !t.completed);
-        listEl.innerHTML = '';
-        if(todaysTasks.length === 0) {
-            listEl.innerHTML = '<div class="empty-state">Nada pendente para hoje!</div>';
-            return;
-        }
-        todaysTasks.forEach(t => listEl.appendChild(createTaskElement(t)));
+        list.innerHTML = '';
+        if(!todaysTasks.length) list.innerHTML = '<div class="empty-state">Nada para hoje.</div>';
+        else todaysTasks.forEach(t => list.appendChild(createTaskElement(t)));
     }
 
     function renderTasks() {
-        const listEl = document.getElementById('tasks-list');
+        const list = document.getElementById('tasks-list');
         const filterCat = document.getElementById('filter-category').value;
-        const searchTerm = document.getElementById('task-search').value.toLowerCase().trim();
+        const searchTerm = document.getElementById('task-search').value.toLowerCase();
         
-        listEl.innerHTML = '';
-        let tasks = [...appData.tasks];
+        let tasks = appData.tasks.filter(t => (filterCat==='all' || t.category===filterCat) && t.title.toLowerCase().includes(searchTerm));
+        tasks.sort((a,b) => (a.completed===b.completed) ? (new Date(a.date)-new Date(b.date)) : (a.completed?1:-1));
         
-        if(filterCat !== 'all') tasks = tasks.filter(t => (t.category || "") === filterCat);
-        if(searchTerm !== '') tasks = tasks.filter(t => (t.title && t.title.toLowerCase().includes(searchTerm)));
-
-        tasks.sort((a, b) => {
-            if (a.completed === b.completed) return new Date(a.date) - new Date(b.date);
-            return a.completed ? 1 : -1;
-        });
-        
-        if(tasks.length === 0) {
-            listEl.innerHTML = '<div class="empty-state">Nenhuma tarefa encontrada.</div>';
-            return;
-        }
-        tasks.forEach(t => listEl.appendChild(createTaskElement(t)));
+        list.innerHTML = '';
+        if(!tasks.length) list.innerHTML = '<div class="empty-state">Vazio.</div>';
+        else tasks.forEach(t => list.appendChild(createTaskElement(t)));
     }
 
     function createTaskElement(t) {
         const div = document.createElement('div');
         div.className = `task-item ${t.completed ? 'done' : ''} priority-normal`;
-        
-        const waMsg = encodeURIComponent(`${t.title} - ${t.date} ${t.time}`);
-        const waBtn = `<button class="btn-icon btn-wa" onclick="window.open('https://wa.me/?text=${waMsg}')">💬</button>`;
-        
+        const waBtn = `<button class="btn-icon btn-wa" onclick="window.open('https://wa.me/?text=${encodeURIComponent(t.title)}')">💬</button>`;
         div.innerHTML = `
-            <div class="task-info" onclick="openEditModal('${t.id}')">
-                <span class="task-title">${t.sendEmail?'📧':''} ${t.title}</span>
-                <div class="task-meta">
-                    <span>📅 ${formatDateBR(t.date)} ${t.time||''}</span>
-                    ${t.category ? `<span class="tag">${t.category}</span>` : ''}
-                    ${t.value ? `<span class="tag" style="color:green">R$ ${t.value}</span>` : ''}
-                </div>
+            <div class="info-col" onclick="openEditTask('${t.id}')">
+                <span class="main-text">${t.sendEmail?'📧':''} ${t.title}</span>
+                <span class="sub-text">📅 ${formatDateBR(t.date)} ${t.time||''} ${t.value? ' • R$ '+t.value : ''}</span>
             </div>
-            <div class="task-actions">
+            <div class="item-actions">
                 ${waBtn}
                 <button class="btn-icon" onclick="toggleTask('${t.id}', ${t.completed})">${t.completed?'↩️':'✅'}</button>
                 <button class="btn-icon" onclick="deleteTask('${t.id}')" style="color:var(--danger)">🗑️</button>
@@ -952,414 +1103,398 @@
         return div;
     }
 
-    let displayMonth = new Date().getMonth();
-    let displayYear = new Date().getFullYear();
+    function renderFinance() {
+        const list = document.getElementById('finance-list');
+        const type = document.getElementById('fin-filter-type').value;
+        const status = document.getElementById('fin-filter-status').value;
 
-    function renderCalendar() {
-        const monthNames = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
-        document.getElementById('calendar-month-year').textContent = `${monthNames[displayMonth]} ${displayYear}`;
-        const daysContainer = document.getElementById('calendar-days');
-        daysContainer.innerHTML = '';
+        let items = appData.financials.filter(i => (type==='all' || i.type===type) && (status==='all' || i.status===status));
+        items.sort((a,b) => new Date(a.dueDate) - new Date(b.dueDate));
 
-        const firstDay = new Date(displayYear, displayMonth, 1);
-        const lastDay = new Date(displayYear, displayMonth + 1, 0);
+        // Totais da tela financeira
+        let finIn = 0, finOut = 0;
+        appData.financials.filter(f=>f.status==='pending').forEach(f => {
+            if(f.type==='in') finIn += f.amount; else finOut += f.amount;
+        });
+        document.getElementById('fin-total-in').textContent = `R$ ${finIn.toFixed(2)}`;
+        document.getElementById('fin-total-out').textContent = `R$ ${finOut.toFixed(2)}`;
+        document.getElementById('fin-balance').textContent = `R$ ${(finIn-finOut).toFixed(2)}`;
 
-        for(let i=0; i<firstDay.getDay(); i++) daysContainer.appendChild(document.createElement('div'));
+        list.innerHTML = '';
+        if(!items.length) list.innerHTML = '<div class="empty-state">Vazio.</div>';
+        else items.forEach(i => {
+            const div = document.createElement('div');
+            div.className = `transaction-item type-${i.type} ${i.status==='paid'?'paid':''}`;
+            
+            // Texto secundário com Vínculos
+            let sub = formatDateBR(i.dueDate);
+            if(i.contactId) { const c = appData.contacts.find(x=>x.id===i.contactId); if(c) sub += ` • ${c.name}`; }
+            if(i.itemId) { const it = appData.items.find(x=>x.id===i.itemId); if(it) sub += ` • ${it.name}`; }
 
-        for(let i=1; i<=lastDay.getDate(); i++) {
-            const dStr = `${displayYear}-${String(displayMonth+1).padStart(2,'0')}-${String(i).padStart(2,'0')}`;
-            const el = document.createElement('div');
-            el.className = 'cal-day';
-            el.textContent = i;
-            if(appData.tasks.some(t => t.date === dStr && !t.completed)) el.classList.add('has-task');
-            if(dStr === getLocalDateStr()) el.classList.add('today');
-            el.onclick = () => {
-                const list = document.getElementById('calendar-task-list');
-                list.innerHTML = '';
-                const tasks = appData.tasks.filter(t => t.date === dStr);
-                if(tasks.length === 0) list.innerHTML = 'Nada neste dia.';
-                else tasks.forEach(t => list.appendChild(createTaskElement(t)));
-            };
-            daysContainer.appendChild(el);
-        }
-    }
-    function changeMonth(o) {
-        displayMonth += o;
-        if(displayMonth>11) { displayMonth=0; displayYear++; }
-        if(displayMonth<0) { displayMonth=11; displayYear--; }
-        renderCalendar();
-    }
-
-    // ==========================================
-    // 5. ALARMES E EMAILS AUTOMÁTICOS
-    // ==========================================
-    setInterval(checkAlarms, 10000);
-
-    function checkAlarms() {
-        if(!currentUser) return;
-        const now = new Date();
-        const todayStr = getLocalDateStr();
-
-        appData.tasks.forEach(task => {
-            if(task.completed) return; 
-
-            // ALARME SONORO
-            if(task.time) {
-                const taskDateTime = new Date(`${task.date}T${task.time}:00`);
-                const diffMs = taskDateTime - now;
-                const diffMin = diffMs / 60000; 
-
-                const startMin = task.remStart || defaultConfig.alarmStartMin;
-                const freqMin = task.remInt || defaultConfig.alarmFreqMin;
-                const overFreqMin = task.remOverInt || defaultConfig.alarmOverdueFreq;
-                
-                let shouldTrigger = false;
-                let triggerType = "";
-
-                if (diffMin > 0 && diffMin <= startMin) {
-                    if (isIntervalPassed(task.lastAlarmSent, freqMin * 60000)) {
-                        shouldTrigger = true;
-                        triggerType = `Faltam ${Math.ceil(diffMin)} min`;
-                    }
-                }
-                
-                if (diffMin < -1) { 
-                    if (isIntervalPassed(task.lastAlarmSent, overFreqMin * 60000)) {
-                        shouldTrigger = true;
-                        triggerType = "ATRASADO!";
-                    }
-                }
-
-                if (Math.abs(diffMin) <= 0.5 && (!task.lastAlarmSent || (now - new Date(task.lastAlarmSent).getTime() > 60000))) {
-                     shouldTrigger = true;
-                     triggerType = "É AGORA!";
-                }
-
-                if (shouldTrigger) {
-                    triggerAlarm(task, triggerType);
-                    db.collection('users').doc(currentUser.uid).collection('tasks').doc(task.id).update({
-                        lastAlarmSent: now.toISOString()
-                    });
-                }
-            }
-
-            // EMAIL
-            if (task.sendEmail && task.emailAddr) {
-                const taskDate = new Date(`${task.date}T00:00:00`); 
-                const todayDate = new Date(`${todayStr}T00:00:00`); 
-                
-                const diffTime = taskDate.getTime() - todayDate.getTime();
-                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
-
-                const mailStartDays = task.mailDays || defaultConfig.emailDaysBefore;
-                const mailFreqDays = task.mailInt || defaultConfig.emailFreqDays;
-                const mailOverFreq = task.mailOverInt || defaultConfig.emailOverdueFreq;
-                const mailMax = task.mailMax || defaultConfig.emailOverdueMax;
-                const overdueCount = task.overdueEmailCount || 0;
-
-                let shouldSend = false;
-                let subjectPrefix = "";
-
-                if (diffDays >= 0 && diffDays <= mailStartDays) {
-                    if (isIntervalPassed(task.lastEmailSent, mailFreqDays * 86400000)) {
-                        shouldSend = true;
-                        subjectPrefix = diffDays === 0 ? "HOJE:" : "Lembrete:";
-                    }
-                }
-
-                if (diffDays < 0) {
-                    if (overdueCount < mailMax) {
-                        if (isIntervalPassed(task.lastEmailSent, mailOverFreq * 86400000)) {
-                            shouldSend = true;
-                            subjectPrefix = "ATRASADO:";
-                        }
-                    }
-                }
-
-                if (shouldSend) {
-                    sendEmail(task, subjectPrefix, diffDays < 0);
-                }
-            }
+            div.innerHTML = `
+                <div class="info-col" onclick="openEditFinancial('${i.id}')">
+                    <span class="main-text">${i.title}</span>
+                    <span class="sub-text">${sub}</span>
+                </div>
+                <div style="text-align:right; margin-right:10px;">
+                    <div class="fin-amount" style="color:${i.type==='in'?'var(--secondary)':'var(--danger)'}">R$ ${i.amount.toFixed(2)}</div>
+                    <small>${i.status==='paid'?'Pago':'Pendente'}</small>
+                </div>
+                <div class="item-actions">
+                    <button class="btn-icon" onclick="toggleFinancialStatus('${i.id}','${i.status}')">${i.status==='paid'?'↩️':'✅'}</button>
+                    <button class="btn-icon" onclick="deleteFinancial('${i.id}')" style="color:var(--danger)">🗑️</button>
+                </div>
+            `;
+            list.appendChild(div);
         });
     }
 
-    function isIntervalPassed(lastStr, intervalMs) {
-        if (!lastStr) return true;
-        const last = new Date(lastStr).getTime();
-        const now = new Date().getTime();
-        return (now - last) >= intervalMs;
-    }
+    function renderRegisters() {
+        const showContacts = document.getElementById('tab-contacts').classList.contains('active');
+        document.getElementById('reg-contacts-view').classList.toggle('hidden', !showContacts);
+        document.getElementById('reg-items-view').classList.toggle('hidden', showContacts);
 
-    function sendEmail(task, subjectPrefix, isOverdue) {
-        const nowIso = new Date().toISOString();
-        let updateData = { lastEmailSent: nowIso };
-        if (isOverdue) {
-            updateData.overdueEmailCount = (task.overdueEmailCount || 0) + 1;
-        }
-
-        db.collection('users').doc(currentUser.uid).collection('tasks').doc(task.id).update(updateData);
-
-        let htmlContent = `
-            <div style="font-family: Arial, sans-serif; color: #333;">
-                <h2 style="color: ${isOverdue ? '#e74c3c' : '#0066cc'};">${subjectPrefix} ${task.title}</h2>
-                <p>Olá! Detalhes do seu compromisso:</p>
-                <hr>
-                <p><strong>Descrição:</strong> ${task.description || 'Sem detalhes.'}</p>
-                <p><strong>Data:</strong> ${formatDateBR(task.date)} ${task.time || ''}</p>
-        `;
-        if (task.value) { htmlContent += `<p><strong>Valor:</strong> R$ ${task.value}</p>`; }
-        htmlContent += `
-                <hr>
-                <small>Compromisso Fácil Cloud Pro.</small>
-            </div>
-        `;
-
-        fetch('https://enviaremailsdiarios-368296869868.southamerica-east1.run.app/send-email', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                to: task.emailAddr,
-                subject: `${subjectPrefix} ${task.title}`,
-                html: htmlContent
-            })
-        }).then(() => console.log("Email enviado para " + task.title))
-          .catch(err => console.error("Erro envio email", err));
-    }
-
-    function triggerAlarm(task, typeText) {
-        const audio = document.getElementById('audioAlert');
-        audio.currentTime = 0;
-        audio.play().catch(()=>{});
-
-        document.getElementById('alarm-context').textContent = typeText;
-        document.getElementById('alarm-task-id').value = task.id;
-        document.getElementById('alarm-time-display').textContent = task.time;
-        document.getElementById('alarm-text-display').textContent = task.title;
-        document.getElementById('alarmModal').classList.add('active');
-        
-        if(Notification.permission==="granted") new Notification(`${typeText}: ${task.title}`);
-    }
-
-    function stopAlarm() {
-        document.getElementById('alarmModal').classList.remove('active');
-        document.getElementById('audioAlert').pause();
-    }
-
-    function completeTaskFromAlarm() {
-        const id = document.getElementById('alarm-task-id').value;
-        const audio = document.getElementById('audioDone');
-        audio.currentTime = 0;
-        audio.play().catch(()=>{});
-        db.collection('users').doc(currentUser.uid).collection('tasks').doc(id).update({ completed: true });
-        stopAlarm();
-    }
-
-    // ==========================================
-    // 6. BACKUP, RESTAURAÇÃO E LIMPEZA
-    // ==========================================
-    function backupData() {
-        if(appData.tasks.length === 0) return alert("Nada para salvar.");
-        const dataStr = JSON.stringify(appData.tasks, null, 2);
-        const blob = new Blob([dataStr], { type: "application/json" });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        const date = new Date().toISOString().split('T')[0];
-        a.download = `backup_compromissos_${date}.json`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-    }
-
-    function triggerRestore() {
-        document.getElementById('restore-input').click();
-    }
-
-    function restoreData(input) {
-        const file = input.files[0];
-        if(!file) return;
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            try {
-                const tasks = JSON.parse(e.target.result);
-                if(!Array.isArray(tasks)) return alert("Arquivo inválido!");
-                if(confirm(`Tem certeza? Isso irá adicionar ${tasks.length} tarefas à sua conta.`)) {
-                    tasks.forEach(t => {
-                        delete t.id; 
-                        db.collection('users').doc(currentUser.uid).collection('tasks').add(t);
-                    });
-                    alert("Restauração iniciada!");
-                }
-            } catch(err) { alert("Erro ao ler arquivo: " + err); }
-        };
-        reader.readAsText(file);
-        input.value = ''; 
-    }
-
-    function toggleCleanup(chk) {
-        localStorage.setItem('autoCleanup', chk.checked);
-        if(chk.checked) runAutoCleanup();
-    }
-
-    function runAutoCleanup() {
-        const isEnabled = localStorage.getItem('autoCleanup') === 'true';
-        if(!isEnabled || !appData.tasks) return;
-
-        const cutoff = new Date();
-        cutoff.setDate(cutoff.getDate() - 30); 
-        const cutoffStr = cutoff.toISOString().split('T')[0];
-        const oldTasks = appData.tasks.filter(t => t.completed && t.date < cutoffStr);
-
-        if (oldTasks.length > 0) {
-            if(confirm(`Limpeza Automática: Existem ${oldTasks.length} tarefas concluídas há mais de 30 dias. Deseja apagá-las para liberar espaço?`)) {
-                let count = 0;
-                oldTasks.forEach(t => {
-                    db.collection('users').doc(currentUser.uid).collection('tasks').doc(t.id).delete();
-                    count++;
-                });
-                console.log(`Limpeza automática: ${count} removidas.`);
-            }
+        if(showContacts) {
+            const list = document.getElementById('contacts-list'); list.innerHTML = '';
+            appData.contacts.forEach(c => {
+                const div = document.createElement('div'); div.className = 'contact-item';
+                let badge = c.type === 'supplier' ? 'badge-supplier' : 'badge-client';
+                div.innerHTML = `
+                    <div class="info-col" onclick="openEditContact('${c.id}')">
+                        <span class="main-text">${c.name} <span class="contact-type-badge ${badge}">${c.type}</span></span>
+                        <span class="sub-text">${c.phone||''} | ${c.email||''}</span>
+                    </div>
+                    <button class="btn-icon" onclick="deleteContact('${c.id}')" style="color:var(--danger)">🗑️</button>
+                `;
+                list.appendChild(div);
+            });
+        } else {
+            const list = document.getElementById('items-list'); list.innerHTML = '';
+            appData.items.forEach(i => {
+                const div = document.createElement('div'); div.className = 'item-item';
+                div.innerHTML = `
+                    <div class="info-col" onclick="openEditItem('${i.id}')">
+                        <span class="main-text">${i.name}</span>
+                        <span class="sub-text">${i.type==='service'?'Serviço':'Produto'} • R$ ${i.price.toFixed(2)}</span>
+                    </div>
+                    <button class="btn-icon" onclick="deleteItem('${i.id}')" style="color:var(--danger)">🗑️</button>
+                `;
+                list.appendChild(div);
+            });
         }
     }
-    
+    function toggleRegisterTab(t) {
+        document.querySelectorAll('.reg-tab').forEach(e => e.classList.remove('active'));
+        document.getElementById('tab-'+t).classList.add('active');
+        renderRegisters();
+    }
+
     // ==========================================
-    // 7. GERAÇÃO DE PIX COPIA E COLA
+    // 8. HELPERS DE MODAIS E EDIÇÃO
     // ==========================================
-    const PIX_KEY_GLOBAL = "b4648948-d0a8-4402-81f4-8a4047fcf4e5";
-    
-    function crc16(str) {
-        let crc = 0xFFFF;
-        for (let i = 0; i < str.length; i++) {
-            crc ^= str.charCodeAt(i) << 8;
-            for (let j = 0; j < 8; j++) {
-                if ((crc & 0x8000) !== 0) crc = (crc << 1) ^ 0x1021;
-                else crc = crc << 1;
-            }
+    function openModal(id) { 
+        document.getElementById(id).classList.add('open'); 
+        if(id==='taskModal'){ 
+            document.getElementById('t-id').value=''; document.getElementById('t-title').value=''; 
+            document.getElementById('t-date').value=''; document.getElementById('t-email-addr').value='';
+            document.getElementById('t-rem-start').value = defaultConfig.alarmStartMin;
         }
-        return (crc & 0xFFFF).toString(16).toUpperCase().padStart(4, '0');
     }
+    function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+    function toggleEmailInput() { document.getElementById('div-email-input').classList.toggle('hidden', !document.getElementById('t-send-email').checked); }
+    function formatDateBR(d) { return d.split('-').reverse().join('/'); }
 
-    function createPixPayload(amount) {
-        const format = (id, val) => id + val.length.toString().padStart(2, '0') + val;
-        const merchantInfo = format('00', 'BR.GOV.BCB.PIX') + format('01', PIX_KEY_GLOBAL);
-        let payload = 
-            format('00', '01') + 
-            format('26', merchantInfo) + 
-            format('52', '0000') + 
-            format('53', '986');
-        if (amount > 0) payload += format('54', amount.toFixed(2));
-        payload += format('58', 'BR') + format('59', 'App Compromisso') + format('60', 'Cidade') + format('62', format('05', '***'));
-        payload += '6304';
-        payload += crc16(payload);
-        return payload;
-    }
-
-    function generatePixCopyPaste(amount) {
-        const code = createPixPayload(amount);
-        copyToClipboard(code, "Pix Copia e Cola (R$ "+amount+",00) copiado!");
-        const disp = document.getElementById('pix-display-area');
-        disp.style.display = 'block';
-        disp.textContent = code;
-    }
-
-    function copyPixSimpleKey() {
-        copyToClipboard(PIX_KEY_GLOBAL, "Chave Pix copiada!");
-        const disp = document.getElementById('pix-display-area');
-        disp.style.display = 'block';
-        disp.textContent = PIX_KEY_GLOBAL;
-    }
-
-    function copyToClipboard(text, msg) {
-        navigator.clipboard.writeText(text).then(() => {
-            const feed = document.getElementById('pix-feedback');
-            feed.textContent = "✅ " + msg;
-            feed.style.display = 'block';
-            setTimeout(() => feed.style.display = 'none', 4000);
-        }).catch(err => alert("Erro ao copiar: " + text));
-    }
-
-    function openSupportModal() {
-        document.getElementById('pix-display-area').style.display = 'none';
-        document.getElementById('pix-feedback').style.display = 'none';
-        document.getElementById('supportModal').classList.add('open');
-    }
-    function closeSupportModal() {
-        document.getElementById('supportModal').classList.remove('open');
-    }
-
-    // --- UI HELPERS ---
-    function openModal() {
-        document.getElementById('taskModal').classList.add('open');
-        document.getElementById('t-id').value = '';
-        
-        // Limpa campos
-        document.getElementById('t-title').value = '';
-        document.getElementById('t-desc').value = ''; 
-        document.getElementById('t-date').value = ''; 
-        document.getElementById('t-time').value = '';
-        document.getElementById('t-category').value = '';
-        document.getElementById('t-value').value = '';
-        document.getElementById('t-email-addr').value = '';
-        document.getElementById('t-send-email').checked = false;
-        
-        // CARREGA DEFAULTS
-        document.getElementById('t-rem-start').value = defaultConfig.alarmStartMin;
-        document.getElementById('t-rem-int').value = defaultConfig.alarmFreqMin;
-        document.getElementById('t-rem-over-int').value = defaultConfig.alarmOverdueFreq;
-        document.getElementById('t-mail-days').value = defaultConfig.emailDaysBefore;
-        document.getElementById('t-mail-int').value = defaultConfig.emailFreqDays;
-        document.getElementById('t-mail-over-int').value = defaultConfig.emailOverdueFreq;
-        document.getElementById('t-mail-max').value = defaultConfig.emailOverdueMax;
-        
-        toggleEmailInput();
-    }
-
-    function openEditModal(id) {
-        const t = appData.tasks.find(x => x.id === id);
-        if(!t) return;
+    function openEditTask(id) {
+        const t = appData.tasks.find(x => x.id === id); if(!t) return;
         document.getElementById('t-id').value = t.id;
         document.getElementById('t-title').value = t.title;
-        document.getElementById('t-desc').value = t.description || ''; 
+        document.getElementById('t-desc').value = t.description || '';
         document.getElementById('t-date').value = t.date;
         document.getElementById('t-time').value = t.time;
-        document.getElementById('t-category').value = t.category||'';
-        document.getElementById('t-value').value = t.value||'';
+        document.getElementById('t-category').value = t.category || '';
+        document.getElementById('t-value').value = t.value || '';
         document.getElementById('t-send-email').checked = t.sendEmail;
-        document.getElementById('t-email-addr').value = t.emailAddr||'';
-        
-        // Configs
+        document.getElementById('t-email-addr').value = t.emailAddr || '';
+        // Load Settings
         document.getElementById('t-rem-start').value = t.remStart || defaultConfig.alarmStartMin;
         document.getElementById('t-rem-int').value = t.remInt || defaultConfig.alarmFreqMin;
         document.getElementById('t-rem-over-int').value = t.remOverInt || defaultConfig.alarmOverdueFreq;
         document.getElementById('t-mail-days').value = t.mailDays || defaultConfig.emailDaysBefore;
-        document.getElementById('t-mail-int').value = t.mailInt || defaultConfig.emailFreqDays;
-        document.getElementById('t-mail-over-int').value = t.mailOverInt || defaultConfig.emailOverdueFreq;
-        document.getElementById('t-mail-max').value = t.mailMax || defaultConfig.emailOverdueMax;
-
+        
         toggleEmailInput();
-        document.getElementById('taskModal').classList.add('open');
+        openModal('taskModal');
     }
-    
-    function closeModal() { document.getElementById('taskModal').classList.remove('open'); }
-    function toggleEmailInput() { 
-        const chk = document.getElementById('t-send-email').checked; 
-        document.getElementById('div-email-input').classList.toggle('hidden', !chk);
+
+    function openFinancialModal() {
+        document.getElementById('f-id').value=''; document.getElementById('f-type').value='out';
+        document.getElementById('f-title').value=''; document.getElementById('f-amount').value='';
+        document.getElementById('f-date').value=''; document.getElementById('f-contact').value='';
+        document.getElementById('f-item').value='';
+        updateFinanceFormContext();
+        openModal('financialModal');
     }
-    function formatDateBR(d) { return d.split('-').reverse().join('/'); }
+    function openEditFinancial(id) {
+        const i = appData.financials.find(x => x.id === id); if(!i) return;
+        document.getElementById('f-id').value = i.id;
+        document.getElementById('f-type').value = i.type;
+        updateFinanceFormContext(); // Popula selects
+        document.getElementById('f-title').value = i.title;
+        document.getElementById('f-amount').value = i.amount;
+        document.getElementById('f-date').value = i.dueDate;
+        document.getElementById('f-contact').value = i.contactId || '';
+        document.getElementById('f-item').value = i.itemId || '';
+        openModal('financialModal');
+    }
+
+    function openContactModal() { 
+        document.getElementById('c-id').value=''; document.getElementById('c-name').value=''; 
+        document.getElementById('c-phone').value=''; document.getElementById('c-email').value='';
+        openModal('contactModal'); 
+    }
+    function openEditContact(id) {
+        const c = appData.contacts.find(x => x.id === id);
+        document.getElementById('c-id').value = c.id;
+        document.getElementById('c-name').value = c.name;
+        document.getElementById('c-type').value = c.type;
+        document.getElementById('c-phone').value = c.phone;
+        document.getElementById('c-email').value = c.email;
+        openModal('contactModal');
+    }
+
+    function openItemModal() {
+        document.getElementById('i-id').value=''; document.getElementById('i-name').value=''; 
+        document.getElementById('i-price').value=''; 
+        openModal('itemModal');
+    }
+    function openEditItem(id) {
+        const i = appData.items.find(x => x.id === id);
+        document.getElementById('i-id').value = i.id;
+        document.getElementById('i-name').value = i.name;
+        document.getElementById('i-type').value = i.type;
+        document.getElementById('i-price').value = i.price;
+        openModal('itemModal');
+    }
+
+    // ==========================================
+    // 9. BACKUP, RESTORE, PDF, PIX
+    // ==========================================
+    function backupData() {
+        const full = { tasks: appData.tasks, financials: appData.financials, contacts: appData.contacts, items: appData.items };
+        const blob = new Blob([JSON.stringify(full, null, 2)], {type: "application/json"});
+        const a = document.createElement("a"); a.href = URL.createObjectURL(blob);
+        a.download = `backup_completo_${new Date().toISOString().split('T')[0]}.json`;
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    }
+    function triggerRestore() { document.getElementById('restore-input').click(); }
+    function restoreData(input) {
+        const file = input.files[0]; if(!file) return;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const data = JSON.parse(e.target.result);
+                // Suporte legado
+                let ts = Array.isArray(data) ? data : (data.tasks||[]);
+                let fs = data.financials||[];
+                let cs = data.contacts||[];
+                let is = data.items||[];
+
+                if(confirm(`Restaurar ${ts.length} tarefas, ${fs.length} finanças, ${cs.length} contatos, ${is.length} itens?`)) {
+                    ts.forEach(x => { delete x.id; db.collection('users').doc(currentUser.uid).collection('tasks').add(x); });
+                    fs.forEach(x => { delete x.id; db.collection('users').doc(currentUser.uid).collection('financials').add(x); });
+                    cs.forEach(x => { delete x.id; db.collection('users').doc(currentUser.uid).collection('contacts').add(x); });
+                    is.forEach(x => { delete x.id; db.collection('users').doc(currentUser.uid).collection('items').add(x); });
+                    alert("Restauração iniciada!");
+                }
+            } catch(er) { alert("Erro arquivo: " + er); }
+        };
+        reader.readAsText(file); input.value = '';
+    }
+
     function exportPDF() {
-        if(!window.jspdf) return alert("Carregando libs...");
+        if(!window.jspdf) return alert("Aguarde carregar libs...");
         const doc = new window.jspdf.jsPDF();
-        doc.text("Relatório Tarefas", 10, 10);
-        const rows = appData.tasks.map(t=>[formatDateBR(t.date), t.title, t.completed?'OK':'Pending']);
-        doc.autoTable({ head:[['Data','Tarefa','Status']], body:rows });
+        doc.text("Relatório Geral", 10, 10);
+        let y = 20;
+        doc.text("Tarefas:", 10, y); y+=10;
+        doc.autoTable({ startY: y, head:[['Data','Tarefa','Status']], body:appData.tasks.map(t=>[formatDateBR(t.date),t.title,t.completed?'OK':'Pendente']) });
+        y = doc.lastAutoTable.finalY + 20;
+        doc.text("Financeiro:", 10, y); y+=10;
+        doc.autoTable({ startY: y, head:[['Vencto','Título','Tipo','Valor','Status']], body:appData.financials.map(f=>[formatDateBR(f.dueDate),f.title,f.type,f.amount,f.status]) });
         doc.save('relatorio.pdf');
     }
 
-    const hr = new Date().getHours();
-    document.getElementById('greeting').textContent = hr<12?"Bom dia!":hr<18?"Boa tarde!":"Boa noite!";
-    if("Notification" in window) Notification.requestPermission();
+    // PIX GENERATOR
+    const PIX_KEY_GLOBAL = "b4648948-d0a8-4402-81f4-8a4047fcf4e5";
+    function crc16(str) {
+        let crc = 0xFFFF;
+        for (let i=0; i<str.length; i++) {
+            crc ^= str.charCodeAt(i) << 8;
+            for (let j=0; j<8; j++) { if ((crc & 0x8000) !== 0) crc = (crc << 1) ^ 0x1021; else crc = crc << 1; }
+        }
+        return (crc & 0xFFFF).toString(16).toUpperCase().padStart(4, '0');
+    }
+    function createPixPayload(amount) {
+        const format = (id, val) => id + val.length.toString().padStart(2, '0') + val;
+        const merchant = format('00','BR.GOV.BCB.PIX') + format('01',PIX_KEY_GLOBAL);
+        let p = format('00','01') + format('26',merchant) + format('52','0000') + format('53','986');
+        if(amount>0) p += format('54',amount.toFixed(2));
+        p += format('58','BR') + format('59','App Compromisso') + format('60','Cidade') + format('62',format('05','***')) + '6304';
+        return p + crc16(p);
+    }
+    function generatePixCopyPaste(amount) {
+        const code = createPixPayload(amount);
+        navigator.clipboard.writeText(code).then(()=>{
+            document.getElementById('pix-feedback').style.display='block';
+            document.getElementById('pix-display-area').textContent = code;
+            document.getElementById('pix-display-area').style.display='block';
+        });
+    }
+    function copyPixSimpleKey() {
+        navigator.clipboard.writeText(PIX_KEY_GLOBAL).then(()=>{ alert("Chave copiada!"); });
+    }
+    function openSupportModal() { document.getElementById('supportModal').classList.add('open'); }
+    
+    function toggleCleanup(chk) {
+        localStorage.setItem('autoCleanup', chk.checked);
+        if(chk.checked) runAutoCleanup();
+    }
+    function runAutoCleanup() {
+        if(localStorage.getItem('autoCleanup') !== 'true') return;
+        const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - 30);
+        const str = cutoff.toISOString().split('T')[0];
+        appData.tasks.filter(t=>t.completed && t.date<str).forEach(t=>db.collection('users').doc(currentUser.uid).collection('tasks').doc(t.id).delete());
+        appData.financials.filter(f=>f.status==='paid' && f.dueDate<str).forEach(f=>db.collection('users').doc(currentUser.uid).collection('financials').doc(f.id).delete());
+    }
 
+    // ==========================================
+    // 10. ALARM & CALENDAR LOOP
+    // ==========================================
+    setInterval(() => {
+        if(!currentUser) return;
+        const now = new Date();
+        const todayStr = getLocalDateStr();
+
+        // 1. Tasks
+        appData.tasks.forEach(t => {
+            if(t.completed || !t.time) return;
+            const target = new Date(`${t.date}T${t.time}:00`);
+            const diffMin = (target - now) / 60000;
+            const startMin = t.remStart || defaultConfig.alarmStartMin;
+            
+            // Lógica simples: aviso na hora ou no intervalo configurado
+            let trigger = false;
+            let msg = "";
+
+            // Pré-alarme
+            if(diffMin > 0 && diffMin <= startMin) {
+                if(!t.lastAlarmSent || (now - new Date(t.lastAlarmSent) > (t.remInt||5)*60000)) { trigger=true; msg=`Em ${Math.ceil(diffMin)} min`; }
+            }
+            // Na hora exata
+            if(Math.abs(diffMin) < 1) {
+                if(!t.lastAlarmSent || (now - new Date(t.lastAlarmSent) > 60000)) { trigger=true; msg="É AGORA!"; }
+            }
+            
+            if(trigger) {
+                triggerAlarm(t.id, 'task', t.title, t.time, msg);
+                db.collection('users').doc(currentUser.uid).collection('tasks').doc(t.id).update({lastAlarmSent: now.toISOString()});
+            }
+
+            // Email Logic
+            if(t.sendEmail && t.emailAddr) {
+                const diffDays = Math.ceil((new Date(t.date+"T00:00") - new Date(todayStr+"T00:00")) / 86400000);
+                if(diffDays === (t.mailDays||1) || diffDays===0) {
+                     if(!t.lastEmailSent || (new Date() - new Date(t.lastEmailSent) > 86400000)) {
+                         sendCloudEmail(t, diffDays===0?"HOJE":"Lembrete");
+                     }
+                }
+            }
+        });
+
+        // 2. Financeiro (Avisar dia do vencto)
+        appData.financials.forEach(f => {
+            if(f.status==='paid' || f.alertEnabled===false) return;
+            const isToday = f.dueDate === todayStr;
+            if(isToday) {
+                 // Avisar as 9h ou se logou depois das 9h e ainda nao avisou hoje
+                 const target = new Date(`${f.dueDate}T09:00:00`);
+                 if(now >= target) {
+                     if(!f.lastAlarmSent || f.lastAlarmSent.split('T')[0] !== todayStr) {
+                         triggerAlarm(f.id, 'financial', f.title, "Hoje", "VENCIMENTO HOJE");
+                         db.collection('users').doc(currentUser.uid).collection('financials').doc(f.id).update({lastAlarmSent: now.toISOString()});
+                     }
+                 }
+            }
+        });
+
+    }, 15000);
+
+    function triggerAlarm(id, type, title, time, ctx) {
+        document.getElementById('audioAlert').currentTime=0; 
+        document.getElementById('audioAlert').play().catch(()=>{});
+        
+        document.getElementById('alarm-item-id').value = id;
+        document.getElementById('alarm-item-type').value = type;
+        document.getElementById('alarm-context').textContent = ctx;
+        document.getElementById('alarm-time-display').textContent = time;
+        document.getElementById('alarm-text-display').textContent = title;
+        document.getElementById('alarmModal').classList.add('active');
+        
+        if(Notification.permission==="granted") new Notification(`${ctx}: ${title}`);
+    }
+
+    function stopAlarm() { document.getElementById('alarmModal').classList.remove('active'); document.getElementById('audioAlert').pause(); }
+    
+    function completeFromAlarm() {
+        const id = document.getElementById('alarm-item-id').value;
+        const type = document.getElementById('alarm-item-type').value;
+        document.getElementById('audioDone').play().catch(()=>{});
+        
+        if(type === 'task') db.collection('users').doc(currentUser.uid).collection('tasks').doc(id).update({completed:true});
+        else db.collection('users').doc(currentUser.uid).collection('financials').doc(id).update({status:'paid'});
+        stopAlarm();
+    }
+
+    function sendCloudEmail(task, prefix) {
+        // Exemplo fetch para Cloud Run
+        fetch('https://enviaremailsdiarios-368296869868.southamerica-east1.run.app/send-email', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                to: task.emailAddr, subject: `${prefix}: ${task.title}`,
+                html: `<h2>${prefix}</h2><p>${task.title}</p><p>${formatDateBR(task.date)} ${task.time||''}</p>`
+            })
+        }).then(()=>{
+            db.collection('users').doc(currentUser.uid).collection('tasks').doc(task.id).update({lastEmailSent: new Date().toISOString()});
+        }).catch(e=>console.log(e));
+    }
+
+    // CALENDAR LOGIC
+    let displayMonth=new Date().getMonth(), displayYear=new Date().getFullYear();
+    function changeMonth(o) { displayMonth+=o; if(displayMonth>11){displayMonth=0;displayYear++} if(displayMonth<0){displayMonth=11;displayYear--} renderCalendar(); }
+    function renderCalendar() {
+        const mNames=["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"];
+        document.getElementById('calendar-month-year').textContent=`${mNames[displayMonth]} ${displayYear}`;
+        const c=document.getElementById('calendar-days'); c.innerHTML='';
+        const fd=new Date(displayYear,displayMonth,1).getDay(), ld=new Date(displayYear,displayMonth+1,0).getDate();
+        for(let i=0;i<fd;i++) c.appendChild(document.createElement('div'));
+        for(let i=1;i<=ld;i++) {
+            const dStr=`${displayYear}-${String(displayMonth+1).padStart(2,'0')}-${String(i).padStart(2,'0')}`;
+            const el=document.createElement('div'); el.className='cal-day'; el.textContent=i;
+            if(appData.tasks.some(t=>t.date===dStr && !t.completed)) el.classList.add('has-task');
+            if(dStr===new Date().toISOString().split('T')[0]) el.classList.add('today');
+            el.onclick=()=>{
+                const l=document.getElementById('calendar-task-list'); l.innerHTML='';
+                const ts=appData.tasks.filter(t=>t.date===dStr);
+                if(!ts.length) l.innerHTML='Nada.'; else ts.forEach(t=>l.appendChild(createTaskElement(t)));
+            };
+            c.appendChild(el);
+        }
+    }
+
+    // Init msg
+    const h = new Date().getHours();
+    document.getElementById('greeting').textContent = h<12?"Bom dia!":h<18?"Boa tarde!":"Boa noite!";
+    if("Notification" in window) Notification.requestPermission();
 </script>
 </body>
 </html>
