@@ -510,6 +510,7 @@
 
                 <div class="card" style="margin-top:15px;">
                     <p><strong>Gerenciar Dados</strong></p>
+                    <button class="btn-block btn-primary" id="btn-force-sync" onclick="forceSync()" style="margin-bottom:10px;">🔄 Forçar Sincronização</button>
                     <button class="btn-block btn-danger" onclick="clearAllCompleted()">🧹 Limpar Tarefas Concluídas</button>
                 </div>
 
@@ -791,6 +792,12 @@
     let audioUnlocked = false;
     const ADMIN_EMAIL = "jcnvap@gmail.com";
 
+    // Variáveis Globais de Unsubscribe (Para forçar sync)
+    let unsubTasks = null;
+    let unsubFinancials = null;
+    let unsubContacts = null;
+    let unsubItems = null;
+
     // Configuração Padrão de Alertas (Default)
     let defaultConfig = {
         alarmStartMin: 15, alarmFreqMin: 5, alarmOverdueFreq: 10,
@@ -873,7 +880,7 @@
         }
     }
 
-    // Função Híbrida: Atualiza o User no DB ao Logar
+    // Função Híbrida: Atualiza o User no DB ao Logar (Salva E-mail)
     function syncUserOnLogin(user) {
         db.collection('users').doc(user.uid).set({ 
             email: user.email,
@@ -993,17 +1000,19 @@
     }
 
     // ==========================================
-    // 3. SINCRONIA DE DADOS (CLOUD -> APP)
+    // 3. SINCRONIA DE DADOS (CLOUD -> APP) - COM UNLISTEN
     // ==========================================
     function syncTasks() {
-        db.collection('users').doc(currentUser.uid).collection('tasks').orderBy('date').onSnapshot(snapshot => {
+        if(unsubTasks) unsubTasks(); // Para o listener anterior
+        unsubTasks = db.collection('users').doc(currentUser.uid).collection('tasks').orderBy('date').onSnapshot(snapshot => {
             appData.tasks = [];
             snapshot.forEach(doc => { let t = doc.data(); t.id = doc.id; appData.tasks.push(t); });
             refreshViews(); runAutoCleanup();
         });
     }
     function syncFinancials() {
-        db.collection('users').doc(currentUser.uid).collection('financials').orderBy('dueDate').onSnapshot(snapshot => {
+        if(unsubFinancials) unsubFinancials();
+        unsubFinancials = db.collection('users').doc(currentUser.uid).collection('financials').orderBy('dueDate').onSnapshot(snapshot => {
             appData.financials = [];
             snapshot.forEach(doc => { let i = doc.data(); i.id = doc.id; appData.financials.push(i); });
             if(currentView === 'finance') renderFinance();
@@ -1011,18 +1020,43 @@
         });
     }
     function syncContacts() {
-        db.collection('users').doc(currentUser.uid).collection('contacts').orderBy('name').onSnapshot(snapshot => {
+        if(unsubContacts) unsubContacts();
+        unsubContacts = db.collection('users').doc(currentUser.uid).collection('contacts').orderBy('name').onSnapshot(snapshot => {
             appData.contacts = [];
             snapshot.forEach(doc => { let c = doc.data(); c.id = doc.id; appData.contacts.push(c); });
             if(currentView==='registers') renderRegisters();
         });
     }
     function syncItems() {
-        db.collection('users').doc(currentUser.uid).collection('items').orderBy('name').onSnapshot(snapshot => {
+        if(unsubItems) unsubItems();
+        unsubItems = db.collection('users').doc(currentUser.uid).collection('items').orderBy('name').onSnapshot(snapshot => {
             appData.items = [];
             snapshot.forEach(doc => { let i = doc.data(); i.id = doc.id; appData.items.push(i); });
             if(currentView==='registers') renderRegisters();
         });
+    }
+
+    function forceSync() {
+        if(!currentUser) return;
+        const btn = document.getElementById('btn-force-sync');
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '🔄 Sincronizando...';
+        btn.disabled = true;
+
+        // Reinicia conexões
+        syncTasks();
+        syncFinancials();
+        syncContacts();
+        syncItems();
+        syncUserOnLogin(currentUser);
+
+        setTimeout(() => {
+            btn.innerHTML = '✅ Sincronizado';
+            setTimeout(() => { 
+                btn.innerHTML = originalText; 
+                btn.disabled = false; 
+            }, 2000);
+        }, 1500);
     }
 
     function getLocalDateStr() {
