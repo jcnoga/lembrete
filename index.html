@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Compromisso Fácil Cloud Pro + ERP</title>
+    <title>Compromisso Fácil Cloud Pro + ERP (Híbrido)</title>
     
     <!-- Bibliotecas PDF -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -13,7 +13,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
-    <!-- MANIFEST PWA (Opcional) -->
+    <!-- MANIFEST PWA -->
     <link rel="manifest" href="manifest.json">
 
     <style>
@@ -60,9 +60,18 @@
         .btn-google:hover { background: #f9f9f9; }
         .google-icon { width: 18px; height: 18px; }
 
+        /* --- TELA DE BLOQUEIO (EXPIRAÇÃO) --- */
+        #block-screen {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.95); color: white;
+            z-index: 6000; display: none; flex-direction: column; justify-content: center; align-items: center; padding: 30px; text-align: center;
+        }
+        #block-screen h1 { color: var(--danger); }
+        
         /* --- APP HEADER --- */
         header { background: var(--white); padding: 15px 20px; box-shadow: 0 1px 5px rgba(0,0,0,0.05); display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; }
         .app-name { font-size: 1.2rem; color: var(--primary); display: flex; align-items: center; gap: 8px; font-weight: bold; }
+        .header-actions { display: flex; gap: 15px; align-items: center; }
         .user-status { font-size: 0.8rem; color: #777; display:flex; align-items: center; gap: 5px; }
 
         /* --- MAIN CONTAINER --- */
@@ -104,6 +113,11 @@
         .item-actions { display: flex; gap: 8px; align-items: center; }
         .btn-icon { background: none; border: none; font-size: 1.2rem; cursor: pointer; color: var(--text-light); padding: 4px; }
         .btn-wa { color: #25D366; }
+
+        /* --- ADMIN PANEL --- */
+        .admin-box { background: #fff8e1; border: 1px solid #ffe082; padding: 15px; border-radius: var(--radius); margin-bottom: 20px; }
+        .admin-box h3 { margin-top: 0; color: #f57f17; }
+        .user-list-item { background: white; padding: 10px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; font-size: 0.9rem; }
 
         /* --- CADASTROS STYLES --- */
         .registers-nav { display: flex; gap: 10px; margin-bottom: 20px; }
@@ -206,6 +220,16 @@
 </head>
 <body onclick="enableAudio()">
 
+    <!-- TELA DE BLOQUEIO (EXPIRAÇÃO) -->
+    <div id="block-screen">
+        <span style="font-size: 4rem;">🚫</span>
+        <h1>Acesso Expirado</h1>
+        <p>Seu período de utilização do aplicativo encerrou.</p>
+        <p>Para continuar utilizando e não perder seus dados,<br>entre em contato com o suporte.</p>
+        <button class="btn-block btn-primary" onclick="window.open('https://wa.me/5500000000000')" style="max-width:300px; margin-top:20px;">Falar com Suporte</button>
+        <button onclick="appLogout()" style="background:none; border:1px solid #666; color:#ccc; padding:10px 20px; border-radius:20px; margin-top:20px; cursor:pointer;">Sair / Logout</button>
+    </div>
+
     <!-- 1. TELA DE AUTENTICAÇÃO -->
     <div id="auth-screen">
         <div class="auth-box" id="login-form">
@@ -261,9 +285,14 @@
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg>
                 Compromisso Fácil
             </div>
-            <div class="user-status">
-                <span id="user-display"></span>
-                <button onclick="appLogout()" style="background:none; border:none; cursor:pointer; font-size:1.2rem; color:var(--danger);" title="Sair">🚪</button>
+            <div class="header-actions">
+                <!-- ÍCONE DE CONFIGURAÇÕES (SHORTCUT) -->
+                <button onclick="switchTab('settings')" style="background:none; border:none; cursor:pointer; font-size:1.3rem; color:var(--text-light);" title="Configurações e Backup">⚙️</button>
+                
+                <div class="user-status">
+                    <span id="user-display"></span>
+                    <button onclick="appLogout()" style="background:none; border:none; cursor:pointer; font-size:1.2rem; color:var(--danger);" title="Sair">🚪</button>
+                </div>
             </div>
         </header>
 
@@ -411,6 +440,13 @@
             <div id="view-settings" class="view-section hidden">
                 <h3>Mais Opções</h3>
                 
+                <!-- PAINEL ADMINISTRATIVO (SÓ VISÍVEL PARA O ADMIN) -->
+                <div id="admin-panel" class="admin-box hidden">
+                    <h3>👑 Painel Administrativo</h3>
+                    <p style="font-size:0.8rem; margin-top:0;">Gerenciar validade dos usuários.</p>
+                    <div id="admin-user-list">Carregando usuários...</div>
+                </div>
+
                 <!-- CONFIGURAÇÃO DEFAULT DE ALERTAS -->
                 <div class="card" style="margin-top:15px; border:1px solid #cce5ff;">
                     <p style="margin-top:0; color:var(--primary-dark); font-weight:bold;">🛠️ Configuração Padrão de Alertas</p>
@@ -482,8 +518,10 @@
                     <button class="btn-block btn-primary" onclick="exportPDF()">📄 Baixar Relatório PDF</button>
                 </div>
                 
-                <div class="card" style="margin-top:15px;">
-                    <p><strong>Backup e Restauração</strong></p>
+                <!-- ÁREA DE BACKUP E RESTORE -->
+                <div class="card" style="margin-top:15px; border: 2px solid #ddd;">
+                    <p><strong>💾 Backup e Restauração</strong></p>
+                    <p style="font-size:0.8rem; color:#666; margin-top:0;">Salve seus dados localmente.</p>
                     <button class="btn-block btn-secondary" onclick="backupData()">📥 Fazer Backup (Baixar)</button>
                     <button class="btn-block btn-secondary" onclick="triggerRestore()">📤 Restaurar Backup (Enviar)</button>
                     <input type="file" id="restore-input" style="display:none" accept=".json" onchange="restoreData(this)">
@@ -552,7 +590,7 @@
                 <label for="t-send-email">Enviar e-mail de lembrete</label>
             </div>
             
-            <!-- BLOCO ÚNICO DE EMAIL (Corrigido) -->
+            <!-- BLOCO ÚNICO DE EMAIL -->
             <div class="form-group hidden" id="div-email-input">
                 <label>E-mail Destino</label>
                 <input type="email" id="t-email-addr" class="form-control" placeholder="cliente@email.com">
@@ -569,7 +607,7 @@
                 </div>
             </div>
 
-            <!-- Campos ocultos para configurações de alarme App (Prevenção de erros) -->
+            <!-- Campos ocultos para configurações de alarme App -->
             <input type="hidden" id="t-rem-start">
             <input type="hidden" id="t-rem-int">
             <input type="hidden" id="t-rem-over-int">
@@ -586,7 +624,7 @@
         </div>
     </div>
 
-    <!-- Finance Modal (Atualizado com Vínculos ERP) -->
+    <!-- Finance Modal -->
     <div class="modal" id="financialModal">
         <div class="modal-content">
             <h3 style="margin-top:0;">Lançamento Financeiro</h3>
@@ -607,13 +645,11 @@
                 <div class="form-group" style="flex:1"><label>Vencimento *</label><input type="date" id="f-date" class="form-control"></div>
             </div>
 
-            <!-- VÍNCULO COM PESSOA (INTEGRAÇÃO) -->
             <div class="form-group">
                 <label id="lbl-contact">Pessoa (Opcional)</label>
                 <select id="f-contact" class="form-control"><option value="">-- Selecione --</option></select>
             </div>
             
-             <!-- VÍNCULO COM ITEM (INTEGRAÇÃO) -->
              <div class="form-group hidden" id="div-item-select">
                 <label>Produto/Serviço (Opcional)</label>
                 <select id="f-item" class="form-control"><option value="">-- Selecione --</option></select>
@@ -633,7 +669,7 @@
         </div>
     </div>
 
-    <!-- Contact Modal (NOVO) -->
+    <!-- Contact Modal -->
     <div class="modal" id="contactModal">
         <div class="modal-content">
             <h3 style="margin-top:0;">Cadastro de Pessoa</h3>
@@ -654,7 +690,7 @@
         </div>
     </div>
 
-    <!-- Item Modal (NOVO) -->
+    <!-- Item Modal -->
     <div class="modal" id="itemModal">
         <div class="modal-content">
             <h3 style="margin-top:0;">Cadastro de Item</h3>
@@ -670,6 +706,23 @@
             <div class="form-group"><label>Preço Padrão (R$)</label><input type="number" id="i-price" class="form-control" step="0.01"></div>
             <button class="btn-block btn-primary" onclick="saveItem()">Salvar Item</button>
             <button class="btn-block btn-secondary" onclick="closeModal('itemModal')">Cancelar</button>
+        </div>
+    </div>
+    
+    <!-- Admin Edit Modal -->
+    <div class="modal" id="adminModal">
+        <div class="modal-content">
+            <h3>Definir Validade</h3>
+            <p>Usuário: <span id="admin-target-user" style="font-weight:bold;"></span></p>
+            <input type="hidden" id="admin-target-uid">
+            
+            <div class="form-group">
+                <label>Dias de Acesso (a partir de hoje)</label>
+                <input type="number" id="admin-days" class="form-control" placeholder="Ex: 30">
+            </div>
+            
+            <button class="btn-block btn-primary" onclick="saveUserAccess()">Salvar Permissão</button>
+            <button class="btn-block btn-secondary" onclick="closeModal('adminModal')">Cancelar</button>
         </div>
     </div>
 
@@ -729,11 +782,14 @@
     try {
         auth = firebase.auth();
         db = firebase.firestore();
+        // Ativar Persistência (Offline-First)
+        db.enablePersistence().catch(err => console.log("Persistence error:", err.code));
     } catch(e) { console.error("Erro Firebase", e); }
 
     let currentUser = null;
     let appData = { tasks: [], financials: [], contacts: [], items: [] };
     let audioUnlocked = false;
+    const ADMIN_EMAIL = "jcnvap@gmail.com";
 
     // Configuração Padrão de Alertas (Default)
     let defaultConfig = {
@@ -761,6 +817,18 @@
                 document.getElementById('user-display').textContent = user.email ? user.email.split('@')[0] : "Usuário Google";
                 document.getElementById('settings-email').textContent = user.email;
                 
+                // --- ADMIN & ACCESS LOGIC ---
+                syncUserOnLogin(user); // Sincroniza dados do usuário (Híbrido)
+                checkAccessValidity(user);
+                
+                if (user.email === ADMIN_EMAIL) {
+                    document.getElementById('admin-panel').classList.remove('hidden');
+                    loadUsersForAdmin();
+                } else {
+                    document.getElementById('admin-panel').classList.add('hidden');
+                }
+                // ---------------------------
+
                 const cleanupPref = localStorage.getItem('autoCleanup') === 'true';
                 document.getElementById('auto-cleanup-check').checked = cleanupPref;
 
@@ -776,9 +844,99 @@
                 appData = { tasks: [], financials: [], contacts: [], items: [] };
                 document.getElementById('auth-screen').classList.remove('hidden');
                 document.getElementById('app-screen').classList.add('hidden');
+                document.getElementById('block-screen').style.display = 'none'; // Reseta tela de bloqueio
             }
         });
     }
+
+    // --- LÓGICA DE VALIDADE E ADMIN ---
+    async function checkAccessValidity(user) {
+        try {
+            const docRef = db.collection('users').doc(user.uid);
+            const doc = await docRef.get();
+            
+            if (doc.exists) {
+                const data = doc.data();
+                if (data.validUntil) {
+                    const validDate = new Date(data.validUntil);
+                    if (new Date() > validDate) {
+                        document.getElementById('block-screen').style.display = 'flex';
+                    }
+                } else {
+                    setAccessDays(user.uid, 7);
+                }
+            } else {
+                setAccessDays(user.uid, 7);
+            }
+        } catch (e) {
+            console.error("Erro checando validade", e);
+        }
+    }
+
+    // Função Híbrida: Atualiza o User no DB ao Logar
+    function syncUserOnLogin(user) {
+        db.collection('users').doc(user.uid).set({ 
+            email: user.email,
+            lastLogin: new Date().toISOString()
+        }, { merge: true });
+    }
+
+    function loadUsersForAdmin() {
+        db.collection('users').get().then(snapshot => {
+            const list = document.getElementById('admin-user-list');
+            list.innerHTML = '';
+            
+            if(snapshot.empty) { list.innerHTML = 'Nenhum usuário.'; return; }
+
+            snapshot.forEach(doc => {
+                const u = doc.data();
+                const uid = doc.id;
+                const valid = u.validUntil ? new Date(u.validUntil).toLocaleDateString('pt-BR') : 'Sem data';
+                
+                // PREFERÊNCIA PELO E-MAIL NA LISTA
+                const userIdentifier = u.email ? u.email : `ID: ${uid}`;
+
+                const div = document.createElement('div');
+                div.className = 'user-list-item';
+                div.innerHTML = `
+                    <div>
+                        <strong>${userIdentifier}</strong><br>
+                        <small>Validade: ${valid}</small>
+                    </div>
+                    <button class="btn-primary" style="padding:5px 10px; font-size:0.8rem;" onclick="openAdminModal('${uid}', '${userIdentifier}')">Definir</button>
+                `;
+                list.appendChild(div);
+            });
+        });
+    }
+
+    function openAdminModal(uid, identifier) {
+        document.getElementById('admin-target-uid').value = uid;
+        document.getElementById('admin-target-user').textContent = identifier;
+        document.getElementById('admin-days').value = '';
+        openModal('adminModal');
+    }
+
+    function saveUserAccess() {
+        const uid = document.getElementById('admin-target-uid').value;
+        const days = parseInt(document.getElementById('admin-days').value);
+        if(!uid || !days) return alert("Preencha os dias");
+        
+        setAccessDays(uid, days).then(() => {
+            alert("Atualizado!");
+            closeModal('adminModal');
+            loadUsersForAdmin(); // Recarrega lista
+        });
+    }
+
+    function setAccessDays(uid, days) {
+        const date = new Date();
+        date.setDate(date.getDate() + days);
+        return db.collection('users').doc(uid).set({ 
+            validUntil: date.toISOString() 
+        }, { merge: true });
+    }
+    // ----------------------------------
 
     function loadDefaultSettings() {
         const stored = localStorage.getItem('alertConfig');
@@ -794,7 +952,6 @@
     }
 
     function saveDefaultSettings() {
-        // Função auxiliar para evitar erro se elemento não existir
         const getInt = (id) => { const el = document.getElementById(id); return el ? parseInt(el.value) : 0; };
         
         defaultConfig = {
@@ -878,15 +1035,12 @@
     // 4. CRUD TASKS (VERSÃO BLINDADA)
     // ==========================================
     function saveTask() {
-        // Helper para ler valores sem dar erro se o campo não existir no HTML
         const getVal = (id) => { const el = document.getElementById(id); return el ? el.value : ''; };
 
         const rawTitle = getVal('t-title');
         const rawDesc = getVal('t-desc');
         const date = getVal('t-date');
 
-        // LÓGICA DE TÍTULO AUTOMÁTICO
-        // Se Título estiver vazio mas Descrição existir, usa Descrição como título
         let finalTitle = rawTitle;
         if (!finalTitle && rawDesc) {
             finalTitle = rawDesc;
@@ -903,35 +1057,26 @@
             time: getVal('t-time'),
             category: getVal('t-category'),
             value: getVal('t-value') || '0.00',
-            
-            // Checkbox seguro
             sendEmail: document.getElementById('t-send-email') ? document.getElementById('t-send-email').checked : false,
             emailAddr: getVal('t-email-addr'),
-            
             userId: currentUser.uid,
             completed: false,
-            
-            // Valores padrão se campos não existirem
             remStart: parseInt(getVal('t-rem-start')) || 15,
             remInt: parseInt(getVal('t-rem-int')) || 5,
             remOverInt: parseInt(getVal('t-rem-over-int')) || 10,
-            
             mailDays: parseInt(getVal('t-mail-days')) || 1,
             mailInt: parseInt(getVal('t-mail-int')) || 1,
             mailOverInt: parseInt(getVal('t-mail-over-int')) || 1,
             mailMax: parseInt(getVal('t-mail-max')) || 3,
-            
             updatedAt: firebase.firestore.FieldValue.serverTimestamp()
         };
 
         const id = getVal('t-id');
         const ref = db.collection('users').doc(currentUser.uid).collection('tasks');
-
         const action = id ? ref.doc(id).update(data) : ref.add({ ...data, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
 
         action.then(() => {
             closeModal('taskModal');
-            // Opcional: alert("Salvo!");
         }).catch(err => {
             console.error("Erro ao salvar:", err);
             alert("Erro: " + err.message);
@@ -991,9 +1136,7 @@
         
         document.getElementById('lbl-contact').innerText = type === 'in' ? "Cliente (Opcional)" : "Fornecedor (Opcional)";
         
-        // Salva seleção atual
         const currentContact = contactSel.value;
-
         contactSel.innerHTML = '<option value="">-- Selecione --</option>';
         appData.contacts.forEach(c => {
             let show = (c.type === 'both') || (type === 'in' && c.type === 'client') || (type === 'out' && c.type === 'supplier');
@@ -1007,7 +1150,7 @@
 
         if(type === 'in') {
             itemDiv.classList.remove('hidden');
-            if(itemSel.options.length <= 1) { // Só popula se estiver vazio
+            if(itemSel.options.length <= 1) {
                 itemSel.innerHTML = '<option value="">-- Selecione --</option>';
                 appData.items.forEach(i => {
                     let opt = document.createElement('option');
@@ -1089,14 +1232,12 @@
         if(currentView === 'registers') renderRegisters();
     }
 
-    // --- RENDERIZADORES ---
     function renderDashboard() {
         const list = document.getElementById('dashboard-list');
         const todayStr = getLocalDateStr();
         const pending = appData.tasks.filter(t => !t.completed);
         document.getElementById('stat-pending').textContent = pending.length;
 
-        // Calculo Total Receita/Despesa (Tarefas + Financeiro)
         let totalIn = 0, totalOut = 0;
         appData.tasks.filter(t=>!t.completed).forEach(t => {
             if(t.category === 'Cliente') totalIn += parseFloat(t.value||0);
@@ -1243,7 +1384,6 @@
         const modal = document.getElementById(id);
         if(modal) modal.classList.add('open'); 
         
-        // Limpeza Segura
         if(id==='taskModal'){ 
             const clear = (eid) => { const el = document.getElementById(eid); if(el) el.value = ''; };
             const set = (eid, v) => { const el = document.getElementById(eid); if(el) el.value = v; };
@@ -1366,7 +1506,6 @@
         reader.onload = (e) => {
             try {
                 const data = JSON.parse(e.target.result);
-                // Suporte legado
                 let ts = Array.isArray(data) ? data : (data.tasks||[]);
                 let fs = data.financials||[];
                 let cs = data.contacts||[];
@@ -1448,7 +1587,6 @@
         const now = new Date();
         const todayStr = getLocalDateStr();
 
-        // 1. Tasks
         appData.tasks.forEach(t => {
             if(t.completed || !t.time) return;
             const target = new Date(`${t.date}T${t.time}:00`);
@@ -1470,7 +1608,6 @@
                 db.collection('users').doc(currentUser.uid).collection('tasks').doc(t.id).update({lastAlarmSent: now.toISOString()});
             }
 
-            // Email Logic
             if(t.sendEmail && t.emailAddr) {
                 const diffDays = Math.ceil((new Date(t.date+"T00:00") - new Date(todayStr+"T00:00")) / 86400000);
                 if(diffDays === (t.mailDays||1) || diffDays===0) {
@@ -1481,7 +1618,6 @@
             }
         });
 
-        // 2. Financeiro
         appData.financials.forEach(f => {
             if(f.status==='paid' || f.alertEnabled===false) return;
             const isToday = f.dueDate === todayStr;
