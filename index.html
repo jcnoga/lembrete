@@ -975,11 +975,50 @@
     }
 
     function appLogin() {
-        const email = document.getElementById('log-email').value;
+        const email = document.getElementById('log-email').value.trim();
         const pass = document.getElementById('log-pass').value;
-        if(!email || !pass) return alert("Preencha os dados");
-        auth.signInWithEmailAndPassword(email, pass).catch(err => alert(err.message));
+        const btn = document.querySelector('#login-form .auth-btn');
+
+        if(!email || !pass) return alert("Por favor, preencha e-mail e senha.");
+
+        // Feedback visual
+        const originalText = btn.innerText;
+        btn.innerText = "Entrando...";
+        btn.disabled = true;
+
+        auth.signInWithEmailAndPassword(email, pass)
+            .then(() => {
+                // Sucesso é tratado pelo onAuthStateChanged
+            })
+            .catch(error => {
+                btn.innerText = originalText;
+                btn.disabled = false;
+
+                // Tratamento robusto de erros em português
+                let msg = "Erro ao entrar.";
+                switch(error.code) {
+                    case 'auth/user-not-found':
+                        msg = "Usuário não cadastrado. Verifique o e-mail ou crie uma conta.";
+                        break;
+                    case 'auth/wrong-password':
+                        msg = "Senha incorreta.";
+                        break;
+                    case 'auth/invalid-email':
+                        msg = "Formato de e-mail inválido.";
+                        break;
+                    case 'auth/user-disabled':
+                        msg = "Esta conta foi desativada.";
+                        break;
+                    case 'auth/too-many-requests':
+                        msg = "Muitas tentativas falhas. Aguarde alguns minutos.";
+                        break;
+                    default:
+                        msg = "Erro: " + error.message;
+                }
+                alert(msg);
+            });
     }
+
     function appLoginGoogle() {
         const provider = new firebase.auth.GoogleAuthProvider();
         auth.signInWithPopup(provider).catch((error) => alert(error.message));
