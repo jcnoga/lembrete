@@ -818,7 +818,7 @@
                 document.getElementById('settings-email').textContent = user.email;
                 
                 // --- ADMIN & ACCESS LOGIC ---
-                syncUserOnLogin(user); // Sincroniza dados do usuário (Híbrido)
+                syncUserOnLogin(user); // Sincroniza e-mail no banco
                 checkAccessValidity(user);
                 
                 if (user.email === ADMIN_EMAIL) {
