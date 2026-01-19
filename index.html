@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Compromisso Fácil Cloud Pro + ERP Completo</title>
+    <title>Compromisso Fácil Cloud Pro + ERP</title>
     
     <!-- Bibliotecas PDF -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -86,14 +86,19 @@
             border-left: 5px solid transparent; box-shadow: 0 2px 5px rgba(0,0,0,0.02); 
         }
         
-        /* Cores de Borda */
+        /* Cores de Borda e Status */
         .task-item.priority-normal { border-left-color: var(--primary); }
         .task-item.done { opacity: 0.6; text-decoration: line-through; border-left-color: var(--secondary); }
+        
         .transaction-item.type-in { border-left-color: var(--secondary); }
         .transaction-item.type-out { border-left-color: var(--danger); }
         .transaction-item.paid { opacity: 0.6; }
         .transaction-item.paid .fin-amount { text-decoration: line-through; }
         
+        /* Estilos específicos para Cadastros */
+        .contact-item { border-left: 5px solid #ccc; }
+        .item-item { border-left: 5px solid #9b59b6; }
+
         .info-col { flex: 1; padding-right: 10px; cursor: pointer; }
         .main-text { font-weight: 600; font-size: 1rem; margin-bottom: 4px; display: block; }
         .sub-text { font-size: 0.8rem; color: var(--text-light); display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
@@ -103,13 +108,15 @@
         .btn-icon { background: none; border: none; font-size: 1.2rem; cursor: pointer; color: var(--text-light); padding: 4px; }
         .btn-wa { color: #25D366; }
 
-        /* --- CADASTROS STYLES (NOVO) --- */
+        /* --- CADASTROS STYLES --- */
         .registers-nav { display: flex; gap: 10px; margin-bottom: 20px; }
         .reg-tab { flex: 1; padding: 10px; text-align: center; background: #e0e0e0; border-radius: 8px; cursor: pointer; font-size: 0.9rem; font-weight: 600; color: #555; transition: 0.2s; }
         .reg-tab.active { background: var(--primary); color: white; }
-        .contact-type-badge { font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; color: white; margin-left: 5px; }
+        
+        .contact-type-badge { font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; color: white; margin-left: 5px; text-transform: uppercase; }
         .badge-client { background: var(--secondary); }
         .badge-supplier { background: var(--danger); }
+        .badge-both { background: var(--primary); }
 
         /* --- FINANCEIRO --- */
         .fin-summary { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 20px; }
@@ -344,7 +351,7 @@
                 <div id="tasks-list"></div>
             </div>
 
-            <!-- VIEW: FINANCE (NOVO MÓDULO) -->
+            <!-- VIEW: FINANCE (MÓDULO ERP) -->
             <div id="view-finance" class="view-section hidden">
                 <div class="section-title">
                     <h3>Financeiro</h3>
@@ -384,9 +391,9 @@
                 <div id="finance-list"></div>
             </div>
 
-            <!-- VIEW: REGISTERS (CADASTROS - NOVO) -->
+            <!-- VIEW: REGISTERS (CADASTROS - GRID INTEGRADO) -->
             <div id="view-registers" class="view-section hidden">
-                <div class="section-title"><h3>Cadastros</h3></div>
+                <div class="section-title"><h3>Cadastros (ERP)</h3></div>
                 
                 <div class="registers-nav">
                     <div class="reg-tab active" id="tab-contacts" onclick="toggleRegisterTab('contacts')">Pessoas (Clientes/Forn.)</div>
@@ -550,6 +557,7 @@
                 <input type="checkbox" id="t-send-email" onchange="toggleEmailInput()">
                 <label for="t-send-email">Enviar e-mail de lembrete</label>
             </div>
+            
             <div class="form-group hidden" id="div-email-input">
                 <label>E-mail Destino</label>
                 <input type="email" id="t-email-addr" class="form-control" placeholder="cliente@email.com">
@@ -559,25 +567,19 @@
                         <div class="col"><label>Dias Antes</label><input type="number" id="t-mail-days" class="form-control"></div>
                         <div class="col"><label>Repetir (dias)</label><input type="number" id="t-mail-int" class="form-control"></div>
                     </div>
+                    <div class="row">
+                        <div class="col"><label>Atrasado (dias)</label><input type="number" id="t-mail-over-int" class="form-control" placeholder="1"></div>
+                        <div class="col"><label>Máx Envios</label><input type="number" id="t-mail-max" class="form-control" placeholder="3"></div>
+                    </div>
                 </div>
             </div>
 
-<div class="form-group hidden" id="div-email-input">
-    <label>E-mail Destino</label>
-    <input type="email" id="t-email-addr" class="form-control" placeholder="cliente@email.com">
-    <div class="advanced-settings" style="margin-top:10px;">
-        <h4>Config E-mail</h4>
-        <div class="row">
-            <div class="col"><label>Dias Antes</label><input type="number" id="t-mail-days" class="form-control"></div>
-            <div class="col"><label>Repetir (dias)</label><input type="number" id="t-mail-int" class="form-control"></div>
-        </div>
-        <div class="row">
-             <!-- Campos que estavam faltando e travavam o JS -->
-            <div class="col"><label>Atrasado (dias)</label><input type="number" id="t-mail-over-int" class="form-control" placeholder="1"></div>
-            <div class="col"><label>Máx Envios</label><input type="number" id="t-mail-max" class="form-control" placeholder="3"></div>
-        </div>
-    </div>
-</div>
+            <div class="advanced-settings hidden" id="task-advanced-options">
+                <!-- Campos ocultos usados pelo JS caso existam, ou defaults -->
+                <input type="hidden" id="t-rem-start">
+                <input type="hidden" id="t-rem-int">
+                <input type="hidden" id="t-rem-over-int">
+            </div>
 
             <div class="form-group">
                 <label>Categoria</label>
@@ -591,7 +593,7 @@
         </div>
     </div>
 
-    <!-- Finance Modal (Atualizado com Vínculos) -->
+    <!-- Finance Modal (Atualizado com Vínculos ERP) -->
     <div class="modal" id="financialModal">
         <div class="modal-content">
             <h3 style="margin-top:0;">Lançamento Financeiro</h3>
@@ -612,13 +614,13 @@
                 <div class="form-group" style="flex:1"><label>Vencimento *</label><input type="date" id="f-date" class="form-control"></div>
             </div>
 
-            <!-- VÍNCULO COM PESSOA -->
+            <!-- VÍNCULO COM PESSOA (INTEGRAÇÃO) -->
             <div class="form-group">
                 <label id="lbl-contact">Pessoa (Opcional)</label>
                 <select id="f-contact" class="form-control"><option value="">-- Selecione --</option></select>
             </div>
             
-             <!-- VÍNCULO COM ITEM -->
+             <!-- VÍNCULO COM ITEM (INTEGRAÇÃO) -->
              <div class="form-group hidden" id="div-item-select">
                 <label>Produto/Serviço (Opcional)</label>
                 <select id="f-item" class="form-control"><option value="">-- Selecione --</option></select>
@@ -878,54 +880,54 @@
     // ==========================================
     // 4. CRUD TASKS
     // ==========================================
-// --- CORREÇÃO DA FUNÇÃO SALVAR ---
-function saveTask() {
-    const title = document.getElementById('t-title').value;
-    const date = document.getElementById('t-date').value;
-    
-    if(!title || !date) return alert("Preencha título e data");
-
-    // Coleta de dados com proteção contra campos inexistentes no HTML
-    const data = {
-        title: title,
-        description: document.getElementById('t-desc').value || '',
-        date: date,
-        time: document.getElementById('t-time').value || '',
-        category: document.getElementById('t-category').value || '',
-        value: document.getElementById('t-value').value || '0.00',
-        sendEmail: document.getElementById('t-send-email').checked,
-        emailAddr: document.getElementById('t-email-addr').value || '',
-        userId: currentUser.uid,
-        completed: false,
+    function saveTask() {
+        const title = document.getElementById('t-title').value;
+        const date = document.getElementById('t-date').value;
         
-        // Alarme App (usa valor do campo ou padrão se o campo não existir)
-        remStart: parseInt(document.getElementById('t-rem-start').value) || defaultConfig.alarmStartMin,
-        remInt: parseInt(document.getElementById('t-rem-int').value) || defaultConfig.alarmFreqMin,
-        remOverInt: document.getElementById('t-rem-over-int') ? (parseInt(document.getElementById('t-rem-over-int').value) || defaultConfig.alarmOverdueFreq) : defaultConfig.alarmOverdueFreq,
-        
-        // E-mail (usa valor do campo ou padrão se o campo não existir)
-        mailDays: document.getElementById('t-mail-days') ? (parseInt(document.getElementById('t-mail-days').value) || defaultConfig.emailDaysBefore) : defaultConfig.emailDaysBefore,
-        mailInt: document.getElementById('t-mail-int') ? (parseInt(document.getElementById('t-mail-int').value) || defaultConfig.emailFreqDays) : defaultConfig.emailFreqDays,
-        mailOverInt: document.getElementById('t-mail-over-int') ? (parseInt(document.getElementById('t-mail-over-int').value) || defaultConfig.emailOverdueFreq) : defaultConfig.emailOverdueFreq,
-        mailMax: document.getElementById('t-mail-max') ? (parseInt(document.getElementById('t-mail-max').value) || defaultConfig.emailOverdueMax) : defaultConfig.emailOverdueMax,
-        
-        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-    };
+        if(!title || !date) return alert("Preencha título e data");
 
-    const id = document.getElementById('t-id').value;
-    const ref = db.collection('users').doc(currentUser.uid).collection('tasks');
+        // Helper para pegar valor ou null
+        const val = (id) => { const el = document.getElementById(id); return el ? el.value : null; };
 
-    const action = id ? ref.doc(id).update(data) : ref.add({ ...data, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
+        const data = {
+            title: title,
+            description: val('t-desc') || '',
+            date: date,
+            time: val('t-time') || '',
+            category: val('t-category') || '',
+            value: val('t-value') || '0.00',
+            sendEmail: document.getElementById('t-send-email').checked,
+            emailAddr: val('t-email-addr') || '',
+            userId: currentUser.uid,
+            completed: false,
+            
+            // Alarme App
+            remStart: parseInt(val('t-rem-start')) || defaultConfig.alarmStartMin,
+            remInt: parseInt(val('t-rem-int')) || defaultConfig.alarmFreqMin,
+            remOverInt: parseInt(val('t-rem-over-int')) || defaultConfig.alarmOverdueFreq,
+            
+            // E-mail
+            mailDays: parseInt(val('t-mail-days')) || defaultConfig.emailDaysBefore,
+            mailInt: parseInt(val('t-mail-int')) || defaultConfig.emailFreqDays,
+            mailOverInt: parseInt(val('t-mail-over-int')) || defaultConfig.emailOverdueFreq,
+            mailMax: parseInt(val('t-mail-max')) || defaultConfig.emailOverdueMax,
+            
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        };
 
-    action.then(() => {
-        closeModal('taskModal');
-        // Opcional: feedback visual
-        console.log("Tarefa salva com sucesso!");
-    }).catch(err => {
-        console.error("Erro ao salvar no Firebase:", err);
-        alert("Erro ao salvar: " + err.message);
-    });
-}
+        const id = document.getElementById('t-id').value;
+        const ref = db.collection('users').doc(currentUser.uid).collection('tasks');
+
+        const action = id ? ref.doc(id).update(data) : ref.add({ ...data, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
+
+        action.then(() => {
+            closeModal('taskModal');
+            console.log("Tarefa salva com sucesso!");
+        }).catch(err => {
+            console.error("Erro ao salvar:", err);
+            alert("Erro ao salvar: " + err.message);
+        });
+    }
 
     function deleteTask(id) { if(confirm("Excluir?")) db.collection('users').doc(currentUser.uid).collection('tasks').doc(id).delete(); }
     
@@ -979,25 +981,33 @@ function saveTask() {
         const itemSel = document.getElementById('f-item');
         
         document.getElementById('lbl-contact').innerText = type === 'in' ? "Cliente (Opcional)" : "Fornecedor (Opcional)";
-        contactSel.innerHTML = '<option value="">-- Selecione --</option>';
         
+        // Salva seleção atual se houver
+        const currentContact = contactSel.value;
+
+        contactSel.innerHTML = '<option value="">-- Selecione --</option>';
         appData.contacts.forEach(c => {
+            // Filtra: se é Entrada, mostra Cliente/Ambos. Se é Saída, mostra Fornecedor/Ambos.
             let show = (c.type === 'both') || (type === 'in' && c.type === 'client') || (type === 'out' && c.type === 'supplier');
             if(show) {
                 let opt = document.createElement('option');
                 opt.value = c.id; opt.text = c.name;
+                if(c.id === currentContact) opt.selected = true;
                 contactSel.appendChild(opt);
             }
         });
 
         if(type === 'in') {
             itemDiv.classList.remove('hidden');
-            itemSel.innerHTML = '<option value="">-- Selecione --</option>';
-            appData.items.forEach(i => {
-                let opt = document.createElement('option');
-                opt.value = i.id; opt.text = `${i.name} (R$ ${i.price})`;
-                itemSel.appendChild(opt);
-            });
+            // Apenas popula se estiver vazio para nao resetar seleção em edição
+            if(itemSel.options.length <= 1) {
+                itemSel.innerHTML = '<option value="">-- Selecione --</option>';
+                appData.items.forEach(i => {
+                    let opt = document.createElement('option');
+                    opt.value = i.id; opt.text = `${i.name} (R$ ${i.price})`;
+                    itemSel.appendChild(opt);
+                });
+            }
         } else {
             itemDiv.classList.add('hidden');
             itemSel.value = "";
@@ -1010,7 +1020,7 @@ function saveTask() {
     });
 
     // ==========================================
-    // 6. CRUD CADASTROS (CRM)
+    // 6. CRUD CADASTROS (CRM - Grid)
     // ==========================================
     function saveContact() {
         const name = document.getElementById('c-name').value;
@@ -1183,33 +1193,44 @@ function saveTask() {
 
         if(showContacts) {
             const list = document.getElementById('contacts-list'); list.innerHTML = '';
-            appData.contacts.forEach(c => {
-                const div = document.createElement('div'); div.className = 'contact-item';
-                let badge = c.type === 'supplier' ? 'badge-supplier' : 'badge-client';
-                div.innerHTML = `
-                    <div class="info-col" onclick="openEditContact('${c.id}')">
-                        <span class="main-text">${c.name} <span class="contact-type-badge ${badge}">${c.type}</span></span>
-                        <span class="sub-text">${c.phone||''} | ${c.email||''}</span>
-                    </div>
-                    <button class="btn-icon" onclick="deleteContact('${c.id}')" style="color:var(--danger)">🗑️</button>
-                `;
-                list.appendChild(div);
-            });
+            if(appData.contacts.length === 0) {
+                list.innerHTML = '<div class="empty-state">Nenhuma pessoa cadastrada.</div>';
+            } else {
+                appData.contacts.forEach(c => {
+                    const div = document.createElement('div'); div.className = 'contact-item';
+                    let badgeClass = c.type === 'supplier' ? 'badge-supplier' : (c.type === 'both' ? 'badge-both' : 'badge-client');
+                    let typeLabel = c.type === 'supplier' ? 'Fornecedor' : (c.type === 'both' ? 'Ambos' : 'Cliente');
+                    
+                    div.innerHTML = `
+                        <div class="info-col" onclick="openEditContact('${c.id}')">
+                            <span class="main-text">${c.name} <span class="contact-type-badge ${badgeClass}">${typeLabel}</span></span>
+                            <span class="sub-text">📞 ${c.phone||'-'} | ✉️ ${c.email||'-'}</span>
+                        </div>
+                        <button class="btn-icon" onclick="deleteContact('${c.id}')" style="color:var(--danger)">🗑️</button>
+                    `;
+                    list.appendChild(div);
+                });
+            }
         } else {
             const list = document.getElementById('items-list'); list.innerHTML = '';
-            appData.items.forEach(i => {
-                const div = document.createElement('div'); div.className = 'item-item';
-                div.innerHTML = `
-                    <div class="info-col" onclick="openEditItem('${i.id}')">
-                        <span class="main-text">${i.name}</span>
-                        <span class="sub-text">${i.type==='service'?'Serviço':'Produto'} • R$ ${i.price.toFixed(2)}</span>
-                    </div>
-                    <button class="btn-icon" onclick="deleteItem('${i.id}')" style="color:var(--danger)">🗑️</button>
-                `;
-                list.appendChild(div);
-            });
+            if(appData.items.length === 0) {
+                list.innerHTML = '<div class="empty-state">Nenhum item cadastrado.</div>';
+            } else {
+                appData.items.forEach(i => {
+                    const div = document.createElement('div'); div.className = 'item-item';
+                    div.innerHTML = `
+                        <div class="info-col" onclick="openEditItem('${i.id}')">
+                            <span class="main-text">${i.name}</span>
+                            <span class="sub-text">${i.type==='service'?'Serviço':'Produto'} • R$ ${i.price.toFixed(2)}</span>
+                        </div>
+                        <button class="btn-icon" onclick="deleteItem('${i.id}')" style="color:var(--danger)">🗑️</button>
+                    `;
+                    list.appendChild(div);
+                });
+            }
         }
     }
+
     function toggleRegisterTab(t) {
         document.querySelectorAll('.reg-tab').forEach(e => e.classList.remove('active'));
         document.getElementById('tab-'+t).classList.add('active');
@@ -1224,37 +1245,41 @@ function saveTask() {
         if(id==='taskModal'){ 
             document.getElementById('t-id').value=''; document.getElementById('t-title').value=''; 
             document.getElementById('t-date').value=''; document.getElementById('t-email-addr').value='';
-            document.getElementById('t-rem-start').value = defaultConfig.alarmStartMin;
+            // Reset defaults
+            if(document.getElementById('t-rem-start')) document.getElementById('t-rem-start').value = defaultConfig.alarmStartMin;
         }
     }
     function closeModal(id) { document.getElementById(id).classList.remove('open'); }
     function toggleEmailInput() { document.getElementById('div-email-input').classList.toggle('hidden', !document.getElementById('t-send-email').checked); }
     function formatDateBR(d) { return d.split('-').reverse().join('/'); }
 
-// --- CORREÇÃO DA FUNÇÃO EDITAR ---
-function openEditTask(id) {
-    const t = appData.tasks.find(x => x.id === id); 
-    if(!t) return;
+    function openEditTask(id) {
+        const t = appData.tasks.find(x => x.id === id); 
+        if(!t) return;
 
-    document.getElementById('t-id').value = t.id;
-    document.getElementById('t-title').value = t.title || '';
-    document.getElementById('t-desc').value = t.description || '';
-    document.getElementById('t-date').value = t.date || '';
-    document.getElementById('t-time').value = t.time || '';
-    document.getElementById('t-category').value = t.category || '';
-    document.getElementById('t-value').value = t.value || '';
-    document.getElementById('t-send-email').checked = !!t.sendEmail;
-    document.getElementById('t-email-addr').value = t.emailAddr || '';
+        document.getElementById('t-id').value = t.id;
+        document.getElementById('t-title').value = t.title || '';
+        document.getElementById('t-desc').value = t.description || '';
+        document.getElementById('t-date').value = t.date || '';
+        document.getElementById('t-time').value = t.time || '';
+        document.getElementById('t-category').value = t.category || '';
+        document.getElementById('t-value').value = t.value || '';
+        document.getElementById('t-send-email').checked = !!t.sendEmail;
+        document.getElementById('t-email-addr').value = t.emailAddr || '';
 
-    // Popula campos avançados apenas se existirem no HTML
-    if(document.getElementById('t-rem-start')) document.getElementById('t-rem-start').value = t.remStart || defaultConfig.alarmStartMin;
-    if(document.getElementById('t-rem-int')) document.getElementById('t-rem-int').value = t.remInt || defaultConfig.alarmFreqMin;
-    if(document.getElementById('t-mail-days')) document.getElementById('t-mail-days').value = t.mailDays || defaultConfig.emailDaysBefore;
-    if(document.getElementById('t-mail-int')) document.getElementById('t-mail-int').value = t.mailInt || defaultConfig.emailFreqDays;
-    
-    toggleEmailInput();
-    openModal('taskModal');
-}
+        // Campos avançados (com verificação se existem no DOM ou se usam os hidden)
+        const setVal = (eid, val) => { if(document.getElementById(eid)) document.getElementById(eid).value = val; };
+        
+        setVal('t-rem-start', t.remStart || defaultConfig.alarmStartMin);
+        setVal('t-rem-int', t.remInt || defaultConfig.alarmFreqMin);
+        setVal('t-mail-days', t.mailDays || defaultConfig.emailDaysBefore);
+        setVal('t-mail-int', t.mailInt || defaultConfig.emailFreqDays);
+        setVal('t-mail-over-int', t.mailOverInt || defaultConfig.emailOverdueFreq);
+        setVal('t-mail-max', t.mailMax || defaultConfig.emailOverdueMax);
+
+        toggleEmailInput();
+        openModal('taskModal');
+    }
 
     function openFinancialModal() {
         document.getElementById('f-id').value=''; document.getElementById('f-type').value='out';
@@ -1268,12 +1293,17 @@ function openEditTask(id) {
         const i = appData.financials.find(x => x.id === id); if(!i) return;
         document.getElementById('f-id').value = i.id;
         document.getElementById('f-type').value = i.type;
-        updateFinanceFormContext(); // Popula selects
-        document.getElementById('f-title').value = i.title;
-        document.getElementById('f-amount').value = i.amount;
-        document.getElementById('f-date').value = i.dueDate;
-        document.getElementById('f-contact').value = i.contactId || '';
-        document.getElementById('f-item').value = i.itemId || '';
+        updateFinanceFormContext(); // Popula selects com base no tipo
+        
+        // Aguarda um tick para garantir que o DOM atualizou
+        setTimeout(() => {
+            document.getElementById('f-title').value = i.title;
+            document.getElementById('f-amount').value = i.amount;
+            document.getElementById('f-date').value = i.dueDate;
+            if(i.contactId) document.getElementById('f-contact').value = i.contactId;
+            if(i.itemId) document.getElementById('f-item').value = i.itemId;
+        }, 0);
+        
         openModal('financialModal');
     }
 
