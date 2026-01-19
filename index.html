@@ -13,7 +13,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
-    <!-- MANIFEST PWA -->
+    <!-- MANIFEST PWA (Opcional) -->
     <link rel="manifest" href="manifest.json">
 
     <style>
@@ -86,23 +86,20 @@
             border-left: 5px solid transparent; box-shadow: 0 2px 5px rgba(0,0,0,0.02); 
         }
         
-        /* Cores de Borda e Status */
+        /* Cores de Borda */
         .task-item.priority-normal { border-left-color: var(--primary); }
         .task-item.done { opacity: 0.6; text-decoration: line-through; border-left-color: var(--secondary); }
-        
         .transaction-item.type-in { border-left-color: var(--secondary); }
         .transaction-item.type-out { border-left-color: var(--danger); }
         .transaction-item.paid { opacity: 0.6; }
         .transaction-item.paid .fin-amount { text-decoration: line-through; }
         
-        /* Estilos específicos para Cadastros */
         .contact-item { border-left: 5px solid #ccc; }
         .item-item { border-left: 5px solid #9b59b6; }
 
         .info-col { flex: 1; padding-right: 10px; cursor: pointer; }
         .main-text { font-weight: 600; font-size: 1rem; margin-bottom: 4px; display: block; }
         .sub-text { font-size: 0.8rem; color: var(--text-light); display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
-        .tag { background: #eee; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; }
         
         .item-actions { display: flex; gap: 8px; align-items: center; }
         .btn-icon { background: none; border: none; font-size: 1.2rem; cursor: pointer; color: var(--text-light); padding: 4px; }
@@ -112,7 +109,6 @@
         .registers-nav { display: flex; gap: 10px; margin-bottom: 20px; }
         .reg-tab { flex: 1; padding: 10px; text-align: center; background: #e0e0e0; border-radius: 8px; cursor: pointer; font-size: 0.9rem; font-weight: 600; color: #555; transition: 0.2s; }
         .reg-tab.active { background: var(--primary); color: white; }
-        
         .contact-type-badge { font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; color: white; margin-left: 5px; text-transform: uppercase; }
         .badge-client { background: var(--secondary); }
         .badge-supplier { background: var(--danger); }
@@ -158,7 +154,6 @@
         .btn-secondary { background: #eee; color: var(--text); margin-top: 10px; }
         .btn-success { background: var(--secondary); color: white; }
         .btn-danger { background: var(--danger); color: white; margin-top: 10px; }
-        .btn-gold { background: #f1c40f; color: #333; margin-top: 10px; }
         
         /* Checkbox Cloud */
         .cloud-option { background: #eef2ff; padding: 12px; border-radius: 8px; border: 1px solid #ccd5ff; display: flex; align-items: center; gap: 10px; margin-bottom: 15px; }
@@ -177,7 +172,6 @@
         .col { flex: 1; }
         .col label { font-size: 0.8rem; font-weight: normal; color: #666; }
         .col input { padding: 8px; font-size: 0.9rem; }
-
 
         /* --- ALARM MODAL --- */
         .alarm-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 999; justify-content: center; align-items: center; }
@@ -534,7 +528,7 @@
     </div>
 
     <!-- 3. MODAIS -->
-    <!-- Task Modal -->
+    <!-- Task Modal (CORRIGIDO) -->
     <div class="modal" id="taskModal">
         <div class="modal-content">
             <h3 id="modal-title" style="margin-top:0;">Novo Compromisso</h3>
@@ -558,6 +552,7 @@
                 <label for="t-send-email">Enviar e-mail de lembrete</label>
             </div>
             
+            <!-- BLOCO ÚNICO DE EMAIL (Corrigido) -->
             <div class="form-group hidden" id="div-email-input">
                 <label>E-mail Destino</label>
                 <input type="email" id="t-email-addr" class="form-control" placeholder="cliente@email.com">
@@ -574,12 +569,10 @@
                 </div>
             </div>
 
-            <div class="advanced-settings hidden" id="task-advanced-options">
-                <!-- Campos ocultos usados pelo JS caso existam, ou defaults -->
-                <input type="hidden" id="t-rem-start">
-                <input type="hidden" id="t-rem-int">
-                <input type="hidden" id="t-rem-over-int">
-            </div>
+            <!-- Campos ocultos para configurações de alarme App (Prevenção de erros) -->
+            <input type="hidden" id="t-rem-start">
+            <input type="hidden" id="t-rem-int">
+            <input type="hidden" id="t-rem-over-int">
 
             <div class="form-group">
                 <label>Categoria</label>
@@ -790,24 +783,28 @@
     function loadDefaultSettings() {
         const stored = localStorage.getItem('alertConfig');
         if(stored) defaultConfig = JSON.parse(stored);
-        document.getElementById('def-alarm-start').value = defaultConfig.alarmStartMin;
-        document.getElementById('def-alarm-freq').value = defaultConfig.alarmFreqMin;
-        document.getElementById('def-alarm-over-freq').value = defaultConfig.alarmOverdueFreq;
-        document.getElementById('def-mail-days').value = defaultConfig.emailDaysBefore;
-        document.getElementById('def-mail-freq').value = defaultConfig.emailFreqDays;
-        document.getElementById('def-mail-over-freq').value = defaultConfig.emailOverdueFreq;
-        document.getElementById('def-mail-over-max').value = defaultConfig.emailOverdueMax;
+        const setVal = (id, val) => { const el = document.getElementById(id); if(el) el.value = val; };
+        setVal('def-alarm-start', defaultConfig.alarmStartMin);
+        setVal('def-alarm-freq', defaultConfig.alarmFreqMin);
+        setVal('def-alarm-over-freq', defaultConfig.alarmOverdueFreq);
+        setVal('def-mail-days', defaultConfig.emailDaysBefore);
+        setVal('def-mail-freq', defaultConfig.emailFreqDays);
+        setVal('def-mail-over-freq', defaultConfig.emailOverdueFreq);
+        setVal('def-mail-over-max', defaultConfig.emailOverdueMax);
     }
 
     function saveDefaultSettings() {
+        // Função auxiliar para evitar erro se elemento não existir
+        const getInt = (id) => { const el = document.getElementById(id); return el ? parseInt(el.value) : 0; };
+        
         defaultConfig = {
-            alarmStartMin: parseInt(document.getElementById('def-alarm-start').value) || 15,
-            alarmFreqMin: parseInt(document.getElementById('def-alarm-freq').value) || 5,
-            alarmOverdueFreq: parseInt(document.getElementById('def-alarm-over-freq').value) || 10,
-            emailDaysBefore: parseInt(document.getElementById('def-mail-days').value) || 1,
-            emailFreqDays: parseInt(document.getElementById('def-mail-freq').value) || 1,
-            emailOverdueFreq: parseInt(document.getElementById('def-mail-over-freq').value) || 1,
-            emailOverdueMax: parseInt(document.getElementById('def-mail-over-max').value) || 3
+            alarmStartMin: getInt('def-alarm-start') || 15,
+            alarmFreqMin: getInt('def-alarm-freq') || 5,
+            alarmOverdueFreq: getInt('def-alarm-over-freq') || 10,
+            emailDaysBefore: getInt('def-mail-days') || 1,
+            emailFreqDays: getInt('def-mail-freq') || 1,
+            emailOverdueFreq: getInt('def-mail-over-freq') || 1,
+            emailOverdueMax: getInt('def-mail-over-max') || 3
         };
         localStorage.setItem('alertConfig', JSON.stringify(defaultConfig));
         alert("Configurações padrão salvas!");
@@ -878,54 +875,66 @@
     }
 
     // ==========================================
-    // 4. CRUD TASKS
+    // 4. CRUD TASKS (VERSÃO BLINDADA)
     // ==========================================
     function saveTask() {
-        const title = document.getElementById('t-title').value;
-        const date = document.getElementById('t-date').value;
-        
-        if(!title || !date) return alert("Preencha título e data");
+        // Helper para ler valores sem dar erro se o campo não existir no HTML
+        const getVal = (id) => { const el = document.getElementById(id); return el ? el.value : ''; };
 
-        // Helper para pegar valor ou null
-        const val = (id) => { const el = document.getElementById(id); return el ? el.value : null; };
+        const rawTitle = getVal('t-title');
+        const rawDesc = getVal('t-desc');
+        const date = getVal('t-date');
+
+        // LÓGICA DE TÍTULO AUTOMÁTICO
+        // Se Título estiver vazio mas Descrição existir, usa Descrição como título
+        let finalTitle = rawTitle;
+        if (!finalTitle && rawDesc) {
+            finalTitle = rawDesc;
+        }
+
+        if (!finalTitle || !date) {
+            return alert("Por favor, preencha a Data e o Título (ou a Descrição).");
+        }
 
         const data = {
-            title: title,
-            description: val('t-desc') || '',
+            title: finalTitle,
+            description: rawDesc,
             date: date,
-            time: val('t-time') || '',
-            category: val('t-category') || '',
-            value: val('t-value') || '0.00',
-            sendEmail: document.getElementById('t-send-email').checked,
-            emailAddr: val('t-email-addr') || '',
+            time: getVal('t-time'),
+            category: getVal('t-category'),
+            value: getVal('t-value') || '0.00',
+            
+            // Checkbox seguro
+            sendEmail: document.getElementById('t-send-email') ? document.getElementById('t-send-email').checked : false,
+            emailAddr: getVal('t-email-addr'),
+            
             userId: currentUser.uid,
             completed: false,
             
-            // Alarme App
-            remStart: parseInt(val('t-rem-start')) || defaultConfig.alarmStartMin,
-            remInt: parseInt(val('t-rem-int')) || defaultConfig.alarmFreqMin,
-            remOverInt: parseInt(val('t-rem-over-int')) || defaultConfig.alarmOverdueFreq,
+            // Valores padrão se campos não existirem
+            remStart: parseInt(getVal('t-rem-start')) || 15,
+            remInt: parseInt(getVal('t-rem-int')) || 5,
+            remOverInt: parseInt(getVal('t-rem-over-int')) || 10,
             
-            // E-mail
-            mailDays: parseInt(val('t-mail-days')) || defaultConfig.emailDaysBefore,
-            mailInt: parseInt(val('t-mail-int')) || defaultConfig.emailFreqDays,
-            mailOverInt: parseInt(val('t-mail-over-int')) || defaultConfig.emailOverdueFreq,
-            mailMax: parseInt(val('t-mail-max')) || defaultConfig.emailOverdueMax,
+            mailDays: parseInt(getVal('t-mail-days')) || 1,
+            mailInt: parseInt(getVal('t-mail-int')) || 1,
+            mailOverInt: parseInt(getVal('t-mail-over-int')) || 1,
+            mailMax: parseInt(getVal('t-mail-max')) || 3,
             
             updatedAt: firebase.firestore.FieldValue.serverTimestamp()
         };
 
-        const id = document.getElementById('t-id').value;
+        const id = getVal('t-id');
         const ref = db.collection('users').doc(currentUser.uid).collection('tasks');
 
         const action = id ? ref.doc(id).update(data) : ref.add({ ...data, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
 
         action.then(() => {
             closeModal('taskModal');
-            console.log("Tarefa salva com sucesso!");
+            // Opcional: alert("Salvo!");
         }).catch(err => {
             console.error("Erro ao salvar:", err);
-            alert("Erro ao salvar: " + err.message);
+            alert("Erro: " + err.message);
         });
     }
 
@@ -982,12 +991,11 @@
         
         document.getElementById('lbl-contact').innerText = type === 'in' ? "Cliente (Opcional)" : "Fornecedor (Opcional)";
         
-        // Salva seleção atual se houver
+        // Salva seleção atual
         const currentContact = contactSel.value;
 
         contactSel.innerHTML = '<option value="">-- Selecione --</option>';
         appData.contacts.forEach(c => {
-            // Filtra: se é Entrada, mostra Cliente/Ambos. Se é Saída, mostra Fornecedor/Ambos.
             let show = (c.type === 'both') || (type === 'in' && c.type === 'client') || (type === 'out' && c.type === 'supplier');
             if(show) {
                 let opt = document.createElement('option');
@@ -999,8 +1007,7 @@
 
         if(type === 'in') {
             itemDiv.classList.remove('hidden');
-            // Apenas popula se estiver vazio para nao resetar seleção em edição
-            if(itemSel.options.length <= 1) {
+            if(itemSel.options.length <= 1) { // Só popula se estiver vazio
                 itemSel.innerHTML = '<option value="">-- Selecione --</option>';
                 appData.items.forEach(i => {
                     let opt = document.createElement('option');
@@ -1020,7 +1027,7 @@
     });
 
     // ==========================================
-    // 6. CRUD CADASTROS (CRM - Grid)
+    // 6. CRUD CADASTROS (CRM)
     // ==========================================
     function saveContact() {
         const name = document.getElementById('c-name').value;
@@ -1148,7 +1155,6 @@
         let items = appData.financials.filter(i => (type==='all' || i.type===type) && (status==='all' || i.status===status));
         items.sort((a,b) => new Date(a.dueDate) - new Date(b.dueDate));
 
-        // Totais da tela financeira
         let finIn = 0, finOut = 0;
         appData.financials.filter(f=>f.status==='pending').forEach(f => {
             if(f.type==='in') finIn += f.amount; else finOut += f.amount;
@@ -1163,7 +1169,6 @@
             const div = document.createElement('div');
             div.className = `transaction-item type-${i.type} ${i.status==='paid'?'paid':''}`;
             
-            // Texto secundário com Vínculos
             let sub = formatDateBR(i.dueDate);
             if(i.contactId) { const c = appData.contacts.find(x=>x.id===i.contactId); if(c) sub += ` • ${c.name}`; }
             if(i.itemId) { const it = appData.items.find(x=>x.id===i.itemId); if(it) sub += ` • ${it.name}`; }
@@ -1193,41 +1198,35 @@
 
         if(showContacts) {
             const list = document.getElementById('contacts-list'); list.innerHTML = '';
-            if(appData.contacts.length === 0) {
-                list.innerHTML = '<div class="empty-state">Nenhuma pessoa cadastrada.</div>';
-            } else {
-                appData.contacts.forEach(c => {
-                    const div = document.createElement('div'); div.className = 'contact-item';
-                    let badgeClass = c.type === 'supplier' ? 'badge-supplier' : (c.type === 'both' ? 'badge-both' : 'badge-client');
-                    let typeLabel = c.type === 'supplier' ? 'Fornecedor' : (c.type === 'both' ? 'Ambos' : 'Cliente');
-                    
-                    div.innerHTML = `
-                        <div class="info-col" onclick="openEditContact('${c.id}')">
-                            <span class="main-text">${c.name} <span class="contact-type-badge ${badgeClass}">${typeLabel}</span></span>
-                            <span class="sub-text">📞 ${c.phone||'-'} | ✉️ ${c.email||'-'}</span>
-                        </div>
-                        <button class="btn-icon" onclick="deleteContact('${c.id}')" style="color:var(--danger)">🗑️</button>
-                    `;
-                    list.appendChild(div);
-                });
-            }
+            if(appData.contacts.length === 0) list.innerHTML = '<div class="empty-state">Nenhuma pessoa cadastrada.</div>';
+            else appData.contacts.forEach(c => {
+                const div = document.createElement('div'); div.className = 'contact-item';
+                let badgeClass = c.type === 'supplier' ? 'badge-supplier' : (c.type === 'both' ? 'badge-both' : 'badge-client');
+                let typeLabel = c.type === 'supplier' ? 'Fornecedor' : (c.type === 'both' ? 'Ambos' : 'Cliente');
+                
+                div.innerHTML = `
+                    <div class="info-col" onclick="openEditContact('${c.id}')">
+                        <span class="main-text">${c.name} <span class="contact-type-badge ${badgeClass}">${typeLabel}</span></span>
+                        <span class="sub-text">📞 ${c.phone||'-'} | ✉️ ${c.email||'-'}</span>
+                    </div>
+                    <button class="btn-icon" onclick="deleteContact('${c.id}')" style="color:var(--danger)">🗑️</button>
+                `;
+                list.appendChild(div);
+            });
         } else {
             const list = document.getElementById('items-list'); list.innerHTML = '';
-            if(appData.items.length === 0) {
-                list.innerHTML = '<div class="empty-state">Nenhum item cadastrado.</div>';
-            } else {
-                appData.items.forEach(i => {
-                    const div = document.createElement('div'); div.className = 'item-item';
-                    div.innerHTML = `
-                        <div class="info-col" onclick="openEditItem('${i.id}')">
-                            <span class="main-text">${i.name}</span>
-                            <span class="sub-text">${i.type==='service'?'Serviço':'Produto'} • R$ ${i.price.toFixed(2)}</span>
-                        </div>
-                        <button class="btn-icon" onclick="deleteItem('${i.id}')" style="color:var(--danger)">🗑️</button>
-                    `;
-                    list.appendChild(div);
-                });
-            }
+            if(appData.items.length === 0) list.innerHTML = '<div class="empty-state">Nenhum item cadastrado.</div>';
+            else appData.items.forEach(i => {
+                const div = document.createElement('div'); div.className = 'item-item';
+                div.innerHTML = `
+                    <div class="info-col" onclick="openEditItem('${i.id}')">
+                        <span class="main-text">${i.name}</span>
+                        <span class="sub-text">${i.type==='service'?'Serviço':'Produto'} • R$ ${i.price.toFixed(2)}</span>
+                    </div>
+                    <button class="btn-icon" onclick="deleteItem('${i.id}')" style="color:var(--danger)">🗑️</button>
+                `;
+                list.appendChild(div);
+            });
         }
     }
 
@@ -1238,38 +1237,53 @@
     }
 
     // ==========================================
-    // 8. HELPERS DE MODAIS E EDIÇÃO
+    // 8. HELPERS DE MODAIS E EDIÇÃO (BLINDADOS)
     // ==========================================
     function openModal(id) { 
-        document.getElementById(id).classList.add('open'); 
+        const modal = document.getElementById(id);
+        if(modal) modal.classList.add('open'); 
+        
+        // Limpeza Segura
         if(id==='taskModal'){ 
-            document.getElementById('t-id').value=''; document.getElementById('t-title').value=''; 
-            document.getElementById('t-date').value=''; document.getElementById('t-email-addr').value='';
-            // Reset defaults
-            if(document.getElementById('t-rem-start')) document.getElementById('t-rem-start').value = defaultConfig.alarmStartMin;
+            const clear = (eid) => { const el = document.getElementById(eid); if(el) el.value = ''; };
+            const set = (eid, v) => { const el = document.getElementById(eid); if(el) el.value = v; };
+
+            clear('t-id'); clear('t-title'); clear('t-desc'); 
+            clear('t-date'); clear('t-time'); clear('t-value'); clear('t-email-addr');
+            
+            const chk = document.getElementById('t-send-email');
+            if(chk) { chk.checked = false; toggleEmailInput(); }
+
+            set('t-rem-start', defaultConfig.alarmStartMin);
         }
     }
+    
     function closeModal(id) { document.getElementById(id).classList.remove('open'); }
-    function toggleEmailInput() { document.getElementById('div-email-input').classList.toggle('hidden', !document.getElementById('t-send-email').checked); }
+    function toggleEmailInput() { 
+        const div = document.getElementById('div-email-input');
+        const chk = document.getElementById('t-send-email');
+        if(div && chk) div.classList.toggle('hidden', !chk.checked); 
+    }
     function formatDateBR(d) { return d.split('-').reverse().join('/'); }
 
     function openEditTask(id) {
         const t = appData.tasks.find(x => x.id === id); 
         if(!t) return;
 
-        document.getElementById('t-id').value = t.id;
-        document.getElementById('t-title').value = t.title || '';
-        document.getElementById('t-desc').value = t.description || '';
-        document.getElementById('t-date').value = t.date || '';
-        document.getElementById('t-time').value = t.time || '';
-        document.getElementById('t-category').value = t.category || '';
-        document.getElementById('t-value').value = t.value || '';
-        document.getElementById('t-send-email').checked = !!t.sendEmail;
-        document.getElementById('t-email-addr').value = t.emailAddr || '';
+        const setVal = (eid, val) => { const el = document.getElementById(eid); if(el) el.value = val; };
 
-        // Campos avançados (com verificação se existem no DOM ou se usam os hidden)
-        const setVal = (eid, val) => { if(document.getElementById(eid)) document.getElementById(eid).value = val; };
+        setVal('t-id', t.id);
+        setVal('t-title', t.title || '');
+        setVal('t-desc', t.description || '');
+        setVal('t-date', t.date || '');
+        setVal('t-time', t.time || '');
+        setVal('t-category', t.category || '');
+        setVal('t-value', t.value || '');
+        setVal('t-email-addr', t.emailAddr || '');
         
+        const chk = document.getElementById('t-send-email');
+        if(chk) { chk.checked = !!t.sendEmail; toggleEmailInput(); }
+
         setVal('t-rem-start', t.remStart || defaultConfig.alarmStartMin);
         setVal('t-rem-int', t.remInt || defaultConfig.alarmFreqMin);
         setVal('t-mail-days', t.mailDays || defaultConfig.emailDaysBefore);
@@ -1277,39 +1291,38 @@
         setVal('t-mail-over-int', t.mailOverInt || defaultConfig.emailOverdueFreq);
         setVal('t-mail-max', t.mailMax || defaultConfig.emailOverdueMax);
 
-        toggleEmailInput();
         openModal('taskModal');
     }
 
     function openFinancialModal() {
-        document.getElementById('f-id').value=''; document.getElementById('f-type').value='out';
-        document.getElementById('f-title').value=''; document.getElementById('f-amount').value='';
-        document.getElementById('f-date').value=''; document.getElementById('f-contact').value='';
-        document.getElementById('f-item').value='';
+        const setVal = (eid, v) => { const el = document.getElementById(eid); if(el) el.value = v; };
+        setVal('f-id',''); setVal('f-type','out'); setVal('f-title',''); 
+        setVal('f-amount',''); setVal('f-date',''); setVal('f-contact',''); setVal('f-item','');
         updateFinanceFormContext();
         openModal('financialModal');
     }
     function openEditFinancial(id) {
         const i = appData.financials.find(x => x.id === id); if(!i) return;
-        document.getElementById('f-id').value = i.id;
-        document.getElementById('f-type').value = i.type;
-        updateFinanceFormContext(); // Popula selects com base no tipo
+        const setVal = (eid, v) => { const el = document.getElementById(eid); if(el) el.value = v; };
         
-        // Aguarda um tick para garantir que o DOM atualizou
+        setVal('f-id', i.id);
+        setVal('f-type', i.type);
+        updateFinanceFormContext(); 
+        
         setTimeout(() => {
-            document.getElementById('f-title').value = i.title;
-            document.getElementById('f-amount').value = i.amount;
-            document.getElementById('f-date').value = i.dueDate;
-            if(i.contactId) document.getElementById('f-contact').value = i.contactId;
-            if(i.itemId) document.getElementById('f-item').value = i.itemId;
+            setVal('f-title', i.title);
+            setVal('f-amount', i.amount);
+            setVal('f-date', i.dueDate);
+            if(i.contactId) setVal('f-contact', i.contactId);
+            if(i.itemId) setVal('f-item', i.itemId);
         }, 0);
         
         openModal('financialModal');
     }
 
     function openContactModal() { 
-        document.getElementById('c-id').value=''; document.getElementById('c-name').value=''; 
-        document.getElementById('c-phone').value=''; document.getElementById('c-email').value='';
+        const clear = (eid) => { document.getElementById(eid).value = ''; };
+        clear('c-id'); clear('c-name'); clear('c-phone'); clear('c-email');
         openModal('contactModal'); 
     }
     function openEditContact(id) {
@@ -1323,8 +1336,8 @@
     }
 
     function openItemModal() {
-        document.getElementById('i-id').value=''; document.getElementById('i-name').value=''; 
-        document.getElementById('i-price').value=''; 
+        const clear = (eid) => { document.getElementById(eid).value = ''; };
+        clear('i-id'); clear('i-name'); clear('i-price');
         openModal('itemModal');
     }
     function openEditItem(id) {
@@ -1442,15 +1455,12 @@
             const diffMin = (target - now) / 60000;
             const startMin = t.remStart || defaultConfig.alarmStartMin;
             
-            // Lógica simples: aviso na hora ou no intervalo configurado
             let trigger = false;
             let msg = "";
 
-            // Pré-alarme
             if(diffMin > 0 && diffMin <= startMin) {
                 if(!t.lastAlarmSent || (now - new Date(t.lastAlarmSent) > (t.remInt||5)*60000)) { trigger=true; msg=`Em ${Math.ceil(diffMin)} min`; }
             }
-            // Na hora exata
             if(Math.abs(diffMin) < 1) {
                 if(!t.lastAlarmSent || (now - new Date(t.lastAlarmSent) > 60000)) { trigger=true; msg="É AGORA!"; }
             }
@@ -1471,12 +1481,11 @@
             }
         });
 
-        // 2. Financeiro (Avisar dia do vencto)
+        // 2. Financeiro
         appData.financials.forEach(f => {
             if(f.status==='paid' || f.alertEnabled===false) return;
             const isToday = f.dueDate === todayStr;
             if(isToday) {
-                 // Avisar as 9h ou se logou depois das 9h e ainda nao avisou hoje
                  const target = new Date(`${f.dueDate}T09:00:00`);
                  if(now >= target) {
                      if(!f.lastAlarmSent || f.lastAlarmSent.split('T')[0] !== todayStr) {
@@ -1516,7 +1525,6 @@
     }
 
     function sendCloudEmail(task, prefix) {
-        // Exemplo fetch para Cloud Run
         fetch('https://enviaremailsdiarios-368296869868.southamerica-east1.run.app/send-email', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
